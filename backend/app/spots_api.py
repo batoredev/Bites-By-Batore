@@ -1,0 +1,244 @@
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy import select
+from .auth import admin_user
+from .config import settings
+from .db import get_db, IdentifiedSpot, Investigation, Venue, Audit, now
+from .spots import spot_dict, identify_from_source, reconcile_spots, INACTIVE, merge_data
+from .spot_identity import maps_reference, quality_issues, name_key, clean_name
+from .schemas import VenueInput, VenueOperations
+
+router = APIRouter(prefix="/api/admin/spots")
+
+
+@router.get("")
+def listing(include_held: bool = False, user=Depends(admin_user), db=Depends(get_db)):
+    rows = list(
+        db.scalars(
+            select(IdentifiedSpot)
+            .where(IdentifiedSpot.user_id == user.id)
+            .order_by(IdentifiedSpot.updated_at.desc())
+        )
+    )
+    return {
+        "spots": [spot_dict(r) for r in rows if include_held or r.status not in INACTIVE],
+        "total": len(rows),
+        "active": sum(r.status not in INACTIVE for r in rows),
+        "held": sum(r.status in INACTIVE for r in rows),
+        "publication": "Every location requires your explicit approval before itinerary suggestions",
+    }
+
+
+@router.post("/quality-check")
+def quality_check(user=Depends(admin_user), db=Depends(get_db)):
+    result = reconcile_spots(db, user.id)
+    db.commit()
+    return result
+
+
+class MergeInput(BaseModel):
+    target_id: str
+    same_branch_checked: bool
+    reason: str = Field(min_length=10, max_length=1000)
+
+
+@router.post("/{spot_id}/merge")
+def merge(spot_id: str, data: MergeInput, user=Depends(admin_user), db=Depends(get_db)):
+    source, target = db.get(IdentifiedSpot, spot_id), db.get(IdentifiedSpot, data.target_id)
+    if not source or not target or source.user_id != user.id or target.user_id != user.id:
+        raise HTTPException(404, "Spot not found")
+    if source.id == target.id or not data.same_branch_checked:
+        raise HTTPException(422, "Choose a different record and confirm the exact same branch")
+    if source.venue_id or target.venue_id or source.status in INACTIVE or target.status in INACTIVE:
+        raise HTTPException(409, "Merge active drafts before preparing either for approval")
+    left, right = source.data.get("maps_identity", {}), target.data.get("maps_identity", {})
+    if left.get("place_key") and right.get("place_key") and left["place_key"] != right["place_key"]:
+        raise HTTPException(409, "Different confirmed Maps identities require identity correction first")
+    before = {"target_data": target.data, "source_status": source.status}
+    target.data = merge_data(
+        target.data, {**source.data, "aliases": [source.name, *source.data.get("aliases", [])]}
+    )
+    source.status, source.updated_at = "merged", now()
+    source.data = {**source.data, "merged_into": target.id, "previous_status": "identified"}
+    db.add(
+        Audit(
+            actor=user.id,
+            action="spot.merged",
+            target=source.id,
+            detail={"into": target.id, "reason": data.reason, "before": before},
+        )
+    )
+    db.commit()
+    return {"spot_id": target.id, "published": False}
+
+
+@router.post("/{spot_id}/maps-candidates")
+def maps_candidates(spot_id: str, user=Depends(admin_user), db=Depends(get_db)):
+    from .providers import google_search, Unavailable
+    from .planner import km
+
+    row = db.get(IdentifiedSpot, spot_id)
+    if not row or row.user_id != user.id:
+        raise HTTPException(404, "Spot not found")
+    try:
+        candidates = google_search(db, f"{row.name} {row.area} Coimbatore", 11.0168, 76.9558)
+    except Unavailable as exc:
+        return {
+            "status": "unavailable",
+            "reason": str(exc),
+            "candidates": [],
+            "search_url": spot_dict(row)["map_search_url"],
+        }
+    candidates = [
+        c
+        for c in candidates
+        if c.get("location")
+        and km((c["location"]["latitude"], c["location"]["longitude"]), (11.0168, 76.9558)) <= 40
+    ]
+    # API content is transient; no API names/addresses copied into our database.
+    return {"status": "review_required", "candidates": candidates, "attribution": "Google Maps"}
+
+
+@router.post("/sync-investigations")
+def sync(user=Depends(admin_user), db=Depends(get_db)):
+    from .research import case_sources
+
+    ids = set()
+    for case in db.scalars(select(Investigation).where(Investigation.user_id == user.id)):
+        for source in case_sources(db, case):
+            ids.update(identify_from_source(db, case, source))
+    db.commit()
+    return {"identified_spots": len(ids), "published": 0}
+
+
+@router.post("/collect")
+def collect(user=Depends(admin_user), db=Depends(get_db)):
+    from datetime import datetime, timezone
+    from .jobs import enqueue
+
+    if settings().app_mode == "demo":
+        raise HTTPException(409, "Real inventory collection is disabled in demo")
+    job = enqueue(
+        db,
+        "spot_inventory",
+        {"user_id": user.id},
+        f"spot-inventory:{user.id}:{datetime.now(timezone.utc).date().isoformat()}",
+        priority=95,
+    )
+    return {"job_id": job.id, "state": job.state}
+
+
+class Preparation(BaseModel):
+    venue: VenueInput
+    evidence_url: str = Field(pattern=r"^https://", max_length=2000)
+    reason: str = Field(min_length=10, max_length=1000)
+    maps_url: str = Field(default="", max_length=2048)
+    maps_name_checked: bool = False
+
+
+@router.post("/{spot_id}/prepare")
+def prepare(spot_id: str, data: Preparation, user=Depends(admin_user), db=Depends(get_db)):
+    row = db.get(IdentifiedSpot, spot_id)
+    if not row or row.user_id != user.id:
+        raise HTTPException(404, "Spot not found")
+    if row.venue_id:
+        return {"venue_id": row.venue_id, "status": row.status}
+    if row.status == "merged":
+        raise HTTPException(409, "Use the surviving record for this merged location")
+    identity = None
+    if settings().app_mode != "demo" or data.maps_url:
+        if not data.maps_name_checked or not data.venue.details.get("branch_confirmed"):
+            raise HTTPException(422, "Check the exact branch and its name against the Google Maps place")
+        try:
+            identity = maps_reference(data.maps_url)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        issues = quality_issues(data.venue.name, data.venue.area, {"address": data.venue.address})
+        if issues:
+            raise HTTPException(422, "; ".join(issues))
+        for other in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user.id)):
+            if (
+                other.id != row.id
+                and other.status not in INACTIVE
+                and (
+                    other.data.get("maps_identity", {}).get("place_key") == identity["place_key"]
+                    or (
+                        name_key(other.name) == name_key(data.venue.name)
+                        and other.data.get("address")
+                        and name_key(other.data["address"]) == name_key(data.venue.address)
+                    )
+                )
+            ):
+                raise HTTPException(
+                    409,
+                    {
+                        "message": "This branch already exists; review or merge the existing record",
+                        "spot_id": other.id,
+                    },
+                )
+    from .planner import km
+
+    if km((data.venue.lat, data.venue.lng), (11.0168, 76.9558)) > 40:
+        raise HTTPException(422, "The first inventory covers Coimbatore within 40 km")
+    if any(
+        k in data.venue.details for k in ("price_per_person", "hours", "closed", "vegetarian", "wheelchair")
+    ):
+        raise HTTPException(422, "Add essential facts through the evidence review queue")
+    try:
+        operations = VenueOperations.model_validate(data.venue.details)
+    except ValueError as exc:
+        raise HTTPException(422, "Invalid planning details") from exc
+    venue = Venue(
+        **data.venue.model_dump(exclude={"details"}),
+        details={
+            **operations.model_dump(mode="json"),
+            "identified_spot_id": row.id,
+            "branch_confirmation_source": data.evidence_url,
+            **(
+                {
+                    "maps_identity": {
+                        **identity,
+                        "confirmed_by": user.id,
+                        "confirmed_at": now(),
+                        "name": data.venue.name,
+                        "basis": "Operator independently checked name and exact Maps branch",
+                    }
+                }
+                if identity
+                else {}
+            ),
+        },
+        status="pending",
+        is_demo=settings().app_mode == "demo",
+    )
+    db.add(venue)
+    db.flush()
+    if identity:
+        row.data = {
+            **row.data,
+            "aliases": list(dict.fromkeys([row.name, *row.data.get("aliases", [])])),
+            "maps_identity": venue.details["maps_identity"],
+            "name_status": "operator_maps_confirmed",
+            "address": data.venue.address,
+            "coordinates": {
+                "lat": data.venue.lat,
+                "lng": data.venue.lng,
+                "basis": "Operator branch confirmation",
+            },
+        }
+        row.name, row.area, row.category = clean_name(data.venue.name), data.venue.area, data.venue.category
+    row.venue_id, row.status, row.updated_at = venue.id, "awaiting_approval", now()
+    db.add(
+        Audit(
+            actor=user.id,
+            action="spot.prepared",
+            target=row.id,
+            detail={"venue_id": venue.id, "reason": data.reason, "evidence_url": data.evidence_url},
+        )
+    )
+    db.commit()
+    return {
+        "venue_id": venue.id,
+        "status": row.status,
+        "message": "Venue prepared. Review essential facts, then explicitly approve this location in Venue desk.",
+    }
