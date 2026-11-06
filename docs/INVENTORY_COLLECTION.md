@@ -2,6 +2,8 @@
 
 Updated 5 November 2026. This is an itinerary-planning product: food and/or entertainment within the user's time and budget. Investigation supplies its database; investigation is not the customer-facing goal.
 
+> 6 November update: [SPOT_IDENTITY_QUALITY.md](SPOT_IDENTITY_QUALITY.md) adds pre-insert duplicate/relevance checks, held/merged records, precise Maps identity review and a documented cleanup of the earlier 66 candidates. The 5 November counts below are historical checkpoints.
+
 ## Confirmed latest rules
 
 - Search newest-first, using publication dates rather than likes or collection time. An unknown date remains unknown.
@@ -34,7 +36,7 @@ The scheduler refreshes the first-party target inventory daily and queues enrich
 
 The updated local extractor combines clip endpoints, detected scene transitions and evenly spaced fallback frames within the configured frame budget. All selected frames are sent to the local model in groups of four; frames after the first group are no longer silently omitted. Speech is transcribed once per video. The model can request bounded follow-up timestamps, which are inspected as another view of the same source, not independent corroboration.
 
-This is bounded scene/frame sampling, not exhaustive decoding and interpretation of every video frame. A real two-scene generated clip verifies scene-cut selection; an eight-frame test verifies all groups reach analysis. The earlier real 15-source run used the previous four-frame configuration. A new real eight-frame replay was deferred by the configured daily browser limit, so that newest live smoke is **not yet verified**. Raw failures remain visible, and available-modality limitations are retained.
+This is bounded scene/frame sampling, not exhaustive decoding and interpretation of every video frame. A real two-scene generated clip verifies scene-cut selection; an eight-frame test verifies all groups reach analysis. The earlier real 15-source run used the previous four-frame configuration. The 5 November eight-frame replay was deferred by the daily browser limit. On 6 November, two actual Instagram videos in the adventure case produced local eight-frame observation results, closing that execution smoke. See VERIFICATION.md for source IDs. This does not measure factual or multilingual accuracy. Raw failures remain visible, and available-modality limitations are retained.
 
 ## What has actually been collected
 
@@ -69,7 +71,7 @@ Raw Instagram source text/transcripts expire 24 hours after the latest valid fet
 | Resumable source processing | Implemented and tested; live per-source results persisted | Longer operation and varied access-failure evaluation |
 | Official Meta pagination | Implemented, mock cursor tests | Credentials/permissions and live access verification |
 | Direct video/comments collection | Live exercised on real public pages | Public comment replies/pages remain a bounded sample; access varies |
-| Scene selection, all frame groups, follow-up inspection | Implemented; local extraction/grouping tests | New eight-frame live replay and representative multilingual/OCR evaluation |
+| Scene selection, all frame groups, follow-up inspection | Implemented; local extraction/grouping tests; two real eight-frame video results on 6 November | Representative multilingual/OCR/location evaluation |
 | Automatic identified-spots DB | Implemented; live records; owner/export/erasure tests | Branch deduplication and operator verification |
 | Menu/map/vibe inventory | First real batch stored and review UI tested | Broad category/neighbourhood coverage, current facts, manual map/vibe checks |
 | Explicit location approval | Implemented and tested; auto-publication path removed | Operator has not approved any real locations |

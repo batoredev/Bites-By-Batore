@@ -9,6 +9,7 @@ import asyncio
 import hashlib
 import ipaddress
 import json
+import re
 import socket
 import subprocess
 import sys
@@ -155,7 +156,15 @@ def extract_public_data(payloads, code, visible_text, max_comments=30):
             if not isinstance(connection, dict):
                 continue
             more |= bool((connection.get("page_info") or {}).get("has_next_page"))
-            for edge in connection.get("edges", [])[:100]:
+            edges = list(connection.get("edges", []))[:100]
+            for edge in list(edges):
+                parent = edge.get("node", {}) if isinstance(edge, dict) else {}
+                for reply_key in ("edge_threaded_comments", "child_comments", "replies_connection"):
+                    replies = parent.get(reply_key, {})
+                    if isinstance(replies, dict):
+                        edges.extend(replies.get("edges", [])[:100])
+                        more |= bool(replies.get("page_info", {}).get("has_next_page"))
+            for edge in edges[:200]:
                 row = edge.get("node", {}) if isinstance(edge, dict) else {}
                 text = row.get("text")
                 if not isinstance(text, str) or not text.strip() or row.get("is_covered"):
@@ -176,7 +185,7 @@ def extract_public_data(payloads, code, visible_text, max_comments=30):
             "Caption delivered in public rendered-page data; not independently verified"
         )
     output["comments_coverage"] = (
-        f"{len(sample)} loaded public comments; sample only, replies and further pages not collected"
+        f"{len(sample)} source-bound visible comments/replies; limited sample, further pages may be unavailable"
         if sample
         else "No source-bound visible comment text retrieved; not evidence of zero comments"
     )
@@ -210,6 +219,44 @@ async def read_public_snapshot(page):
                     videos.forEach(v => v.pause());
                     return {text, scripts, loaded};
                 }""")
+
+
+async def expand_visible_comments(page, code, maximum):
+    """Only ordinary comment/reply controls inside the exact post's article."""
+    expanded = 0
+    stop = "expansion_budget"
+    for _ in range(maximum):
+        if any(p in urlparse(page.url).path for p in ("/accounts/", "/challenge", "/checkpoint")):
+            stop = "login_or_challenge"
+            break
+        article = page.locator("article").filter(
+            has=page.locator(f'a[href*="/p/{code}/"], a[href*="/reel/{code}/"]')
+        )
+        if await article.count() != 1:
+            stop = "exact_post_controls_unavailable"
+            break
+        buttons = article.get_by_role(
+            "button",
+            name=re.compile(
+                r"^(?:Load more comments|View all \d+[,.\d]* comments|View (?:\d+ )?(?:more )?replies(?: \(\d+\))?)$",
+                re.I,
+            ),
+        )
+        if not await buttons.count():
+            stop = "no_more_visible_controls"
+            break
+        try:
+            await buttons.first.click(timeout=1200)
+            expanded += 1
+            await page.wait_for_timeout(500)
+        except Exception:
+            stop = "control_unavailable"
+            break
+    return {
+        "expanded_controls": expanded,
+        "stop_reason": stop,
+        "coverage": "Only exposed public controls; login/challenges are not bypassed",
+    }
 
 
 async def collect_in_browser(url, seconds=35):
@@ -274,6 +321,7 @@ async def collect_in_browser(url, seconds=35):
                     }
                 # No clicks on account prompts or challenge pages; an optional sign-up
                 # panel may coexist with publicly readable content.
+                expansion = await expand_visible_comments(page, code, settings().browser_comment_expansions)
                 snapshot = await read_public_snapshot(page)
                 payloads = []
                 for raw in snapshot["scripts"]:
@@ -304,6 +352,7 @@ async def collect_in_browser(url, seconds=35):
                     playable_video_seen=snapshot["loaded"],
                     request_count=requests,
                     blocked_requests=rejected,
+                    comment_expansion=expansion,
                 )
                 return result
 

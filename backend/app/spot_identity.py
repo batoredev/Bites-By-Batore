@@ -21,6 +21,10 @@ AREAS = [
     "Thudiyalur",
     "Nava India",
     "Bharathi Park",
+    "Vadavalli",
+    "Ganapathy",
+    "Podanur",
+    "Sundarapuram",
 ]
 DESCRIPTORS = set(
     "the and at in cafe cafes coffee restaurant restaurants grills grill japanese coimbatore kovai cbe".split()
@@ -74,6 +78,11 @@ def quality_issues(name, area="", data=None):
         r"\b(first|best|new)\b.*\b(in|launch|opening|opened)\b|\b(foodspots|viralreels|trendingreels)\b", key
     ):
         issues.append("Promotional caption or creator handle needs a real venue identity")
+    if re.match(
+        r"^(?:the |a |an )?(?:cafe|restaurant|stall|shop|place|venue|food spot)\s+(?:near|opposite|behind|beside|next to)\b",
+        key,
+    ):
+        issues.append("Relative location description does not provide a venue name")
     address = name_key(" ".join([name, area, data.get("address", ""), *data.get("address_clues", [])]))
     # A nearby business such as 'Mumbai Kulfi' is not evidence of a Mumbai address.
     address = re.sub(
@@ -105,6 +114,14 @@ def source_urls(data):
     return {x.get("url") for x in data.get("sources", []) if x.get("url")}
 
 
+def branch_clues(data):
+    """Strong conflicting address tokens block a merge, even within one neighbourhood."""
+    clues = " ".join([data.get("address", ""), *data.get("address_clues", [])])
+    postal = set(re.findall(r"\b6\d{5}\b", clues))
+    numbers = set(re.findall(r"\bno\.?\s*(\d+[A-Za-z]?(?:[-/]\w+)?)\b", clues, re.I))
+    return {"postal": sorted(postal), "numbers": sorted(n.casefold() for n in numbers)}
+
+
 def names_match(left, right):
     return name_key(left).replace(" ", "") == name_key(right).replace(" ", "") or (
         bool(signature(left)) and signature(left) == signature(right)
@@ -129,11 +146,17 @@ def same_branch(row, name, area, data):
     old_address, new_address = row.data.get("address"), data.get("address")
     if old_address and new_address and name_key(old_address) != name_key(new_address):
         return False
+    left_clues, right_clues = branch_clues(row.data), branch_clues(data)
+    if any(left_clues[k] and right_clues[k] and left_clues[k] != right_clues[k] for k in left_clues):
+        return False
     shared_source = bool(source_urls(row.data) & source_urls(data))
-    exact = name_key(row.name).replace(" ", "") == name_key(name).replace(" ", "")
+    exact = any(
+        name_key(alias).replace(" ", "") == name_key(name).replace(" ", "")
+        for alias in [row.name, *row.data.get("aliases", [])]
+    )
     return (
         shared_source
-        or (exact and area_key(row.area) == area_key(area))
+        or (exact and bool(area) and area_key(row.area) == area_key(area))
         or (bool(old_address) and name_key(old_address) == name_key(new_address or ""))
     )
 

@@ -263,7 +263,7 @@ def rank_discovery(db, case, task):
 
     def source_priority(source):
         identity = creator_key(source)
-        history = creator_assessment(db, identity)
+        history = creator_assessment(db, identity, case.user_id)
         reviewed = history.get("supported", 0) + history.get("refuted", 0)
         # Shrink small review histories toward neutral; never use likes as truth.
         accuracy = (history.get("supported", 0) + 2) / (reviewed + 4)
@@ -474,14 +474,24 @@ def analysis_stage(db, case, task, only_source=None):
                     "video": [],
                 }[role]
                 data.update({k: content[k] for k in keys if k in content})
-                result = analyze(
-                    db,
-                    role,
-                    data,
-                    content.get("media") if role == "video" else None,
-                    content.get("video_url") if role == "video" else None,
-                )
+                if role == "comments":
+                    from .comment_analysis import analyze_comments
+
+                    result = analyze_comments(db, source, data, analyze)
+                else:
+                    result = analyze(
+                        db,
+                        role,
+                        data,
+                        content.get("media") if role == "video" else None,
+                        content.get("video_url") if role == "video" else None,
+                    )
                 speech = result.pop("_transcription", None)
+                signatures = result.pop("_visual_signatures", [])
+                if role == "video":
+                    from .visual_places import match_frames
+
+                    result["visual_reference_matches"] = match_frames(db, case.user_id, signatures)
                 if speech:
                     source.content = {
                         **source.content,
@@ -520,6 +530,10 @@ def analysis_stage(db, case, task, only_source=None):
 
 
 def location_stage(db, case, task):
+    from .db import IdentifiedSpot
+    from .branch_matching import branch_match, rank_google
+
+    spots = list(db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == case.user_id)))
     inventory = list(db.scalars(select(Venue).where(Venue.is_demo == (settings().app_mode == "demo"))))
     count = 0
     for source in case_sources(db, case):
@@ -554,6 +568,21 @@ def location_stage(db, case, task):
                 for row in matches:
                     row["status"] = "candidate"
             hypothesis = {"observed": candidate, "inventory_matches": matches, "google_place_ids": []}
+            visual = source.analysis.get("video", {}).get("visual_reference_matches", {}).get("matches", [])
+            ranked = [
+                branch_match(candidate, s, visual)
+                for s in spots
+                if s.status not in {"merged", "quarantined", "rejected"}
+            ]
+            ranked = sorted(
+                [r for r in ranked if r], key=lambda r: (not r["conflicts"], r["score"]), reverse=True
+            )
+            if len(ranked) > 1 and ranked[0]["score"] - ranked[1]["score"] < 2:
+                for r in ranked:
+                    if r["status"] == "corroborated_candidate":
+                        r["status"] = "ambiguous_candidate"
+                        r["conflicts"].append("Multiple branches have similar support")
+            hypothesis["spot_matches"] = ranked
             if settings().app_mode == "local":
                 hypothesis["lookup_gap"] = (
                     "Exact branch requires independent address and coordinate verification; source captions alone do not confirm a location"
@@ -561,7 +590,9 @@ def location_stage(db, case, task):
             if settings().app_mode != "demo":
                 try:
                     places = google_search(db, f"{name} {clues} Coimbatore", 11.0168, 76.9558)
-                    hypothesis["google_place_ids"] = [p["id"] for p in places[:5] if p.get("id")]
+                    hypothesis["google_place_ids"] = [
+                        p["id"] for p in rank_google(candidate, places) if p.get("id")
+                    ]
                 except Unavailable as exc:
                     hypothesis["lookup_gap"] = str(exc)
                 if not any(m["status"] == "confirmed" for m in matches):
@@ -607,7 +638,8 @@ def reliability_stage(db, case, task):
                     "views": source.content.get("views"),
                     "dislikes": None,
                 },
-                "assessment": creator_assessment(db, identity),
+                "assessment": creator_assessment(db, identity, case.user_id),
+                "assessed_at": now(),
                 "reason": "Engagement and model agreement do not verify a claim",
             },
         }
@@ -617,7 +649,7 @@ def reliability_stage(db, case, task):
     }
 
 
-def creator_assessment(db, identity):
+def creator_assessment(db, identity, user_id=None):
     if not identity:
         return {"status": "unestablished", "reason": "Creator identity unknown"}
     rows = list(
@@ -627,22 +659,11 @@ def creator_assessment(db, identity):
             .order_by(SourceAssessment.created_at.desc())
         )
     )
-    # Repeated judgements about one independent origin must not inflate the denominator.
-    unique = {}
-    for row in rows:
-        unique.setdefault(row.evidence_group, row.outcome)
-    supported = sum(v == "supported" for v in unique.values())
-    refuted = sum(v == "refuted" for v in unique.values())
-    total = supported + refuted
-    return {
-        "status": "limited_review_history" if total < 5 else "reviewed_history",
-        "supported": supported,
-        "refuted": refuted,
-        "outdated": sum(v == "outdated" for v in unique.values()),
-        "unresolved": sum(v == "unresolved" for v in unique.values()),
-        "observed_support_rate": round(supported / total, 3) if total else None,
-        "limitations": "Small, selected human-reviewed sample; not a probability the next claim is true. Changed facts and subjective taste are excluded.",
-    }
+    if user_id:
+        rows = [r for r in rows if r.actor == user_id]
+    from .trust import review_statistics
+
+    return review_statistics(rows)
 
 
 def verification_stage(db, case, task):
@@ -750,10 +771,11 @@ def verification_stage(db, case, task):
             for k, v in source.content.items()
             if k not in {"media", "media_url", "video_url", "audio_url"}
         }
-    from .spots import identify_from_source
+    from .spots import identify_from_source, reconcile_spots
 
     for source in sources:
         identify_from_source(db, case, source)
+    reconcile_spots(db, case.user_id)
     result = {
         "eligible_venue_ids": sorted(eligible),
         "gaps": gaps,
@@ -887,8 +909,12 @@ def erase_cases(db, user_id):
     ids = list(db.scalars(select(Investigation.id).where(Investigation.user_id == user_id)))
     source_ids = list(db.scalars(select(ResearchSource.id).where(ResearchSource.case_id.in_(ids))))
     db.execute(delete(SourceAssessment).where(SourceAssessment.source_id.in_(source_ids)))
-    for job in db.scalars(select(Job).where(Job.kind == "investigation")):
-        if job.payload.get("case_id") in ids:
+    for job in db.scalars(
+        select(Job).where(
+            Job.kind.in_(["investigation", "evaluation_compare", "source_quality_upgrade", "source_watch"])
+        )
+    ):
+        if job.payload.get("case_id") in ids or job.payload.get("source_id") in source_ids:
             db.delete(job)
     db.execute(delete(ResearchSource).where(ResearchSource.case_id.in_(ids)))
     db.execute(delete(ResearchTask).where(ResearchTask.case_id.in_(ids)))
@@ -931,4 +957,6 @@ def purge_expired_sources(db):
                 case = db.get(Investigation, source.case_id)
                 if case and case.state in {"queued", "running"}:
                     source.state = "lead"
-                    source.content = {k: v for k, v in source.content.items() if k not in {"browser", "media_receipt"}}
+                    source.content = {
+                        k: v for k, v in source.content.items() if k not in {"browser", "media_receipt"}
+                    }

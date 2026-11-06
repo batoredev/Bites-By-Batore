@@ -64,6 +64,10 @@ def coverage_report(db):
         missing = sorted({"price_per_person", "hours", "closed"} - set(fields))
         if not v.details.get("branch_confirmed"):
             missing.append("branch_confirmation")
+        if not v.is_demo and not v.details.get("maps_identity", {}).get("confirmed_by"):
+            missing.append("maps_name_confirmation")
+        if not v.is_demo and not v.details.get("location_approval"):
+            missing.append("operator_location_approval")
         rows.append(
             {
                 "venue_id": v.id,
@@ -117,7 +121,9 @@ def coverage_report(db):
 
 @router.get("/quality")
 def quality(user=Depends(admin_user), db=Depends(get_db)):
-    return coverage_report(db)
+    from .evaluation import report
+
+    return {**coverage_report(db), "evaluation": report(db, user.id)}
 
 
 class LaunchReview(BaseModel):
@@ -132,6 +138,10 @@ class LaunchReview(BaseModel):
 @router.post("/launch-review")
 def launch_review(data: LaunchReview, user=Depends(admin_user), db=Depends(get_db)):
     report = coverage_report(db)
+    if settings().app_mode != "demo":
+        from .evaluation import report as evaluation_report
+
+        report["launch_blockers"].extend(evaluation_report(db, user.id)["blockers"])
     if data.approve and (
         report["launch_blockers"]
         or not all(

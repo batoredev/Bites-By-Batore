@@ -16,6 +16,7 @@ dependencies = [
     "faster-whisper>=1.2,<2",
     "av>=11,<17",
     "playwright>=1.56,<2",
+    "opencv-python-headless>=4.11,<5",
 ]
 
 [dependency-groups]

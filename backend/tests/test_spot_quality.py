@@ -44,6 +44,24 @@ def test_explicit_branch_keys_are_preserved(client):
         assert a.id != b.id
 
 
+def test_same_brand_unknown_branch_and_conflicting_address_clues_stay_separate(client):
+    with Session() as db:
+        a = upsert_spot(db, "owner", "Zircon Cafe", data=evidence("https://www.instagram.com/p/one/"))
+        b = upsert_spot(db, "owner", "Zircon Cafe", data=evidence("https://www.instagram.com/p/two/"))
+        assert a.id != b.id
+        assert (
+            upsert_spot(db, "owner", "Zircon Cafe", data=evidence("https://www.instagram.com/p/one/")).id
+            == a.id
+        )
+        c = upsert_spot(
+            db, "owner", "Beryl Cafe", area="RS Puram", data=evidence(address_clues=["No. 14, Fixture Road"])
+        )
+        d = upsert_spot(
+            db, "owner", "Beryl Cafe", area="RS Puram", data=evidence(address_clues=["No. 25, Fixture Road"])
+        )
+        assert c.id != d.id
+
+
 def test_typo_is_flagged_not_silently_merged(client):
     with Session() as db:
         a = upsert_spot(db, "owner", "Zircona Cafe", data=evidence())
@@ -60,6 +78,7 @@ def test_typo_is_flagged_not_silently_merged(client):
         ("go-karting facility", ["Coimbatore"]),
         ("Zircon Cafe", ["Arumbakkam, Chennai"]),
         ("Fixture Textiles", ["Coimbatore"]),
+        ("cafe near VOC Park", ["Coimbatore"]),
     ],
 )
 def test_irrelevant_candidates_never_enter_inventory(client, name, clues):
@@ -265,3 +284,129 @@ def test_missing_maps_provider_is_honest_and_does_not_save_guessed_name(client, 
     assert response.status_code == 200 and response.json()["status"] == "unavailable"
     with Session() as db:
         assert "maps_identity" not in db.get(IdentifiedSpot, sid).data
+
+
+def test_landmark_and_speech_only_names_are_held(client):
+    with Session() as db:
+        assert (
+            upsert_spot(
+                db,
+                "owner",
+                "Fixture Park",
+                data=evidence(observations=[{"text": "Great food near Fixture Park", "basis": "caption"}]),
+            )
+            is None
+        )
+        assert (
+            upsert_spot(
+                db,
+                "owner",
+                "Zircon Cafe",
+                data=evidence(observations=[{"text": "Zircon Cafe", "basis": "speech"}]),
+            )
+            is None
+        )
+        assert upsert_spot(
+            db,
+            "owner",
+            "Zircon Cafe",
+            data=evidence(
+                observations=[
+                    {"text": "Zircon Cafe", "basis": "speech"},
+                    {"text": "Zircon Cafe sign", "basis": "visual"},
+                ]
+            ),
+        )
+
+
+def test_venue_desk_identity_review_and_reapproval(client, auth):
+    with Session() as db:
+        venue = Venue(
+            name="Zircon Cafe",
+            category="cafe",
+            area="RS Puram",
+            address="Fixture address Coimbatore",
+            lat=11.01,
+            lng=76.96,
+            is_demo=True,
+            status="published",
+            details={"branch_confirmed": True, "location_approval": {"by": "fixture"}},
+        )
+        db.add(venue)
+        db.commit()
+        vid = venue.id
+    body = {
+        "name": "Zircon Cafe and Kitchen",
+        "maps_url": "https://www.google.com/maps?cid=123",
+        "checked": True,
+        "reason": "Checked Maps name against fixture branch",
+    }
+    response = client.post(f"/api/admin/venues/{vid}/maps-identity", json=body, headers=auth)
+    assert response.status_code == 200, response.text
+    with Session() as db:
+        venue = db.get(Venue, vid)
+        assert venue.name == body["name"] and venue.status == "pending"
+        assert "location_approval" not in venue.details
+
+
+def test_private_merge_audit_export_and_erasure(client, auth):
+    from app.db import Audit
+
+    user = client.get("/api/me", headers=auth).json()["id"]
+    with Session() as db:
+        db.add_all(
+            [
+                Audit(
+                    actor=user,
+                    action="spot.merged",
+                    target="fixture",
+                    detail={"before": {"private": "fixture only"}},
+                ),
+                Audit(
+                    actor="other-owner",
+                    action="spot.merged",
+                    target="other",
+                    detail={"private": "other fixture"},
+                ),
+            ]
+        )
+        db.commit()
+    exported = client.get("/api/me/export", headers=auth).json()
+    assert len(exported["spot_reviews"]) == 1
+    assert client.delete("/api/me/data", headers=auth).status_code == 200
+    with Session() as db:
+        rows = list(db.scalars(select(Audit).where(Audit.action == "spot.merged")))
+        assert len(rows) == 1 and rows[0].actor == "other-owner"
+
+
+def test_operator_can_resolve_a_false_positive_name_without_publishing(client, auth):
+    user = client.get("/api/me", headers=auth).json()["id"]
+    with Session() as db:
+        row = IdentifiedSpot(
+            user_id=user,
+            identity_key="held-fixture",
+            name="Hidden Cafe",
+            status="quarantined",
+            data={"quality_issues": ["Generic name"]},
+        )
+        db.add(row)
+        db.commit()
+        sid = row.id
+    body = preparation()
+    body["venue"]["name"] = "Hidden Cafe"
+    response = client.post(f"/api/admin/spots/{sid}/prepare", json=body, headers=auth)
+    assert response.status_code == 200, response.text
+    with Session() as db:
+        row = db.get(IdentifiedSpot, sid)
+        assert row.status == "awaiting_approval"
+        assert row.data["maps_identity"]["reviewed_warnings"]
+        assert row.data["quality_issues"] == []
+        assert db.get(Venue, row.venue_id).status == "pending"
+        # A reviewed false-positive name can collect new evidence for this same
+        # branch; an unrelated out-of-city conflict still cannot enter it.
+        refreshed = upsert_spot(db, user, "Hidden Cafe", area="RS Puram", data=evidence())
+        assert refreshed and refreshed.id == sid
+        assert (
+            upsert_spot(db, user, "Hidden Cafe", area="RS Puram", data=evidence(address_clues=["Chennai"]))
+            is None
+        )

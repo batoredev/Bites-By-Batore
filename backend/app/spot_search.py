@@ -21,6 +21,15 @@ def enrich_spot(db, spot_id):
     if row.status in INACTIVE:
         return {"skipped": row.status, "remaining": 0}
     data = dict(row.data)
+    if (
+        data.get("web_search_next_at")
+        and data["web_search_next_at"] <= now()
+        and not any(r["status"] == "pending" for r in data.get("web_search_results", []))
+    ):
+        data["previous_search_results"] = unique(
+            data.get("previous_search_results", []) + data.get("web_search_results", [])
+        )
+        data.pop("web_search_results", None)
     if "web_search_results" not in data:
         quota(db)
         try:
@@ -101,6 +110,21 @@ def enrich_spot(db, spot_id):
             ]
             for field in ("maps_links", "menu_links", "offerings"):
                 data[field] = unique(data.get(field, []) + doc[field])
+            from .visual_places import fetch_reference
+            from .spots import merge_list
+
+            for image_url in doc.get("image_links", [])[:1]:
+                if any(r.get("url") == image_url for r in data.get("visual_references", [])):
+                    continue
+                try:
+                    ref = fetch_reference(db, image_url, url)
+                    data["visual_references"] = merge_list(
+                        "visual_references", data.get("visual_references", []) + [ref]
+                    )[-4:]
+                except DeferredCollection:
+                    raise
+                except Unavailable as exc:
+                    item["visual_reference_gap"] = str(exc)
             if doc.get("coordinates"):
                 doc["coordinates"]["basis"] = (
                     "Direction link on a search-discovered page; branch and authority unverified"
@@ -125,6 +149,11 @@ def enrich_spot(db, spot_id):
     row.updated_at = now()
     db.commit()
     remaining = sum(x["status"] == "pending" for x in data["web_search_results"])
+    if not remaining:
+        from .maintenance import after
+
+        row.data = {**row.data, "web_search_completed_at": now(), "web_search_next_at": after(24 * 7)}
+        db.commit()
     return {
         "spot_id": row.id,
         "remaining": remaining,

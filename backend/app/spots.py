@@ -7,7 +7,16 @@ from copy import deepcopy
 from urllib.parse import urlencode
 from sqlalchemy import select
 from .db import IdentifiedSpot, now
-from .spot_identity import clean_name, name_key, infer_area, quality_issues, same_branch, possible_match
+from .spot_identity import (
+    clean_name,
+    name_key,
+    infer_area,
+    quality_issues,
+    same_branch,
+    possible_match,
+    branch_clues,
+    source_urls,
+)
 
 INACTIVE = {"merged", "quarantined", "rejected"}
 
@@ -28,9 +37,15 @@ def merge_list(field, items):
     for original in items:
         item = deepcopy(original)
         if not isinstance(item, dict):
-            key = name_key(item) if isinstance(item, str) else json.dumps(item, sort_keys=True)
+            key = (
+                name_key(item)
+                if isinstance(item, str) and field in {"aliases", "address_clues"}
+                else json.dumps(item, sort_keys=True)
+            )
         elif field == "sources":
             key = (item.get("url"), item.get("type"))
+        elif field == "visual_references":
+            key = (item.get("url"), item.get("page_url"))
         elif field == "offerings":
             key = (
                 name_key(item.get("name", "")),
@@ -49,7 +64,9 @@ def merge_list(field, items):
             key = (item.get("tag"), item.get("source_url"), name_key(item.get("evidence", "")))
         else:
             key = json.dumps(item, sort_keys=True, ensure_ascii=False)
-        if key in result and field == "sources":
+        if key in result and field == "visual_references":
+            result[key] = item
+        elif key in result and field == "sources":
             previous = result[key]
             dates = sorted(
                 d
@@ -124,18 +141,36 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
     name, data = clean_name(name), deepcopy(data or {})
     if branch_key:
         data["branch_key"] = branch_key
-    if quality_issues(name, area, data):
-        return None
     records = list(db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user_id)))
     matches = [r for r in records if r.status not in INACTIVE and same_branch(r, name, area, data)]
     row = matches[0] if len(matches) == 1 else None
+    issues = quality_issues(name, area, data)
+    identity_review = row.data.get("maps_identity", {}) if row else {}
+    if issues and not (
+        identity_review.get("confirmed_by")
+        and set(issues).issubset(identity_review.get("reviewed_warnings", []))
+    ):
+        return None
     # A conflicting address needs a separate identity even when names/areas agree.
     branch = branch_key or data.get("address") or area
+    strong_clues = branch_clues(data)
+    if any(strong_clues.values()):
+        branch += "|" + json.dumps(strong_clues, sort_keys=True)
+    elif not branch and source_urls(data):
+        # Same brand in different posts without branch evidence is ambiguous.
+        # Preserve separate proposals until a real address or Maps ID links them.
+        branch = "unresolved|" + sorted(source_urls(data))[0]
     identity = hashlib.sha256(f"{user_id}|{name_key(name)}|{name_key(branch)}".encode()).hexdigest()
     if row is None:
         row = db.scalar(select(IdentifiedSpot).where(IdentifiedSpot.identity_key == identity))
-        if row and row.status == "merged":
+        visited = set()
+        while row and row.status == "merged":
+            if row.id in visited:
+                return None
+            visited.add(row.id)
             row = db.get(IdentifiedSpot, row.data.get("merged_into"))
+            if row and row.user_id != user_id:
+                return None
         if row and row.status in {"quarantined", "rejected"}:
             return None
     if row is None:
@@ -173,13 +208,7 @@ def identify_from_source(db, case, source):
     }
     for candidate in candidates:
         area = infer_area(candidate.get("address_clues", []))
-        issues = quality_issues(
-            candidate.get("name", ""), area, {"address_clues": candidate.get("address_clues", [])}
-        )
-        if issues:
-            checks.append({"name": candidate.get("name"), "decision": "held", "reasons": issues})
-            continue
-        topic = (case.query + " " + candidate.get("dish_or_activity", "")).lower()
+        topic = (candidate.get("name", "") + " " + candidate.get("dish_or_activity", "")).lower()
         category = next(
             (
                 c
@@ -246,13 +275,18 @@ def identify_from_source(db, case, source):
             ],
         }
         issues = quality_issues(candidate["name"], area, data)
-        if issues:
-            checks.append({"name": candidate["name"], "decision": "held", "reasons": issues})
-            continue
         row = upsert_spot(db, case.user_id, candidate["name"], category, area, data)
         if row:
             output.append(row.id)
             checks.append({"name": candidate["name"], "decision": "saved", "spot_id": row.id})
+        else:
+            checks.append(
+                {
+                    "name": candidate["name"],
+                    "decision": "held",
+                    "reasons": issues or ["Existing rejection or identity review prevents another insert"],
+                }
+            )
     source.analysis = {**source.analysis, "inventory_checks": unique(checks)}
     db.flush()
     return list(dict.fromkeys(output))
@@ -330,8 +364,6 @@ def reconcile_spots(db, user_id):
             }
     # Old runs copied every observation into every candidate in a multi-venue
     # reel. Keep ambiguous evidence available without presenting it as this spot's vibe.
-    from .spot_identity import source_urls
-
     for row in rows:
         if row.status in INACTIVE:
             continue

@@ -1,12 +1,44 @@
 # Bites by Batore — master project record and completion tracker
 
-Last consolidated: **5 November 2026 (Asia/Calcutta)**.
+Last consolidated: **6 November 2026 (Asia/Calcutta)**.
 
 This is the canonical working record for the product we discussed: what the user wants, what was decided, what exists, what still needs building, how it should work, and how completion must be demonstrated. Start here when resuming development. Supporting documents contain deeper implementation/runbook detail; they do not reduce the original product scope.
 
-**Current truth: this is a Coimbatore food/entertainment itinerary planner. Its local collection pipeline now retains all discovered relevant sources, ranks known publication dates newest-first and fills an identified-spots review database. A real 15-source run downloaded 14 videos and collected 83 loaded comments; the checkpoint inventory contains 66 unapproved candidate records and 120 first-party menu item/price pairs. Zero real venues are published. The full original Instagram vision and city-wide accuracy are NOT complete.** Read [INVENTORY_COLLECTION.md](docs/INVENTORY_COLLECTION.md) and [verification](docs/VERIFICATION.md) for exact evidence, gaps and review steps.
+**Current truth: this is a Coimbatore food/entertainment itinerary planner. Its local collection pipeline retains discovered relevant sources, ranks known publication dates newest-first and fills an identified-spots review database. A real 15-source run downloaded 14 videos and collected 83 loaded comments. The 6 November cleanup of 66 originals left 36 active candidates, 8 merged and 22 held records; ongoing collection may increase counts. Extracted names remain Maps-unconfirmed until operator review. Zero real venues were published at that checkpoint. The full original Instagram vision and city-wide accuracy are NOT complete.** Read [SPOT_IDENTITY_QUALITY.md](docs/SPOT_IDENTITY_QUALITY.md), [INVENTORY_COLLECTION.md](docs/INVENTORY_COLLECTION.md) and [verification](docs/VERIFICATION.md) for exact evidence, gaps and review steps.
 
 This record consolidates the available conversation, current workspace, previous verification report, and selectively reviewed references. It is a living engineering record, not a claim of perfect knowledge, market coverage, or accuracy. If a future check disproves an entry, correct the entry and retain the reason in the change log.
+
+## Owned-model feasibility study ? 6 November 2026
+
+The user requested resources, architecture, implementation/testing/deployment and calculations for removing external AI-model dependence. [OWNED_AI_FEASIBILITY.md](docs/OWNED_AI_FEASIBILITY.md) records the inspected laptop (Ryzen 5600H, approximately 16 GB RAM, 4 GB RTX 3050, 88.5 GiB free), current Qwen/Whisper dependencies, specialist-model versus general-model routes, training-data requirements, memory/compute/power/annotation calculations and a phased proposal. All prices, throughput and staffing assumptions are labelled. This is research only: no runtime change, training, purchasing, cloud upload or product-scope reduction was performed. Owned weights remain unbuilt; existing correction retrieval is not weight training. Proposed English/Tamil milestones do not cancel the multilingual-source requirement, and the INR 3,000/month operating target remains unchanged.
+
+## Instagram completion work ? 6 November 2026
+
+Read [INSTAGRAM_COMPLETION.md](docs/INSTAGRAM_COMPLETION.md) for the full workflow, review procedure and validation checklist. Added local reference-image geometry matching, combined branch/address conflict ranking, resumable structured comment classification, bounded visible reply expansion, uncertainty-aware creator history, prospective calibration measurement, owner-scoped multilingual accuracy labels and independent-correction A/B jobs. These are implemented mechanisms, not claims of calibrated reliability, universal access, trained owned weights or verified city coverage.
+
+| ID | Completion step | Evidence | Remaining dependency |
+|---|---|---|---|
+| L16 | Local visual reference index and branch candidate ranking | [x] Implemented; geometry/conflict tests; one real page image indexed | Real reel-to-branch accuracy and exact Maps confirmation |
+| L17 | Resumable per-comment classes and public reply controls | [x] Implemented; 12 real collected comments classified locally; revised collector fetched 12 | Live expansion controls unavailable on tested post; broader access/accuracy |
+| L18 | Creator review uncertainty and prospective calibration report | [x] Implemented and locally tested | Sufficient independent future judgements; no calibrated reliability claim |
+| L19 | Private accuracy-review UI, grouped metrics, release gates and paired correction comparisons | [x] Implemented and locally tested | Real independent human labels and measured improvement |
+| L20 | Verified inventory and approvals | [ ] 46 active drafts at the first new checkpoint, zero Maps reviews | Current critical facts and explicit approval of every location |
+
+No human gold labels or approvals were fabricated. Local inference, storage and testing remain local. The final runtime and test counts are in the newest [verification record](docs/VERIFICATION.md).
+
+## Latest data quality direction - 6 November 2026
+
+The user observed repeated and irrelevant records and requires duplicate checks before storage and proper names matching the exact Google Maps location. Implemented: conservative name/branch matching before inserts, held extraction reasons, replay-safe evidence merging, uncertain duplicate flags, operator draft merge, reviewable historical cleanup, and explicit Maps name/branch review before preparation/publication. Updated analyst instructions distinguish venue names from generic titles, nearby landmarks, dishes and creator handles. See [SPOT_IDENTITY_QUALITY.md](docs/SPOT_IDENTITY_QUALITY.md).
+
+The real cleanup retained all 66 originals: 8 merged records, 22 held records and 36 active candidates at 10:59:16 IST. It removed 15 repeated list entries and set aside 31 ambiguous observation/vibe associations. The repeat cleanup made zero changes; no venue was published. Later autonomous collection may increase counts. Maps matching is currently an operator review with an optional fresh Places lookup; no automatic live Maps verification or globally accurate naming is claimed. Full original Instagram completion remains open.
+
+Final checkpoint at 11:09:43 IST: the restarted local API/worker are healthy; ongoing collection brought the inventory to 39 active drafts plus 8 merged and 22 held records, with zero published real venues. Full backend suite: 128 passed; final affected suites: 42 passed; eight desktop/mobile checks, strict build and Ruff passed. Backup `data/backups/batore-20261106T053906Z.db` passed integrity checking. Two additional actual Instagram videos have local eight-frame observation results, closing the previous deferred eight-frame execution smoke; accuracy remains unmeasured. See the newest verification section and `data/spot-quality-final-status.json`.
+
+| ID | Step | Evidence level | Remaining limit |
+|---|---|---|---|
+| L13 | Duplicate and relevance checks before storage; historical cleanup | [x] Implemented, isolated regression tests and actual local cleanup | Heuristics can hold legitimate names; ambiguous branches need review |
+| L14 | Canonical name/Maps place review and duplicate prepared-place guard | [x] Implemented and locally tested, with precise place link and explicit operator check | Live Maps lookup unverified; existing names are not yet operator-confirmed |
+| L15 | Multivenue evidence association and private review retention | [x] Implemented; old ambiguous associations set aside; owner export/erasure regression coverage | Model attribution accuracy still needs representative labelled evaluation |
 
 ## Latest product direction - 5 November 2026
 
@@ -50,7 +82,7 @@ The user confirmed: INR 3,000/month initial operating target; both Meta and repl
 
 New code now covers persisted specialist cases/tasks; resumable Meta/Apify collection paths; caption/comment/video analysis contracts; bounded local/targeted frame extraction; branch alternatives and independent lookup leads; human source outcomes; social fact proposals entering review; existing/new branch review; source export/erasure; guided uncertainty discovery; up to four stops; package/dated-session records; occasion and per-companion scoring; internal/test/public access gates; quality metrics; estimated spending reservations; and a nine-entry official-source Coimbatore lead pack. Local checks are recorded in VERIFICATION.md. These do not establish live source access, trained-model quality or a verified city database.
 
-Remaining release-critical dependencies are actual provider/account access, real inventory verification, representative multilingual/location/evidence evaluations, partner feed access, production PostgreSQL/restore/hosting and real invited-user outcomes. Advanced visual-geolocation retrieval, calibrated creator reliability, unrestricted dialogue and owned-model training are still beyond the implemented baseline. They must not be relabelled as complete.
+Remaining release-critical dependencies are actual provider/account access, real inventory verification, representative multilingual/location/evidence evaluations, partner feed access, production PostgreSQL/restore/hosting and real invited-user outcomes. Local reference-image matching, uncertainty-aware creator history and prospective calibration measurement were added on 6 November (L16-L19). Broad visual-geolocation quality, calibrated reliability, unrestricted dialogue and owned-model training remain open; implementation is not validation.
 
 ## Contents
 
@@ -426,7 +458,7 @@ All completed implementation entries below reflect recorded work through **4 Nov
 - [x] C04 — Display explicit missing-source/provider states rather than inventing analysis. **Locally verified baseline.**
 - [ ] C05 - Broad Instagram location/keyword/hashtag discovery and complete access evaluation. **Partial live evidence:** public keyword discovery, newest-known-date ordering, all-found-source retention, actual video/caption/loaded-comment collection. Meta cursor pagination is implemented/mock-tested; access and exhaustive coverage are not verified.
 - [x] C06 - Shared investigation cases, specialist dependencies, durable batches, retries, quota deferral and completion gates. **Implemented/local tests and real 15-source completed workflow.**
-- [ ] C07 - Speech/scene/keyframe/OCR processing and targeted reinspection with multilingual evaluation. **Implemented:** local ASR, scene-cut and fallback sampling, all-frame-group analysis and requested follow-up inspection. **Unfinished:** representative language/OCR accuracy evaluation; newest eight-frame live smoke was quota-deferred.
+- [ ] C07 - Speech/scene/keyframe/OCR processing and targeted reinspection with multilingual evaluation. **Implemented:** local ASR, scene-cut and fallback sampling, all-frame-group analysis and requested follow-up inspection. **Actual execution:** two real eight-frame reel results now exist. **Unfinished:** representative language/OCR accuracy; private labelling and error metrics are implemented in L19.
 - [ ] C08 — Implement exact-branch investigation from multiple visual/text/geographic clues and independent confirmation.
 - [ ] C09 — Implement meaningful comment evidence classification, creator identity/history, repost independence and source reliability evaluation.
 - [x] C10 - Connect discovery, collection, analysis, branch hypotheses, identified-spots storage and explicit review/publication gates. **Implementation/local publication-boundary tests and real collection-to-draft evidence.** No real location has been approved or published.

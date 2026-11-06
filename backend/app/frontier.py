@@ -15,8 +15,28 @@ CATEGORIES = [
     "parks",
     "cinema",
     "vegetarian restaurants",
+    "South Indian breakfast restaurants",
+    "biryani restaurants",
+    "desserts bakeries ice cream",
+    "street food snacks",
+    "family restaurants",
 ]
-AREAS = ["RS Puram", "Peelamedu", "Saibaba Colony", "Gandhipuram", "Race Course", "Saravanampatti"]
+AREAS = [
+    "RS Puram",
+    "Peelamedu",
+    "Saibaba Colony",
+    "Gandhipuram",
+    "Race Course",
+    "Saravanampatti",
+    "Ukkadam",
+    "Singanallur",
+    "Thudiyalur",
+    "Nava India",
+    "Vadavalli",
+    "Ganapathy",
+    "Podanur",
+    "Sundarapuram",
+]
 
 
 def next_query(db, user_id):

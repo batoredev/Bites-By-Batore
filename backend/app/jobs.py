@@ -111,6 +111,41 @@ def analyze_submission(db, submission):
 
 
 def execute_job(db, job):
+    if job.kind in {"spot_refresh", "source_watch"}:
+        from .maintenance import refresh_spot, watch_source
+        from .providers import DeferredCollection
+
+        if settings().app_mode == "demo":
+            raise Unavailable("Real source maintenance is disabled in demo")
+        try:
+            output = (
+                refresh_spot(db, job.payload["spot_id"], job.payload["user_id"])
+                if job.kind == "spot_refresh"
+                else watch_source(db, job.payload["source_id"], job.payload["user_id"])
+            )
+        except DeferredCollection as exc:
+            raise PendingSource(exc.retry_seconds) from exc
+        if output.get("remaining"):
+            raise PendingSource(30)
+        return output
+    if job.kind == "source_quality_upgrade":
+        from .db import ResearchSource
+        from .research import analysis_stage, location_stage
+        from types import SimpleNamespace
+
+        source = db.get(ResearchSource, job.payload["source_id"])
+        case = db.get(Investigation, source.case_id) if source else None
+        if not case or case.user_id != job.payload["user_id"]:
+            return {"removed": True}
+        if source.content.get("comments") and not source.analysis.get("comments", {}).get("comment_labels"):
+            old = source.analysis.get("comments", {})
+            source.analysis = {**source.analysis, "previous_comment_analysis": old, "comments": {}}
+            analysis_stage(db, case, SimpleNamespace(role="comments"), only_source=source)
+        return location_stage(db, case, None)
+    if job.kind == "evaluation_compare":
+        from .evaluation import run_comparison
+
+        return run_comparison(db, job.payload["user_id"], job.payload["source_id"], job.payload["role"])
     if job.kind == "spot_enrich":
         from .spot_search import enrich_spot
         from .providers import DeferredCollection
@@ -307,6 +342,9 @@ def schedule():
     bucket = int(time.time() // (max(1, cfg.refresh_interval_hours) * 3600))
     with Session() as db:
         purge_expired_sources(db)
+        from .maintenance import expire_critical_facts
+
+        expire_critical_facts(db)
         # Recover a crash between a committed stage result and enqueueing its successor.
         for case in db.scalars(select(Investigation).where(Investigation.state.in_(["queued", "running"]))):
             task = db.scalar(
@@ -345,6 +383,9 @@ def schedule():
             if db.get(User, "local-operator"):
                 paused = db.get(Counter, "research_paused")
                 if cfg.inventory_collection_enabled and not (paused and paused.value):
+                    from .maintenance import schedule_maintenance
+
+                    schedule_maintenance(db, "local-operator")
                     enqueue(
                         db,
                         "spot_inventory",
@@ -364,6 +405,19 @@ def schedule():
                         ):
                             enqueue(
                                 db, "spot_enrich", {"spot_id": spot.id}, f"spot-enrich:{spot.id}", priority=25
+                            )
+                    from .evaluation import source_rows
+
+                    for source in source_rows(db, "local-operator"):
+                        if source.content.get("comments") and not source.analysis.get("comments", {}).get(
+                            "comment_labels"
+                        ):
+                            enqueue(
+                                db,
+                                "source_quality_upgrade",
+                                {"source_id": source.id, "user_id": "local-operator"},
+                                f"source-quality-v1:{source.id}",
+                                priority=22,
                             )
                 try:
                     start_next(db, "local-operator", scheduled=True)

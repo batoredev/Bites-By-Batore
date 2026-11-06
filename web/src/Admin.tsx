@@ -30,6 +30,12 @@ function OperationsEditor({
   onSaved: () => void;
 }) {
   const d = venue.details;
+  const [identity, setIdentity] = useState({
+    name: venue.name,
+    maps_url: "",
+    checked: false,
+    reason: "",
+  });
   const [form, setForm] = useState({
     visit_minutes: Number(d.visit_minutes || 60),
     wait_minutes: Number(d.wait_minutes || 0),
@@ -64,6 +70,8 @@ function OperationsEditor({
             .filter(Boolean),
         }),
       });
+      if (identity.maps_url)
+        await post(`/admin/venues/${venue.id}/maps-identity`, identity);
       onSaved();
       onClose();
     } catch (e) {
@@ -139,6 +147,55 @@ function OperationsEditor({
             }
           />
         </label>
+        <details>
+          <summary>Confirm or correct the Google Maps location name</summary>
+          <p>
+            Check the exact branch and use its name here. A search query or
+            coordinate pin does not identify a Maps place. Changing a published
+            identity requires location approval again.
+          </p>
+          <label>
+            Checked location name
+            <input
+              value={identity.name}
+              onChange={(e) =>
+                setIdentity({ ...identity, name: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Full Google Maps place URL
+            <input
+              type="url"
+              value={identity.maps_url}
+              onChange={(e) =>
+                setIdentity({ ...identity, maps_url: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            What did you verify?
+            <input
+              minLength={10}
+              required={!!identity.maps_url}
+              value={identity.reason}
+              onChange={(e) =>
+                setIdentity({ ...identity, reason: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              required={!!identity.maps_url}
+              checked={identity.checked}
+              onChange={(e) =>
+                setIdentity({ ...identity, checked: e.target.checked })
+              }
+            />
+            I checked this name against the exact Maps place and branch.
+          </label>
+        </details>
         <label>
           External booking link
           <input
@@ -591,8 +648,8 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
             <form className="panel stack-form" onSubmit={addFact}>
               <h3>Add sourced information</h3>
               <p className="muted small-text">
-                Ordinary authoritative updates can publish automatically.
-                Unusual changes still require review.
+                Sourced facts enter the evidence workflow. Every location still
+                needs explicit approval before suggestions.
               </p>
               <label>
                 Venue

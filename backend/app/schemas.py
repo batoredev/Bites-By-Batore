@@ -214,3 +214,10 @@ class VenueOperations(BaseModel):
         if value and urlparse(value).scheme != "https":
             raise ValueError("Booking links must use HTTPS")
         return value
+
+
+class MapsIdentityReview(BaseModel):
+    name: str = Field(min_length=2, max_length=150)
+    maps_url: str = Field(min_length=10, max_length=2048)
+    checked: bool
+    reason: str = Field(min_length=10, max_length=1000)

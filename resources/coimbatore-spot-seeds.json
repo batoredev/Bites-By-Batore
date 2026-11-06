@@ -1,43 +1,451 @@
 {
   "status": "Unapproved first-party collection targets; every fact is checked against the fetched page",
   "spots": [
-    {"name":"The French Door","category":"cafe","area":"RS Puram","url":"https://www.thefrenchdoorindia.com/","facts":[
-      {"field":"address","value":"102, West Bashyagaralu Road, R.S. Puram, Coimbatore 641002","requires":["102, West Bashyagaralu Road"]},
-      {"field":"hours","value":"Daily 12:00-15:00 and 18:00-22:30; first-party listing, unapproved","requires":["12 pm","3 pm","10.30pm"]},
-      {"field":"vibes","value":[{"tag":"heritage setting","evidence":"Restaurant describes an antique door from Pondicherry"}],"requires":["antique door","Pondicherry"]}
-    ]},
-    {"name":"INOX at Prozone","category":"cinema","area":"Sathy Road","url":"https://coimbatore.prozonemalls.com/entertainment","facts":[
-      {"field":"address","value":"First Floor, Prozone Mall, Coimbatore; exact entrance unconfirmed","requires":["Inox Cinemas","First Floor"]},
-      {"field":"offerings","value":[{"name":"Cinema screenings","price_inr":null,"unit":"person"}],"requires":["Inox Cinemas"]}
-    ]},
-    {"name":"Fun Unlimited at Prozone","category":"gaming","area":"Sathy Road","url":"https://coimbatore.prozonemalls.com/entertainment","facts":[
-      {"field":"address","value":"First Floor, Prozone Mall, Coimbatore; exact entrance unconfirmed","requires":["Fun Unlimited","First Floor"]},
-      {"field":"offerings","value":[{"name":"Bowling","price_inr":null,"unit":"unknown"},{"name":"Arcade games","price_inr":null,"unit":"unknown"},{"name":"Bumper cars","price_inr":null,"unit":"unknown"}],"requires":["Fun Unlimited","bowling alley","bumper cars"]},
-      {"field":"vibes","value":[{"tag":"family entertainment","evidence":"Mall describes a family entertainment zone with soft play and games"}],"requires":["family entertainment zone"]}
-    ]},
-    {"name":"CRA Speedway at Prozone","category":"adventure","area":"Sathy Road","url":"https://coimbatore.prozonemalls.com/entertainment","facts":[
-      {"field":"address","value":"Second-floor rooftop, Prozone Mall, Coimbatore; exact entrance unconfirmed","requires":["CRA Speedway","2nd Floor Rooftop"]},
-      {"field":"offerings","value":[{"name":"Go-karting","price_inr":null,"unit":"unknown"}],"requires":["CRA Speedway","go-karting"]}
-    ]},
-    {"name":"CoASTT Kartmania","category":"adventure","area":"Karumathampatti","url":"https://coastt.in/kartmania/","facts":[
-      {"field":"address","value":"SF 763, behind ARC Matriculation School, Karumathampatti, Tamil Nadu 641659","requires":["SF 763","Karumathampatti"]},
-      {"field":"offerings","value":[{"name":"Rental karting","price_inr":null,"unit":"unknown"}],"requires":["rental karting"]},
-      {"field":"hours","value":"Tuesday-Friday 12:00-21:00; Saturday-Sunday 10:00-21:00; Monday not specified","requires":["Tuesday to Friday","12 PM","09 PM","Saturday"]},
-      {"field":"vibes","value":[{"tag":"active","evidence":"Operator offers rental karting on a motorsport circuit"}],"requires":["rental karting"]}
-    ]},
-    {"name":"Semmozhi Poonga","category":"park","area":"Gandhipuram","url":"https://coimbatore.nic.in/tourist-place/semmozhi-poonga/","facts":[
-      {"field":"address","value":"Semmozhi Poonga, A.T.T. Colony, Gandhipuram, Coimbatore 641018","requires":["A.T.T. Colony","Gandhipuram"]},
-      {"field":"hours","value":"06:00-19:00; listed by district administration; holiday exceptions unconfirmed","requires":["06:00 AM","07:00 PM"]},
-      {"field":"offerings","value":[{"name":"Adult entry","price_inr":15,"unit":"person"},{"name":"Child entry","price_inr":5,"unit":"person"}],"requires":["₹15","₹5"]},
-      {"field":"vibes","value":[{"tag":"outdoor gardens","evidence":"District page describes gardens, walking paths and children's recreation"}],"requires":["walking paths","gardens"]}
-    ]},
-    {"name":"Nilgiri Biosphere Nature Park","category":"park","area":"Anaikatti","url":"https://coimbatore.nic.in/tourist-place/nilgiri-biosphere-nature-park/","facts":[
-      {"field":"address","value":"Thuvaipathy Village, Anaikatti, Coimbatore 641108","requires":["Thuvaipathy Village","Anaikatti"]},
-      {"field":"hours","value":"09:00-17:00; closed Tuesday, according to district listing","requires":["09:00 AM","05:00 PM","Tuesday"]},
-      {"field":"offerings","value":[{"name":"Adult entry","price_inr":100,"unit":"person"},{"name":"Child entry","price_inr":50,"unit":"person"},{"name":"Hiking listed fee","price_inr":75,"unit":"unknown"}],"requires":["Rs.100","Rs.50","Rs.75"]},
-      {"field":"vibes","value":[{"tag":"nature trails","evidence":"District page describes nature trails and children's play area"}],"requires":["nature trails","play area"]}
-    ]},
-    {"name":"WAGHOBA Coimbatore","category":"bowling","area":"Peelamedu","url":"https://www.vgpwaghoba.in/","facts":[]},
-    {"name":"Apex Karting Arena","category":"adventure","area":"","url":"https://apexkarting.in/","facts":[]}
+    {
+      "name": "The French Door",
+      "category": "cafe",
+      "area": "RS Puram",
+      "url": "https://www.thefrenchdoorindia.com/",
+      "facts": [
+        {
+          "field": "address",
+          "value": "102, West Bashyagaralu Road, R.S. Puram, Coimbatore 641002",
+          "requires": [
+            "102, West Bashyagaralu Road"
+          ]
+        },
+        {
+          "field": "hours",
+          "value": "Daily 12:00-15:00 and 18:00-22:30; first-party listing, unapproved",
+          "requires": [
+            "12 pm",
+            "3 pm",
+            "10.30pm"
+          ]
+        },
+        {
+          "field": "vibes",
+          "value": [
+            {
+              "tag": "heritage setting",
+              "evidence": "Restaurant describes an antique door from Pondicherry"
+            }
+          ],
+          "requires": [
+            "antique door",
+            "Pondicherry"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "INOX at Prozone",
+      "category": "cinema",
+      "area": "Sathy Road",
+      "url": "https://coimbatore.prozonemalls.com/entertainment",
+      "facts": [
+        {
+          "field": "address",
+          "value": "First Floor, Prozone Mall, Coimbatore; exact entrance unconfirmed",
+          "requires": [
+            "Inox Cinemas",
+            "First Floor"
+          ]
+        },
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Cinema screenings",
+              "price_inr": null,
+              "unit": "person"
+            }
+          ],
+          "requires": [
+            "Inox Cinemas"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fun Unlimited at Prozone",
+      "category": "gaming",
+      "area": "Sathy Road",
+      "url": "https://coimbatore.prozonemalls.com/entertainment",
+      "facts": [
+        {
+          "field": "address",
+          "value": "First Floor, Prozone Mall, Coimbatore; exact entrance unconfirmed",
+          "requires": [
+            "Fun Unlimited",
+            "First Floor"
+          ]
+        },
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Bowling",
+              "price_inr": null,
+              "unit": "unknown"
+            },
+            {
+              "name": "Arcade games",
+              "price_inr": null,
+              "unit": "unknown"
+            },
+            {
+              "name": "Bumper cars",
+              "price_inr": null,
+              "unit": "unknown"
+            }
+          ],
+          "requires": [
+            "Fun Unlimited",
+            "bowling alley",
+            "bumper cars"
+          ]
+        },
+        {
+          "field": "vibes",
+          "value": [
+            {
+              "tag": "family entertainment",
+              "evidence": "Mall describes a family entertainment zone with soft play and games"
+            }
+          ],
+          "requires": [
+            "family entertainment zone"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CRA Speedway at Prozone",
+      "category": "adventure",
+      "area": "Sathy Road",
+      "url": "https://coimbatore.prozonemalls.com/entertainment",
+      "facts": [
+        {
+          "field": "address",
+          "value": "Second-floor rooftop, Prozone Mall, Coimbatore; exact entrance unconfirmed",
+          "requires": [
+            "CRA Speedway",
+            "2nd Floor Rooftop"
+          ]
+        },
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Go-karting",
+              "price_inr": null,
+              "unit": "unknown"
+            }
+          ],
+          "requires": [
+            "CRA Speedway",
+            "go-karting"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CoASTT Kartmania",
+      "category": "adventure",
+      "area": "Karumathampatti",
+      "url": "https://coastt.in/kartmania/",
+      "facts": [
+        {
+          "field": "address",
+          "value": "SF 763, behind ARC Matriculation School, Karumathampatti, Tamil Nadu 641659",
+          "requires": [
+            "SF 763",
+            "Karumathampatti"
+          ]
+        },
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Rental karting",
+              "price_inr": null,
+              "unit": "unknown"
+            }
+          ],
+          "requires": [
+            "rental karting"
+          ]
+        },
+        {
+          "field": "hours",
+          "value": "Tuesday-Friday 12:00-21:00; Saturday-Sunday 10:00-21:00; Monday not specified",
+          "requires": [
+            "Tuesday to Friday",
+            "12 PM",
+            "09 PM",
+            "Saturday"
+          ]
+        },
+        {
+          "field": "vibes",
+          "value": [
+            {
+              "tag": "active",
+              "evidence": "Operator offers rental karting on a motorsport circuit"
+            }
+          ],
+          "requires": [
+            "rental karting"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Semmozhi Poonga",
+      "category": "park",
+      "area": "Gandhipuram",
+      "url": "https://coimbatore.nic.in/tourist-place/semmozhi-poonga/",
+      "facts": [
+        {
+          "field": "address",
+          "value": "Semmozhi Poonga, A.T.T. Colony, Gandhipuram, Coimbatore 641018",
+          "requires": [
+            "A.T.T. Colony",
+            "Gandhipuram"
+          ]
+        },
+        {
+          "field": "hours",
+          "value": "06:00-19:00; listed by district administration; holiday exceptions unconfirmed",
+          "requires": [
+            "06:00 AM",
+            "07:00 PM"
+          ]
+        },
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Adult entry",
+              "price_inr": 15,
+              "unit": "person"
+            },
+            {
+              "name": "Child entry",
+              "price_inr": 5,
+              "unit": "person"
+            }
+          ],
+          "requires": [
+            "₹15",
+            "₹5"
+          ]
+        },
+        {
+          "field": "vibes",
+          "value": [
+            {
+              "tag": "outdoor gardens",
+              "evidence": "District page describes gardens, walking paths and children's recreation"
+            }
+          ],
+          "requires": [
+            "walking paths",
+            "gardens"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Nilgiri Biosphere Nature Park",
+      "category": "park",
+      "area": "Anaikatti",
+      "url": "https://coimbatore.nic.in/tourist-place/nilgiri-biosphere-nature-park/",
+      "facts": [
+        {
+          "field": "address",
+          "value": "Thuvaipathy Village, Anaikatti, Coimbatore 641108",
+          "requires": [
+            "Thuvaipathy Village",
+            "Anaikatti"
+          ]
+        },
+        {
+          "field": "hours",
+          "value": "09:00-17:00; closed Tuesday, according to district listing",
+          "requires": [
+            "09:00 AM",
+            "05:00 PM",
+            "Tuesday"
+          ]
+        },
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Adult entry",
+              "price_inr": 100,
+              "unit": "person"
+            },
+            {
+              "name": "Child entry",
+              "price_inr": 50,
+              "unit": "person"
+            },
+            {
+              "name": "Hiking listed fee",
+              "price_inr": 75,
+              "unit": "unknown"
+            }
+          ],
+          "requires": [
+            "Rs.100",
+            "Rs.50",
+            "Rs.75"
+          ]
+        },
+        {
+          "field": "vibes",
+          "value": [
+            {
+              "tag": "nature trails",
+              "evidence": "District page describes nature trails and children's play area"
+            }
+          ],
+          "requires": [
+            "nature trails",
+            "play area"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "WAGHOBA Coimbatore",
+      "category": "bowling",
+      "area": "Peelamedu",
+      "url": "https://www.vgpwaghoba.in/",
+      "facts": []
+    },
+    {
+      "name": "Apex Karting Arena",
+      "category": "adventure",
+      "area": "",
+      "url": "https://apexkarting.in/",
+      "facts": []
+    },
+    {
+      "name": "Cafe Totaram",
+      "category": "cafe",
+      "area": "Race Course",
+      "url": "https://cafetotaram.com/",
+      "facts": [
+        {
+          "field": "address",
+          "value": "245/1, Ground Floor, adjacent to Raheja Enclave, Race Course, Coimbatore 641018",
+          "requires": [
+            "245/1",
+            "Raheja Enclave",
+            "Race Course"
+          ]
+        },
+        {
+          "field": "hours",
+          "value": "Daily 11:00-22:30, as listed by the cafe; holiday exceptions unconfirmed",
+          "requires": [
+            "Mon-Sun: 11 AM",
+            "10:30 PM"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Fun Unlimited at Prozone",
+      "category": "gaming",
+      "area": "Sathy Road",
+      "url": "https://fununlimited.co.in/coimbatore/",
+      "facts": [
+        {
+          "field": "address",
+          "value": "F08, Prozone Mall, Saravanampatty, Coimbatore 641035; entrance unconfirmed",
+          "requires": [
+            "F08",
+            "Prozone Mall",
+            "641035"
+          ]
+        },
+        {
+          "field": "hours",
+          "value": "11:00-22:00 according to operator; conflicts with mall listing and needs review",
+          "requires": [
+            "11 am - 10 pm"
+          ]
+        }
+      ],
+      "target_source_url": "https://coimbatore.prozonemalls.com/entertainment"
+    },
+    {
+      "name": "Cricket Simulator at Prozone",
+      "category": "gaming",
+      "area": "Sathy Road",
+      "url": "https://coimbatore.prozonemalls.com/entertainment",
+      "facts": [
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Virtual cricket simulator",
+              "price_inr": null,
+              "unit": "unknown"
+            }
+          ],
+          "requires": [
+            "Cricket Simulator",
+            "Virtual Cricket Simulator"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kites Cafe",
+      "category": "cafe",
+      "area": "Peelamedu",
+      "url": "https://kitescafe.in/index.php",
+      "facts": []
+    },
+    {
+      "name": "CSR Landmark Resorts day activities",
+      "category": "adventure",
+      "area": "",
+      "url": "https://csrlandmarkresorts.com/dayout.html",
+      "facts": [
+        {
+          "field": "offerings",
+          "value": [
+            {
+              "name": "Day-out tariff 1; unit/eligibility unconfirmed, tax extra",
+              "price_inr": 1600,
+              "unit": "unknown"
+            },
+            {
+              "name": "Day-out tariff 2; unit/eligibility unconfirmed, tax extra",
+              "price_inr": 1800,
+              "unit": "unknown"
+            },
+            {
+              "name": "Day-out tariff 3; unit/eligibility unconfirmed, tax extra",
+              "price_inr": 2000,
+              "unit": "unknown"
+            }
+          ],
+          "requires": [
+            "1600",
+            "1800",
+            "2000",
+            "Tax"
+          ]
+        }
+      ]
+    }
   ]
 }

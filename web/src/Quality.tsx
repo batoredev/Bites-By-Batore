@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, post } from "./api";
 import { ErrorBox } from "./components";
+import Evaluation from "./Evaluation";
+import Maintenance from "./Maintenance";
 
 type QualityReport = {
   categories: Record<string, { records: number; eligible: number }>;
@@ -57,6 +59,8 @@ export default function Quality() {
   return (
     <section>
       <h2>Coimbatore readiness</h2>
+      <Maintenance />
+      <Evaluation />
       <button
         type="button"
         className="secondary"

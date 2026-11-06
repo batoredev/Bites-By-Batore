@@ -36,6 +36,7 @@ from .schemas import (
     ReviewInput,
     VenueInput,
     VenueOperations,
+    MapsIdentityReview,
 )
 from .seed import seed_demo
 from .planner import build_plans, demo_leg, km
@@ -59,6 +60,8 @@ from .research import erase_cases, public_case
 from .db import Investigation, ResearchCorrection, IdentifiedSpot
 from .learning_api import router as learning_router, correction_dict
 from .spots_api import router as spots_router
+from .evaluation import router as evaluation_router
+from .maintenance_api import router as maintenance_router
 from .spots import spot_dict
 
 logging.basicConfig(level=logging.INFO)
@@ -97,6 +100,8 @@ app.include_router(ingest_router)
 app.include_router(research_router)
 app.include_router(learning_router)
 app.include_router(spots_router)
+app.include_router(evaluation_router)
+app.include_router(maintenance_router)
 app.include_router(discovery_router)
 app.include_router(operations_router)
 app.add_middleware(
@@ -287,6 +292,15 @@ def export_data(user=Depends(current_user), db=Depends(get_db)):
             for c in db.scalars(select(Investigation).where(Investigation.user_id == user.id))
         ],
         "plans": [model_dict(x) for x in db.scalars(select(Plan).where(Plan.user_id == user.id))],
+        "spot_reviews": [
+            model_dict(x)
+            for x in db.scalars(
+                select(Audit).where(
+                    Audit.actor == user.id,
+                    Audit.action.in_(["spot.merged", "spot.prepared", "spots.quality_cleanup"]),
+                )
+            )
+        ],
         "visits": [model_dict(x) for x in db.scalars(select(Visit).where(Visit.user_id == user.id))],
         "saved_venues": list(db.scalars(select(SavedVenue.venue_id).where(SavedVenue.user_id == user.id))),
         "submissions": [
@@ -304,7 +318,21 @@ def clear_account_data(user=Depends(current_user), db=Depends(get_db)):
         paused.value = 1
         db.add(paused)
     spot_ids = set(db.scalars(select(IdentifiedSpot.id).where(IdentifiedSpot.user_id == user.id)))
-    for job in db.scalars(select(Job).where(Job.kind.in_(["spot_inventory", "spot_enrich"]))):
+    db.execute(
+        delete(Audit).where(
+            Audit.actor == user.id,
+            Audit.action.in_(
+                [
+                    "spot.merged",
+                    "spot.prepared",
+                    "spots.quality_cleanup",
+                    "maintenance.alert_reviewed",
+                    "maintenance.venue_held",
+                ]
+            ),
+        )
+    )
+    for job in db.scalars(select(Job).where(Job.kind.in_(["spot_inventory", "spot_enrich", "spot_refresh"]))):
         if job.payload.get("user_id") == user.id or job.payload.get("spot_id") in spot_ids:
             db.delete(job)
     for table in [Plan, Visit, SavedVenue, Submission, IdentifiedSpot]:
@@ -732,10 +760,76 @@ def venue_operations(venue_id: str, data: VenueOperations, user=Depends(admin_us
     return venue_dict(db, venue)
 
 
+@app.post("/api/admin/venues/{venue_id}/maps-identity")
+def review_maps_identity(
+    venue_id: str, data: MapsIdentityReview, user=Depends(admin_user), db=Depends(get_db)
+):
+    from .spot_identity import maps_reference, quality_issues, clean_name
+
+    venue = accessible_venue(db, venue_id)
+    if not data.checked or not venue.details.get("branch_confirmed"):
+        raise HTTPException(422, "Check the branch, Maps place and matching location name")
+    if km((venue.lat, venue.lng), (11.0168, 76.9558)) > 40:
+        raise HTTPException(422, "The first inventory covers Coimbatore within 40 km")
+    try:
+        identity = maps_reference(data.maps_url)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    issues = quality_issues(data.name, venue.area, {"address": venue.address})
+    identity["reviewed_warnings"] = issues
+    for other in db.scalars(select(Venue).where(Venue.is_demo == venue.is_demo, Venue.id != venue.id)):
+        if other.details.get("maps_identity", {}).get("place_key") == identity["place_key"]:
+            raise HTTPException(409, "This exact Maps branch already has a venue record")
+    previous = venue.name
+    venue.name = clean_name(data.name)
+    identity.update(
+        {
+            "name": venue.name,
+            "confirmed_by": user.id,
+            "confirmed_at": now(),
+            "basis": "Operator independently checked name and exact Maps branch",
+        }
+    )
+    venue.details = {
+        **venue.details,
+        "maps_identity": identity,
+        "google_place_id": identity.get("place_id", ""),
+    }
+    if venue.status == "published":
+        venue.status = "pending"
+        venue.details = {k: v for k, v in venue.details.items() if k != "location_approval"}
+    for spot in db.scalars(
+        select(IdentifiedSpot).where(IdentifiedSpot.venue_id == venue.id, IdentifiedSpot.user_id == user.id)
+    ):
+        spot.data = {
+            **spot.data,
+            "maps_identity": identity,
+            "name_status": "operator_maps_confirmed",
+            "quality_issues": [],
+            "aliases": list(dict.fromkeys([spot.name, *spot.data.get("aliases", [])])),
+        }
+        spot.name, spot.status, spot.updated_at = venue.name, "awaiting_approval", now()
+    venue.revision += 1
+    venue.updated_at = now()
+    db.add(
+        Audit(
+            actor=user.id,
+            action="venue.maps_identity_reviewed",
+            target=venue.id,
+            detail={"previous_name": previous, "reason": data.reason, "place_key": identity["place_key"]},
+        )
+    )
+    db.commit()
+    return venue_dict(db, venue)
+
+
 @app.post("/api/admin/venues/{venue_id}/publish")
 def publish_venue(venue_id: str, data: ReviewInput, user=Depends(admin_user), db=Depends(get_db)):
     venue = accessible_venue(db, venue_id)
     if data.decision == "approve":
+        for spot in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.venue_id == venue_id)):
+            if any(a["state"] == "open" for a in spot.data.get("maintenance_alerts", [])):
+                raise HTTPException(422, "Review outstanding source-change/freshness alerts before approval")
         if not venue.details.get("branch_confirmed"):
             raise HTTPException(422, "Confirm the exact branch before approving this location")
         if not venue.is_demo and not venue.details.get("maps_identity", {}).get("confirmed_by"):

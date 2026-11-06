@@ -76,12 +76,42 @@ def local_chat(prompt, content, schema, frames=None):
         "additionalProperties": False,
     }
     if frames:
+        observation["properties"]["verbatim_text"] = {"type": ["string", "null"], "maxLength": 400}
+        observation["required"].append("verbatim_text")
+    if frames:
         compact["properties"]["followup_seconds"] = {
             "type": "array",
             "items": {"type": "number", "minimum": 0, "maximum": max(f["seconds"] for f in frames) + 0.15},
             "maxItems": 2,
         }
         compact["required"].append("followup_seconds")
+    if content.get("indexed_comments"):
+        compact["properties"]["comment_labels"] = {
+            "type": "array",
+            "maxItems": len(content["indexed_comments"]),
+            "items": {
+                "type": "object",
+                "properties": {
+                    "index": {"type": "integer", "enum": [c["index"] for c in content["indexed_comments"]]},
+                    "kind": {
+                        "enum": [
+                            "firsthand_claim",
+                            "question",
+                            "promotion",
+                            "correction",
+                            "opinion",
+                            "unrelated",
+                            "unclear",
+                        ]
+                    },
+                    "aspect": {"enum": ["food", "service", "price", "location", "hours", "other"]},
+                    "claim": {"type": "string", "maxLength": 120},
+                },
+                "required": ["index", "kind", "aspect", "claim"],
+                "additionalProperties": False,
+            },
+        }
+        compact["required"].append("comment_labels")
     prompt = (
         prompt.split(" Schema: ")[0]
         + " Return a brief JSON object under 200 words. Summarize instead of copying hashtags or repeating source text. Use empty arrays when no evidence exists. Never infer prices. Timestamp means seconds within the supplied clip, never a calendar date. Text-only observations use null timestamps. Use this exact structure: "

@@ -11,14 +11,40 @@ from .spots import upsert_spot, unique
 from .web_evidence import read_official_html, VisibleText
 
 
+def save_target(db, user_id, seed, data):
+    """Explicit configured cross-reference joins evidence, never confirms identity or facts."""
+    if seed.get("target_source_url"):
+        from sqlalchemy import select
+        from .db import IdentifiedSpot
+        from .spots import INACTIVE, merge_data
+        from .spot_identity import name_key
+
+        matches = [
+            r
+            for r in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user_id))
+            if r.status not in INACTIVE
+            and name_key(r.name) == name_key(seed["name"])
+            and r.area == seed.get("area", "")
+            and any(s.get("url") == seed["target_source_url"] for s in r.data.get("sources", []))
+        ]
+        if len(matches) == 1:
+            matches[0].data = merge_data(matches[0].data, data)
+            matches[0].updated_at = now()
+            return matches[0]
+    return upsert_spot(db, user_id, seed["name"], seed["category"], seed.get("area", ""), data)
+
+
 class Document(HTMLParser):
     def __init__(self, url):
         super().__init__()
         self.url, self.links, self.items = url, [], []
         self.capture, self.parts, self.last_name = "", [], ""
+        self.images = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "meta" and attrs.get("property") in {"og:image", "og:image:url"} and attrs.get("content"):
+            self.images.append(urljoin(self.url, attrs["content"]))
         if tag == "a" and attrs.get("href"):
             url = urljoin(self.url, attrs["href"])
             if urlparse(url).scheme == "https" and not urlparse(url).username:
@@ -82,6 +108,7 @@ def parse_document(html, url):
         "menu_links": menu,
         "coordinates": coordinates,
         "offerings": unique(document.items),
+        "image_links": unique(document.images)[:2],
         "text": "\n".join(visible.parts),
     }
 
@@ -97,6 +124,17 @@ def collect_inventory(db, user_id):
             if url not in cache:
                 cache[url] = parse_document(read_official_html(db, url), url)
             doc = cache[url]
+            if "visual_references" not in doc:
+                from .visual_places import fetch_reference
+
+                doc["visual_references"] = []
+                for image_url in doc["image_links"]:
+                    try:
+                        doc["visual_references"].append(fetch_reference(db, image_url, url))
+                    except DeferredCollection:
+                        raise
+                    except Unavailable as exc:
+                        gaps.append({"name": seed["name"], "field": "visual_reference", "reason": str(exc)})
             text = doc["text"]
             data = {
                 "sources": [
@@ -111,6 +149,7 @@ def collect_inventory(db, user_id):
                 "maps_links": doc["maps_links"],
                 "menu_links": doc["menu_links"],
                 "coordinates": doc["coordinates"],
+                "visual_references": doc["visual_references"],
                 "offerings": doc["offerings"],
                 "review_notes": [
                     "Current branch, operation, menus, vibes and fees still require operator review. Collection does not establish customer suitability."
@@ -156,7 +195,7 @@ def collect_inventory(db, user_id):
                     raise
                 except Unavailable as exc:
                     gaps.append({"name": seed["name"], "url": menu_url, "reason": str(exc)})
-            row = upsert_spot(db, user_id, seed["name"], seed["category"], seed.get("area", ""), data)
+            row = save_target(db, user_id, seed, data)
         except DeferredCollection:
             db.commit()
             raise

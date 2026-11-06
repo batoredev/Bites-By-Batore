@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     research_daily_limit: int = 5
     research_streaming: bool = True
     inventory_collection_enabled: bool = False
+    source_watch_days: int = Field(default=7, ge=1, le=90)
+    source_watch_daily_limit: int = Field(default=6, ge=0, le=30)
     media_max_seconds: int = 180
     media_max_frames: int = 12
     ffmpeg_binary: str = ""
@@ -42,7 +44,8 @@ class Settings(BaseSettings):
     local_search_enabled: bool = False
     instagram_browser_enabled: bool = False
     browser_daily_limit: int = Field(default=12, ge=1, le=100)
-    browser_max_comments: int = Field(default=30, ge=1, le=50)
+    browser_max_comments: int = Field(default=100, ge=1, le=100)
+    browser_comment_expansions: int = Field(default=3, ge=0, le=8)
     browser_timeout_seconds: int = Field(default=35, ge=10, le=60)
     autonomous_discovery: bool = False
     web_evidence_hosts: list[str] = Field(
@@ -55,6 +58,10 @@ class Settings(BaseSettings):
             "apexkarting.in",
             "www.ccmc.gov.in",
             "coimbatore.nic.in",
+            "cafetotaram.com",
+            "fununlimited.co.in",
+            "kitescafe.in",
+            "csrlandmarkresorts.com",
         ]
     )
     release_stage: Literal["internal", "test", "public"] = "internal"

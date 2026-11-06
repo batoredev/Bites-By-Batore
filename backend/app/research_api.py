@@ -61,12 +61,26 @@ def assess_source(source_id: str, data: AssessmentInput, user=Depends(admin_user
     source = db.get(ResearchSource, source_id)
     if not source or not source.creator:
         raise HTTPException(422, "A retrieved creator identity is required before recording creator history")
+    case = db.get(Investigation, source.case_id)
+    if not case or case.user_id != user.id:
+        raise HTTPException(404, "Source not found")
     identity = creator_key(source)
     group = (
         source.content.get("content_fingerprint")
         or evidence_fingerprint(source.content)
         or source.canonical_url
     )
+    reliability = source.analysis.get("reliability", {})
+    rate = reliability.get("assessment", {}).get("observed_support_rate")
+    if rate is not None and reliability.get("assessed_at"):
+        forecast = {
+            "origin": group,
+            "probability": rate,
+            "predicted_at": reliability["assessed_at"],
+            "judged_at": now(),
+            "outcome": 1 if data.outcome == "supported" else 0 if data.outcome == "refuted" else None,
+        }
+        source.analysis = {**source.analysis, "prospective_assessment": forecast}
     db.add(
         SourceAssessment(
             source_id=source.id,
@@ -78,7 +92,7 @@ def assess_source(source_id: str, data: AssessmentInput, user=Depends(admin_user
     )
     db.add(Audit(actor=user.id, action="source.assessed", target=source.id, detail=data.model_dump()))
     db.commit()
-    return creator_assessment(db, identity)
+    return creator_assessment(db, identity, user.id)
 
 
 class ResearchInput(BaseModel):

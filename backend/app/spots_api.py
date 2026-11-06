@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from .auth import admin_user
@@ -96,7 +97,15 @@ def maps_candidates(spot_id: str, user=Depends(admin_user), db=Depends(get_db)):
         and km((c["location"]["latitude"], c["location"]["longitude"]), (11.0168, 76.9558)) <= 40
     ]
     # API content is transient; no API names/addresses copied into our database.
-    return {"status": "review_required", "candidates": candidates, "attribution": "Google Maps"}
+    from .branch_matching import rank_google
+
+    candidates = rank_google(
+        {"name": row.name, "address_clues": [row.area, *row.data.get("address_clues", [])]}, candidates
+    )
+    return JSONResponse(
+        {"status": "review_required", "candidates": candidates, "attribution": "Google Maps"},
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.post("/sync-investigations")
@@ -107,6 +116,7 @@ def sync(user=Depends(admin_user), db=Depends(get_db)):
     for case in db.scalars(select(Investigation).where(Investigation.user_id == user.id)):
         for source in case_sources(db, case):
             ids.update(identify_from_source(db, case, source))
+    reconcile_spots(db, user.id)
     db.commit()
     return {"identified_spots": len(ids), "published": 0}
 
@@ -154,8 +164,9 @@ def prepare(spot_id: str, data: Preparation, user=Depends(admin_user), db=Depend
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
         issues = quality_issues(data.venue.name, data.venue.area, {"address": data.venue.address})
-        if issues:
-            raise HTTPException(422, "; ".join(issues))
+        # Heuristics may flag real names such as 'Hidden Cafe'. An explicit
+        # independent branch/Maps review can resolve them; keep that decision.
+        identity["reviewed_warnings"] = issues
         for other in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user.id)):
             if (
                 other.id != row.id
@@ -180,6 +191,10 @@ def prepare(spot_id: str, data: Preparation, user=Depends(admin_user), db=Depend
 
     if km((data.venue.lat, data.venue.lng), (11.0168, 76.9558)) > 40:
         raise HTTPException(422, "The first inventory covers Coimbatore within 40 km")
+    if identity:
+        for other in db.scalars(select(Venue).where(Venue.is_demo == (settings().app_mode == "demo"))):
+            if other.details.get("maps_identity", {}).get("place_key") == identity["place_key"]:
+                raise HTTPException(409, "This exact Maps branch already has a venue record")
     if any(
         k in data.venue.details for k in ("price_per_person", "hours", "closed", "vegetarian", "wheelchair")
     ):
@@ -192,6 +207,7 @@ def prepare(spot_id: str, data: Preparation, user=Depends(admin_user), db=Depend
         **data.venue.model_dump(exclude={"details"}),
         details={
             **operations.model_dump(mode="json"),
+            **({"google_place_id": identity.get("place_id", "")} if identity else {}),
             "identified_spot_id": row.id,
             "branch_confirmation_source": data.evidence_url,
             **(
@@ -219,6 +235,7 @@ def prepare(spot_id: str, data: Preparation, user=Depends(admin_user), db=Depend
             "aliases": list(dict.fromkeys([row.name, *row.data.get("aliases", [])])),
             "maps_identity": venue.details["maps_identity"],
             "name_status": "operator_maps_confirmed",
+            "quality_issues": [],
             "address": data.venue.address,
             "coordinates": {
                 "lat": data.venue.lat,

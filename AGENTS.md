@@ -36,3 +36,19 @@ analysis and identified-spots insertion; quota waits preserve pending sources.
 Schema 5 adds owner-scoped identified_spots. Read docs/INVENTORY_COLLECTION.md.
 Every location requires explicit operator approval before suggestions; accepting
 facts must not auto-publish venues. Drafts/first-party menu pairs are unapproved.
+
+Latest quality direction (6 November): check duplicates/relevance before spot inserts.
+Read docs/SPOT_IDENTITY_QUALITY.md. Held and merged records retain their evidence;
+do not silently delete or re-create them. Similar names alone do not confirm a
+branch. Names remain Maps-unconfirmed until explicit operator identity review;
+optional Places lookup is not live verified. Maps identity review is required for
+non-demo venue publication; it does not replace current fact/location approval.
+
+Latest continuation (6 November): read docs/INSTAGRAM_COMPLETION.md and the newest
+VERIFICATION.md section. Local visual-reference matching, branch conflict ranking,
+resumable structured comments, creator uncertainty/calibration metrics and private
+accuracy-review/comparison tooling are implemented. Only one real reference image
+and a 12-comment local inference smoke are verified; real accuracy, branch matching,
+calibration and correction improvement remain unmeasured. Never fabricate gold
+labels or operator approvals. Public comment expansion was unavailable on the
+real test page; offline control-expansion tests are not live coverage evidence.

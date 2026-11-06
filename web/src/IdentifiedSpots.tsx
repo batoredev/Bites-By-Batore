@@ -18,6 +18,11 @@ interface Spot {
     aliases?: string[];
     possible_duplicates?: string[];
     quality_issues?: string[];
+    unassigned_observations?: {
+      text: string;
+      basis: string;
+      source_url: string;
+    }[];
     merged_into?: string;
     address?: string;
     hours?: string;
@@ -71,8 +76,15 @@ function Prepare({
     maps_checked: false,
   });
   const [mapsResult, setMapsResult] = useState<{
-    status: string; reason?: string;
-    candidates: { id: string; displayName?: { text: string }; formattedAddress?: string; googleMapsUri?: string }[];
+    status: string;
+    reason?: string;
+    candidates: {
+      id: string;
+      displayName?: { text: string };
+      formattedAddress?: string;
+      attributions?: { provider?: string; providerUri?: string }[];
+      googleMapsUri?: string;
+    }[];
   } | null>(null);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -114,23 +126,81 @@ function Prepare({
           of suggestions until that approval.
         </p>
         <ErrorBox message={error} />
-        <p>The location name must match the exact Google Maps branch. Keep nicknames as aliases. Use independent branch evidence for your saved address and coordinates.</p>
-        <a href={spot.map_search_url} target="_blank" rel="noreferrer">Open Google Maps to check this branch</a>
-        <button type="button" className="secondary" disabled={busy} onClick={async () => {
-          setBusy(true);
-          try { setMapsResult(await post(`/admin/spots/${spot.id}/maps-candidates`)); }
-          catch (e) { setError((e as Error).message); }
-          finally { setBusy(false); }
-        }}>Look up Maps candidates</button>
-        {mapsResult && <div role="status">
-          {mapsResult.status === "unavailable" ? <p>{mapsResult.reason}. Open Maps above to check the name manually.</p> : <>
-            <p>Google Maps — live candidates, exact branch still needs your check.</p>
-            <ul>{mapsResult.candidates.map(c => <li key={c.id}>
-              <a href={c.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.displayName?.text || spot.name)}&query_place_id=${encodeURIComponent(c.id)}`} target="_blank" rel="noreferrer">{c.displayName?.text || c.id}</a>
-              <p>{c.formattedAddress}</p>
-            </li>)}</ul>
-          </>}
-        </div>}
+        <p>
+          The location name must match the exact Google Maps branch. Keep
+          nicknames as aliases. Use independent branch evidence for your saved
+          address and coordinates.
+        </p>
+        <a href={spot.map_search_url} target="_blank" rel="noreferrer">
+          Open Google Maps to check this branch
+        </a>
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              setMapsResult(
+                await post(`/admin/spots/${spot.id}/maps-candidates`),
+              );
+            } catch (e) {
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Look up Maps candidates
+        </button>
+        {mapsResult && (
+          <div role="status">
+            {mapsResult.status === "unavailable" ? (
+              <p>
+                {mapsResult.reason}. Open Maps above to check the name manually.
+              </p>
+            ) : (
+              <>
+                <p>
+                  Google Maps — live candidates, exact branch still needs your
+                  check.
+                </p>
+                <ul>
+                  {mapsResult.candidates.map((c) => (
+                    <li key={c.id}>
+                      <a
+                        href={
+                          c.googleMapsUri ||
+                          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.displayName?.text || spot.name)}&query_place_id=${encodeURIComponent(c.id)}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {c.displayName?.text || c.id}
+                      </a>
+                      <p>{c.formattedAddress}</p>
+                      {c.attributions?.map((a, i) => (
+                        <p key={i}>
+                          {a.providerUri?.startsWith("https://") ? (
+                            <a
+                              href={a.providerUri}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {a.provider || "Source attribution"}
+                            </a>
+                          ) : (
+                            a.provider
+                          )}
+                        </p>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
         {(
           [
             ["name", "Location name"],
@@ -139,7 +209,10 @@ function Prepare({
             ["lat", "Latitude"],
             ["lng", "Longitude"],
             ["evidence_url", "Independent branch evidence URL"],
-            ["maps_url", "Exact Google Maps place URL (full link with place ID or CID)"],
+            [
+              "maps_url",
+              "Exact Google Maps place URL (full link with place ID or CID)",
+            ],
             ["reason", "What did you verify?"],
           ] as const
         ).map(([key, label]) => (
@@ -183,7 +256,14 @@ function Prepare({
           I checked this exact branch and its map coordinates.
         </label>
         <label className="check-row">
-          <input type="checkbox" required checked={form.maps_checked} onChange={e => setForm({ ...form, maps_checked: e.target.checked })} />
+          <input
+            type="checkbox"
+            required
+            checked={form.maps_checked}
+            onChange={(e) =>
+              setForm({ ...form, maps_checked: e.target.checked })
+            }
+          />
           I checked that this location name matches the exact Google Maps place.
         </label>
         <button className="primary" disabled={busy}>
@@ -204,12 +284,17 @@ export default function IdentifiedSpots({
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     [selected, setSelected] = useState<Spot | null>(null);
-  const [showHeld, setShowHeld] = useState(false), [held, setHeld] = useState(0);
+  const [showHeld, setShowHeld] = useState(false),
+    [held, setHeld] = useState(0);
   const [mergeSpot, setMergeSpot] = useState<Spot | null>(null);
-  const [targetId, setTargetId] = useState(""), [mergeReason, setMergeReason] = useState(""), [mergeChecked, setMergeChecked] = useState(false);
+  const [targetId, setTargetId] = useState(""),
+    [mergeReason, setMergeReason] = useState(""),
+    [mergeChecked, setMergeChecked] = useState(false);
   async function refresh() {
     try {
-      const result = await api<{ spots: Spot[]; held: number }>(`/admin/spots?include_held=${showHeld}`);
+      const result = await api<{ spots: Spot[]; held: number }>(
+        `/admin/spots?include_held=${showHeld}`,
+      );
       setSpots(result.spots);
       setHeld(result.held);
     } catch (e) {
@@ -228,7 +313,9 @@ export default function IdentifiedSpots({
       setMessage(
         path.endsWith("/collect")
           ? "First-party collection queued. Refresh after the worker finishes."
-          : path.endsWith("/quality-check") ? "Duplicate and relevance checks completed. Originals remain in the held-record view." : "Investigation findings added to identified spots.",
+          : path.endsWith("/quality-check")
+            ? "Duplicate and relevance checks completed. Originals remain in the held-record view."
+            : "Investigation findings added to identified spots.",
       );
     } catch (e) {
       setError((e as Error).message);
@@ -262,9 +349,22 @@ export default function IdentifiedSpots({
         <button className="secondary" onClick={() => void refresh()}>
           Refresh spots
         </button>
-        <button className="secondary" disabled={busy} onClick={() => action("/admin/spots/quality-check")}>Check duplicates and relevance</button>
+        <button
+          className="secondary"
+          disabled={busy}
+          onClick={() => action("/admin/spots/quality-check")}
+        >
+          Check duplicates and relevance
+        </button>
       </div>
-      <label className="check-row"><input type="checkbox" checked={showHeld} onChange={e => setShowHeld(e.target.checked)} />Show held and merged records ({held})</label>
+      <label className="check-row">
+        <input
+          type="checkbox"
+          checked={showHeld}
+          onChange={(e) => setShowHeld(e.target.checked)}
+        />
+        Show held and merged records ({held})
+      </label>
       <ErrorBox message={error} />
       {message && <p role="status">{message}</p>}
       {!spots ? (
@@ -278,11 +378,34 @@ export default function IdentifiedSpots({
             {spots.map((spot) => (
               <article className="review-card" key={spot.id}>
                 <h3>{spot.name}</h3>
-                <p className="small-text">{spot.data.maps_identity?.confirmed_by ? "Name and Maps branch checked by operator" : "Extracted name — Maps identity unconfirmed"}</p>
-                {spot.data.aliases && spot.data.aliases.length > 1 && <p>Also seen as: {spot.data.aliases.join("; ")}</p>}
-                {spot.data.quality_issues?.map(issue => <p key={issue}>{issue}</p>)}
-                {spot.data.merged_into && <p>Merged into {spots.find(s => s.id === spot.data.merged_into)?.name || spot.data.merged_into}. Original evidence retained.</p>}
-                {!!spot.data.possible_duplicates?.length && <p>Possible duplicate: {spot.data.possible_duplicates.map(id => spots.find(s => s.id === id)?.name || id).join("; ")}. Exact branch needs checking.</p>}
+                <p className="small-text">
+                  {spot.data.maps_identity?.confirmed_by
+                    ? "Name and Maps branch checked by operator"
+                    : "Extracted name — Maps identity unconfirmed"}
+                </p>
+                {spot.data.aliases && spot.data.aliases.length > 1 && (
+                  <p>Also seen as: {spot.data.aliases.join("; ")}</p>
+                )}
+                {spot.data.quality_issues?.map((issue) => (
+                  <p key={issue}>{issue}</p>
+                ))}
+                {spot.data.merged_into && (
+                  <p>
+                    Merged into{" "}
+                    {spots.find((s) => s.id === spot.data.merged_into)?.name ||
+                      spot.data.merged_into}
+                    . Original evidence retained.
+                  </p>
+                )}
+                {!!spot.data.possible_duplicates?.length && (
+                  <p>
+                    Possible duplicate:{" "}
+                    {spot.data.possible_duplicates
+                      .map((id) => spots.find((s) => s.id === id)?.name || id)
+                      .join("; ")}
+                    . Exact branch needs checking.
+                  </p>
+                )}
                 <p>
                   {spot.area || "Neighbourhood unconfirmed"} · {spot.category} ·{" "}
                   {spot.status.replaceAll("_", " ")}
@@ -360,6 +483,32 @@ export default function IdentifiedSpots({
                   <p>No menu items or activity prices collected yet.</p>
                 )}
                 <h4>Vibe evidence</h4>
+                {!!spot.data.unassigned_observations?.length && (
+                  <details>
+                    <summary>
+                      Evidence needing venue attribution (
+                      {spot.data.unassigned_observations.length})
+                    </summary>
+                    <p>
+                      These observations came from a source mentioning more than
+                      one location. They are not assigned to this venue.
+                    </p>
+                    <ul>
+                      {spot.data.unassigned_observations.map((o, i) => (
+                        <li key={i}>
+                          {o.text}{" "}
+                          <a
+                            href={o.source_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Original source
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
                 {spot.data.vibes?.length ? (
                   <ul>
                     {spot.data.vibes.map((v, i) => (
@@ -412,7 +561,22 @@ export default function IdentifiedSpots({
                     Prepare location for approval
                   </button>
                 )}
-                {!spot.venue_id && !["merged", "quarantined", "rejected"].includes(spot.status) && <button className="secondary" onClick={() => { setMergeSpot(spot); setTargetId(""); setMergeReason(""); setMergeChecked(false); }}>Merge duplicate after branch check</button>}
+                {!spot.venue_id &&
+                  !["merged", "quarantined", "rejected"].includes(
+                    spot.status,
+                  ) && (
+                    <button
+                      className="secondary"
+                      onClick={() => {
+                        setMergeSpot(spot);
+                        setTargetId("");
+                        setMergeReason("");
+                        setMergeChecked(false);
+                      }}
+                    >
+                      Merge duplicate after branch check
+                    </button>
+                  )}
               </article>
             ))}
           </div>
@@ -428,21 +592,83 @@ export default function IdentifiedSpots({
           }}
         />
       )}
-      {mergeSpot && <Modal title={`Merge ${mergeSpot.name}`} onClose={() => setMergeSpot(null)}>
-        <form className="stack-form" onSubmit={async e => {
-          e.preventDefault(); setBusy(true); setError("");
-          try { await post(`/admin/spots/${mergeSpot.id}/merge`, { target_id: targetId, reason: mergeReason, same_branch_checked: mergeChecked }); setMergeSpot(null); await refresh(); }
-          catch (e) { setError((e as Error).message); }
-          finally { setBusy(false); }
-        }}>
-          <p>Keep all source evidence in the surviving record. Check the address: different branches must stay separate.</p>
-          <ErrorBox message={error} />
-          <label>Surviving location<select required value={targetId} onChange={e => setTargetId(e.target.value)}><option value="">Choose a location</option>{spots?.filter(s => s.id !== mergeSpot.id && !s.venue_id && !["merged", "quarantined", "rejected"].includes(s.status)).map(s => <option key={s.id} value={s.id}>{s.name} — {s.area || "area unknown"}</option>)}</select></label>
-          <label>Evidence for the same branch<input required minLength={10} value={mergeReason} onChange={e => setMergeReason(e.target.value)} /></label>
-          <label className="check-row"><input required type="checkbox" checked={mergeChecked} onChange={e => setMergeChecked(e.target.checked)} />I checked that both records refer to the same branch.</label>
-          <button className="primary" disabled={busy}>Merge and retain original evidence</button>
-        </form>
-      </Modal>}
+      {mergeSpot && (
+        <Modal
+          title={`Merge ${mergeSpot.name}`}
+          onClose={() => setMergeSpot(null)}
+        >
+          <form
+            className="stack-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError("");
+              try {
+                await post(`/admin/spots/${mergeSpot.id}/merge`, {
+                  target_id: targetId,
+                  reason: mergeReason,
+                  same_branch_checked: mergeChecked,
+                });
+                setMergeSpot(null);
+                await refresh();
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <p>
+              Keep all source evidence in the surviving record. Check the
+              address: different branches must stay separate.
+            </p>
+            <ErrorBox message={error} />
+            <label>
+              Surviving location
+              <select
+                required
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+              >
+                <option value="">Choose a location</option>
+                {spots
+                  ?.filter(
+                    (s) =>
+                      s.id !== mergeSpot.id &&
+                      !s.venue_id &&
+                      !["merged", "quarantined", "rejected"].includes(s.status),
+                  )
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} — {s.area || "area unknown"}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Evidence for the same branch
+              <input
+                required
+                minLength={10}
+                value={mergeReason}
+                onChange={(e) => setMergeReason(e.target.value)}
+              />
+            </label>
+            <label className="check-row">
+              <input
+                required
+                type="checkbox"
+                checked={mergeChecked}
+                onChange={(e) => setMergeChecked(e.target.checked)}
+              />
+              I checked that both records refer to the same branch.
+            </label>
+            <button className="primary" disabled={busy}>
+              Merge and retain original evidence
+            </button>
+          </form>
+        </Modal>
+      )}
     </section>
   );
 }
