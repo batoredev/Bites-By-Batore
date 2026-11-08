@@ -318,6 +318,14 @@ def export_data(user=Depends(current_user), db=Depends(get_db)):
     return {
         "account": model_dict(user),
         "research_job_metrics": metrics_export(db, user.id),
+        "duplicate_agent_runs": [
+            model_dict(j)
+            for j in db.scalars(
+                select(Job).where(
+                    Job.kind == "spot_deduplicate", Job.payload["user_id"].as_string() == user.id
+                )
+            )
+        ],
         "identified_spots": [
             spot_dict(r) for r in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user.id))
         ],
@@ -386,7 +394,11 @@ def clear_account_data(user=Depends(current_user), db=Depends(get_db)):
         )
     )
     for job in db.scalars(
-        select(Job).where(Job.kind.in_(["spot_inventory", "spot_enrich", "spot_refresh", "city_directory"]))
+        select(Job).where(
+            Job.kind.in_(
+                ["spot_inventory", "spot_enrich", "spot_refresh", "city_directory", "spot_deduplicate"]
+            )
+        )
     ):
         if job.payload.get("user_id") == user.id or job.payload.get("spot_id") in spot_ids:
             db.delete(job)

@@ -5,11 +5,26 @@ from sqlalchemy import select
 from .auth import admin_user
 from .config import settings
 from .db import get_db, IdentifiedSpot, Venue, Audit, now
-from .spots import spot_dict, reconcile_spots, INACTIVE, merge_data
+from .spots import spot_dict, reconcile_spots, INACTIVE
 from .spot_identity import maps_reference, quality_issues, name_key, clean_name
 from .schemas import VenueInput, VenueOperations
 
 router = APIRouter(prefix="/api/admin/spots")
+
+
+@router.get("/duplicates")
+def duplicate_status(user=Depends(admin_user), db=Depends(get_db)):
+    from .duplicate_agent import status
+
+    return status(db, user.id)
+
+
+@router.post("/duplicates/run")
+def duplicate_run(user=Depends(admin_user), db=Depends(get_db)):
+    from .duplicate_agent import request_scan
+
+    job = request_scan(db, user.id, force=True)
+    return {"job_id": job.id, "state": job.state}
 
 
 @router.get("")
@@ -45,30 +60,29 @@ class MergeInput(BaseModel):
 
 @router.post("/{spot_id}/merge")
 def merge(spot_id: str, data: MergeInput, user=Depends(admin_user), db=Depends(get_db)):
+    from .spots import lock_inventory
+    from .duplicate_agent import merge_records
+
+    lock_inventory(db)
     source, target = db.get(IdentifiedSpot, spot_id), db.get(IdentifiedSpot, data.target_id)
     if not source or not target or source.user_id != user.id or target.user_id != user.id:
         raise HTTPException(404, "Spot not found")
     if source.id == target.id or not data.same_branch_checked:
         raise HTTPException(422, "Choose a different record and confirm the exact same branch")
-    if source.venue_id or target.venue_id or source.status in INACTIVE or target.status in INACTIVE:
+    if (
+        source.venue_id
+        or target.venue_id
+        or source.status in {"merged", "rejected"}
+        or target.status in INACTIVE
+    ):
         raise HTTPException(409, "Merge active drafts before preparing either for approval")
     left, right = source.data.get("maps_identity", {}), target.data.get("maps_identity", {})
     if left.get("place_key") and right.get("place_key") and left["place_key"] != right["place_key"]:
         raise HTTPException(409, "Different confirmed Maps identities require identity correction first")
-    before = {"target_data": target.data, "source_status": source.status}
-    target.data = merge_data(
-        target.data, {**source.data, "aliases": [source.name, *source.data.get("aliases", [])]}
-    )
-    source.status, source.updated_at = "merged", now()
-    source.data = {**source.data, "merged_into": target.id, "previous_status": "identified"}
-    db.add(
-        Audit(
-            actor=user.id,
-            action="spot.merged",
-            target=source.id,
-            detail={"into": target.id, "reason": data.reason, "before": before},
-        )
-    )
+    try:
+        merge_records(db, source, target, user.id, [data.reason])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
     db.commit()
     return {"spot_id": target.id, "published": False}
 

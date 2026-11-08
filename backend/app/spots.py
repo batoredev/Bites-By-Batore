@@ -194,6 +194,8 @@ def spot_dict(row):
 
 def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_key=""):
     from .providers import renew_job
+    from .duplicate_identity import identity_conflicts
+    from types import SimpleNamespace
 
     renew_job(db)
     lock_inventory(db)
@@ -207,7 +209,14 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
             .execution_options(populate_existing=True)
         )
     )
-    matches = [r for r in records if r.status not in INACTIVE and same_branch(r, name, area, data)]
+    proposal = SimpleNamespace(name=name, area=area, data=data)
+    matches = [
+        r
+        for r in records
+        if r.status not in INACTIVE
+        and not identity_conflicts(r, proposal)
+        and same_branch(r, name, area, data)
+    ]
     row = matches[0] if len(matches) == 1 else None
     issues = quality_issues(name, area, data)
     identity_review = row.data.get("maps_identity", {}) if row else {}
@@ -218,9 +227,11 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
         return None
     # A conflicting address needs a separate identity even when names/areas agree.
     branch = branch_key or data.get("address") or area
-    if data.get("strict_identity") and data.get("coordinates"):
+    if data.get("coordinates"):
         point = data["coordinates"]
         branch += f"|point:{float(point['lat']):.5f},{float(point['lng']):.5f}"
+    if data.get("maps_identity", {}).get("place_key"):
+        branch += "|place:" + data["maps_identity"]["place_key"]
     strong_clues = branch_clues(data)
     if any(strong_clues.values()):
         branch += "|" + json.dumps(strong_clues, sort_keys=True)
@@ -231,6 +242,8 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
     identity = hashlib.sha256(f"{user_id}|{name_key(name)}|{name_key(branch)}".encode()).hexdigest()
     if row is None:
         row = db.scalar(select(IdentifiedSpot).where(IdentifiedSpot.identity_key == identity))
+        if row and row.user_id != user_id:
+            return None
         visited = set()
         while row and row.status == "merged":
             if row.id in visited:
@@ -239,7 +252,24 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
             row = db.get(IdentifiedSpot, row.data.get("merged_into"))
             if row and row.user_id != user_id:
                 return None
-        if row and row.status in {"quarantined", "rejected"}:
+        if row and identity_conflicts(row, proposal):
+            # Old name/area hashes must never override newly contradictory branch evidence.
+            evidence = json.dumps(
+                {
+                    "maps": data.get("maps_identity"),
+                    "point": data.get("coordinates"),
+                    "address": data.get("address"),
+                    "clues": data.get("address_clues", []),
+                },
+                sort_keys=True,
+            )
+            identity = hashlib.sha256((identity + "|branch-evidence:" + evidence).encode()).hexdigest()
+            row = db.scalar(select(IdentifiedSpot).where(IdentifiedSpot.identity_key == identity))
+            if row and (
+                row.user_id != user_id or row.status == "merged" or identity_conflicts(row, proposal)
+            ):
+                return None
+        if row and row.status == "rejected":
             return None
     if row is None:
         ambiguous = [
@@ -485,6 +515,7 @@ class _ReconciliationIndex:
 def reconcile_spots(db, user_id):
     """Reversible cleanup: retain originals and provenance; never publish or erase."""
     from .db import Audit
+    from .duplicate_identity import identity_conflicts
 
     lock_inventory(db)
 
@@ -524,6 +555,7 @@ def reconcile_spots(db, user_id):
             and r.status not in INACTIVE
             and not r.venue_id
             and same_branch(r, row.name, row.area, row.data)
+            and not identity_conflicts(r, row)
         ]
         # One-to-one evidence only; never choose arbitrarily among multiple branches.
         if len(matches) == 1:

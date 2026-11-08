@@ -1,3 +1,51 @@
+# Dedicated duplicate agent — 8 November 2026
+
+Read [DUPLICATE_AGENT.md](DUPLICATE_AGENT.md). Implemented and locally tested:
+durable local duplicate lane, conservative identity evidence, caption/sign
+co-reference, full-clique checks, short locked fresh revalidation, held-source
+manual merges, conflict-safe hash redirects/legacy cleanup, explicit private UI,
+terminal retry/version handling and account export/erasure. No new model trained.
+
+- **345 backend tests passed in 78.94s** after the final branch-conflict guard;
+  new files pass configured Ruff, repository `--select F` checks pass, strict web
+  build passed. A broader optional lint selection found existing style findings
+  in unrelated files (not claimed fixed/clean).
+- **20 isolated desktop/mobile checks passed in 34.9s**. These include eight new
+  duplicate desk checks, pagination, accessibility, unselected branch confirmation,
+  no merge on load, explicit held-source merge, and no automatic mutation replay.
+  An earlier run lost its isolated server during a controlled service stop and
+  had connection-refused failures; restarting that isolated service and rerunning
+  the full selected suite passed. No synthetic venue/approval entered local data.
+- Separate full-size real-data copy: 989 eligible rows / 6,965 pairs; three merges
+  in 20.095s, repeat zero in 20.786s, integrity `ok`. This is a rehearsal of saved
+  evidence, not independently labelled accuracy.
+- Fresh pre-apply backup `data/backups/batore-20261108T142244Z.db`. Actual tracked
+  local pass: 1,007 eligible rows / 7,150 pairs; three merged drafts, **12.961s**
+  execution. Repeat zero. All originals retained; no venue/claim writes.
+- Real API/worker restarted; one interrupted owned analysis job requeued without
+  resetting request/spending counters. The independent lane completed a scan,
+  authenticated status HTTP200, zero model calls. Local initial unlimited mode
+  remains enabled. New worker error log empty at the recorded short check.
+- 14:26 UTC / 19:56 IST: 948 active / 144 held / 16 merged =1,108 originals;
+  372 sources, 41/168 grid combinations scheduled, zero venues/claims. At the stable
+  duplicate scan, 215 possible pairs awaited review. Healthy structural SQL audit:
+  integrity `ok`, no audited orphans/duplicate identity-key groups. This does not
+  imply an absence of physical duplicates or prove fact accuracy.
+- Human exact-branch/duplicate decisions, measured real merge accuracy, sustained
+  growing-inventory reliability, city completeness and customer validation remain
+  open. All locations still need explicit approval before recommendations.
+
+Ignored receipts: `data/duplicate-agent/` (separate rehearsal, live jobs, API/lane
+checks, controlled recovery); progress/CSV snapshot: `data/city-collection/`.
+
+14:29 UTC / 19:59 IST follow-up: API health and authenticated duplicate status
+HTTP200, latest independently completed duplicate job `done`; **218 possible
+pairs** as collection added evidence. Structural audit still healthy. Consistent
+post-change backup: `data/backups/batore-20261108T142926Z.db`. The earlier 215-pair
+count is a historical scan, not a fixed total or confirmed-duplicate count.
+
+---
+
 # Instagram workflow documentation — 8 November 2026
 
 Current code and non-secret settings traced into

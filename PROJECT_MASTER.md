@@ -2,6 +2,48 @@
 
 Last consolidated: **8 November 2026 (Asia/Calcutta)**.
 
+## Dedicated duplicate agent — 8 November 2026, 19:56 IST
+
+Read [DUPLICATE_AGENT.md](docs/DUPLICATE_AGENT.md) for rules, operator controls,
+real receipts and remaining validation. This follows the user's instruction to
+choose the best duplicate-merging approach while continuing local collection.
+
+- [x] Independent local duplicate worker lane/durable jobs, conservative candidate
+  policy, complete-group validation, fresh serialized rechecks and retry/version
+  handling. No additional model/provider/GPU inference or paid activation.
+- [x] Fix caption/sign extraction variants, groups of three, held-source manual
+  merges, legacy hash/redirect and cleanup conflict bypasses, shared-search-URL
+  identity contamination and reciprocal manual-merge races. Originals/evidence
+  and prior statuses retained; no publication/fact/Maps approval introduced.
+- [x] Private duplicate review desk with explicit survivor, branch checkbox and
+  reason; reports included in owner export/erasure. Clarify ambience evidence and
+  area/topic search counters in the UI; 41/168 is scheduled combinations, not
+  completed searches, verified places or city completeness.
+- [x] **345 backend tests**, new-module Ruff/repository unused-name checks and
+  strict web build passed. **20 isolated desktop/mobile checks** passed. Broader
+  optional style lint still flags unrelated existing code; not claimed clean.
+- [x] Separate-copy rehearsal merged three drafts; repeat zero. Fresh consistent
+  backup `data/backups/batore-20261108T142244Z.db`; real tracked pass merged three
+  drafts in 12.961s, repeat zero. Worker-run independent scan completed, status
+  HTTP200, zero model calls. Real source/fact accuracy is not proven by these tests.
+- [x] Local collection/API/worker restored, one interrupted owned analysis job
+  safely requeued; counters/checkpoints retained. Unlimited initial counts and
+  existing source pacing/monetary guards remain. Structural SQL audit healthy.
+- [x] 14:26 UTC / 19:56 IST snapshot: **948 active unapproved drafts, 144 held,
+  16 merged originals; 1,108 total**, 372 research sources, 41/168 search-grid
+  combinations scheduled. **215 possible pairs** at the stable scan need review;
+  zero real venues/claims/approvals. Collection continues, so counts change.
+- [ ] Human duplicate/branch validation, measured multilingual extraction and
+  merge accuracy, sustained growth/concurrency checks, complete current city
+  inventory, explicit approvals and customer validation remain unfinished.
+
+19:59 IST follow-up: latest autonomous scan completed; 218 possible review pairs
+as collection continued. API/duplicate status HTTP200, structural audit healthy;
+post-change backup `data/backups/batore-20261108T142926Z.db`. Earlier counts above
+remain timestamped snapshots, not live totals.
+
+---
+
 ## Instagram workflow walkthrough — 8 November 2026
 
 - [x] Trace current source code and non-secret local model/provider settings;

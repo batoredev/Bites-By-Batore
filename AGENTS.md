@@ -1,5 +1,16 @@
 # Project continuity
 
+Latest continuation (8 November, 19:56 IST): read docs/DUPLICATE_AGENT.md. Dedicated
+local duplicate lane, conservative group/branch guards, scoped caption/sign aliases,
+held-source review UI and private job export/erasure are implemented. 345 backend
+tests and 20 isolated browser checks passed. Real tracked pass merged three drafts;
+repeat zero, independent worker scan completed. Originals/evidence retained; zero
+venue/claim/approval writes. Snapshot: 948 active/144 held/16 merged, 372 sources;
+215 possible pairs need review, not confirmed duplicates. Local unlimited-count
+collection restored. Real merge/branch accuracy, sustained growth and city/customer
+validation remain unfinished. 41/168 means scheduled search combinations, not
+completed searches or verified spots; ambience evidence also remains unverified.
+
 Latest continuation: read docs/SQLITE_RELIABILITY.md. Duplicate-cleanup indexing/
 cache repair, transient SQLite busy handling, API read-only retries and safer
 Windows launcher are implemented. 292 backend tests/12 browser checks passed;

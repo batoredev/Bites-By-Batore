@@ -125,6 +125,10 @@ def analyze_submission(db, submission):
 
 
 def execute_job(db, job):
+    if job.kind == "spot_deduplicate":
+        from .duplicate_agent import run_scan
+
+        return run_scan(db, job.payload["user_id"])
     if job.kind == "city_directory":
         from .city_collection import collect_directory
         from .providers import DeferredCollection
@@ -512,6 +516,9 @@ def schedule():
                     from .maintenance import schedule_maintenance
 
                     schedule_maintenance(db, "local-operator")
+                    from .duplicate_agent import request_scan
+
+                    request_scan(db, "local-operator")
                     if cfg.city_directory_enabled:
                         week = datetime.now(timezone.utc).strftime("%G-%V")
                         enqueue(
@@ -593,6 +600,19 @@ def main():
     stop = threading.Event()
     model_kinds = ["source_analysis", "source_quality_upgrade", "evaluation_compare", "analysis"]
     pipeline = settings().app_mode == "local" and settings().research_pipeline_enabled
+    duplicate_lane = settings().app_mode == "local" and settings().inventory_collection_enabled
+
+    def duplicate_loop():
+        import logging
+
+        while not stop.is_set():
+            try:
+                worked = run_once(include_kinds=["spot_deduplicate"])
+            except Exception:
+                logging.getLogger(__name__).exception("Duplicate lane failed; retrying")
+                worked = False
+            if not worked:
+                stop.wait(max(1, settings().worker_poll_seconds))
 
     def model_loop():
         import logging
@@ -608,6 +628,8 @@ def main():
 
     if pipeline and not args.once:
         threading.Thread(target=model_loop, name="batore-analysis", daemon=True).start()
+    if duplicate_lane and not args.once:
+        threading.Thread(target=duplicate_loop, name="batore-duplicates", daemon=True).start()
     while not stop.is_set():
         try:
             with Session() as db:
@@ -620,7 +642,8 @@ def main():
             if time.monotonic() - scheduled > 60:
                 schedule()
                 scheduled = time.monotonic()
-            worked = run_once(exclude_kinds=model_kinds if pipeline and not args.once else None)
+            excluded = (model_kinds if pipeline else []) + (["spot_deduplicate"] if duplicate_lane else [])
+            worked = run_once(exclude_kinds=excluded if not args.once else None)
         except KeyboardInterrupt:
             stop.set()
             break

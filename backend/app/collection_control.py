@@ -123,6 +123,7 @@ def fair_kind(db, eligible):
         "spot_inventory",
         "source_watch",
         "city_directory",
+        "spot_deduplicate",
     ]
     eligible = set(eligible)
     if not eligible.intersection(cycle):

@@ -114,6 +114,15 @@ def source_urls(data):
     return {x.get("url") for x in data.get("sources", []) if x.get("url")}
 
 
+def identity_source_urls(data):
+    # Search results and monitored copies can be shared across distant branches.
+    return {
+        s.get("url")
+        for s in data.get("sources", [])
+        if s.get("url") and s.get("type") not in {"web_candidate", "monitored_page", "official_lead"}
+    }
+
+
 def branch_clues(data):
     """Strong conflicting address tokens block a merge, even within one neighbourhood."""
     clues = " ".join([data.get("address", ""), *data.get("address_clues", [])])
@@ -149,7 +158,7 @@ def same_branch(row, name, area, data):
     left_clues, right_clues = branch_clues(row.data), branch_clues(data)
     if any(left_clues[k] and right_clues[k] and left_clues[k] != right_clues[k] for k in left_clues):
         return False
-    shared_source = bool(source_urls(row.data) & source_urls(data))
+    shared_source = bool(identity_source_urls(row.data) & identity_source_urls(data))
     close_coordinates = False
     a, b = row.data.get("coordinates", {}), data.get("coordinates", {})
     if all(k in a and k in b for k in ("lat", "lng")):

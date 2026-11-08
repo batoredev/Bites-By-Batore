@@ -28,12 +28,21 @@ def main():
             "city-collection-start",
             "city-collection-report",
             "bulk-collection-resume",
+            "duplicates-run",
         ],
     )
     parser.add_argument("--user-id", default="local-operator")
     parser.add_argument("--dialect", choices=["sqlite", "postgresql"], default="sqlite")
     args = parser.parse_args()
-    if args.command == "bulk-collection-resume":
+    if args.command == "duplicates-run":
+        from .duplicate_agent import request_scan
+
+        if settings().app_mode not in {"local", "demo"}:
+            raise SystemExit("Use the authenticated operator interface for hosted data")
+        with Session() as db:
+            job = request_scan(db, args.user_id, force=True)
+            print(json.dumps({"job_id": job.id, "state": job.state}, indent=2))
+    elif args.command == "bulk-collection-resume":
         from .collection_control import resume_bulk
 
         with Session() as db:

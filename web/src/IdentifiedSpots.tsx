@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, post, dateText, money } from "./api";
 import { ErrorBox, Loading, Modal, categories } from "./components";
+import DuplicateDesk from "./DuplicateDesk";
 
 interface Spot {
   id: string;
@@ -352,6 +353,12 @@ export default function IdentifiedSpots({
         planner. Every location needs your approval before it can appear in
         suggestions.
       </p>
+      <DuplicateDesk
+        onChanged={() => {
+          void refresh();
+          onChanged();
+        }}
+      />
       <div className="inline-actions">
         <button
           className="secondary"
@@ -393,9 +400,14 @@ export default function IdentifiedSpots({
             {coverage.maps_unreviewed}.
           </p>
           <p>
-            {coverage.queries_scheduled} of {coverage.discovery_queries}{" "}
-            area/topic searches scheduled. Scheduled searches do not mean
-            completed coverage. Refresh to see the latest saved progress.
+            Vibe evidence describes the atmosphere, such as seating, music or
+            crowd levels. These source observations still need review.
+          </p>
+          <p>
+            Search topics queued or started: {coverage.queries_scheduled} /{" "}
+            {coverage.discovery_queries}. This includes waiting, running and
+            review tasks, not verified places or completed searches. Refresh to
+            see the latest saved progress.
           </p>
         </div>
       )}
@@ -626,9 +638,7 @@ export default function IdentifiedSpots({
                   </button>
                 )}
                 {!spot.venue_id &&
-                  !["merged", "quarantined", "rejected"].includes(
-                    spot.status,
-                  ) && (
+                  !["merged", "rejected", "prepared"].includes(spot.status) && (
                     <button
                       className="secondary"
                       onClick={() => {
@@ -665,16 +675,19 @@ export default function IdentifiedSpots({
             className="stack-form"
             onSubmit={async (e) => {
               e.preventDefault();
+              if (!targetId || !mergeChecked || mergeReason.trim().length < 10)
+                return;
               setBusy(true);
               setError("");
               try {
                 await post(`/admin/spots/${mergeSpot.id}/merge`, {
                   target_id: targetId,
-                  reason: mergeReason,
+                  reason: mergeReason.trim(),
                   same_branch_checked: mergeChecked,
                 });
                 setMergeSpot(null);
                 await refresh();
+                onChanged();
               } catch (e) {
                 setError((e as Error).message);
               } finally {
@@ -700,7 +713,12 @@ export default function IdentifiedSpots({
                     (s) =>
                       s.id !== mergeSpot.id &&
                       !s.venue_id &&
-                      !["merged", "quarantined", "rejected"].includes(s.status),
+                      ![
+                        "merged",
+                        "quarantined",
+                        "rejected",
+                        "prepared",
+                      ].includes(s.status),
                   )
                   .map((s) => (
                     <option key={s.id} value={s.id}>
@@ -727,7 +745,15 @@ export default function IdentifiedSpots({
               />
               I checked that both records refer to the same branch.
             </label>
-            <button className="primary" disabled={busy}>
+            <button
+              className="primary"
+              disabled={
+                busy ||
+                !targetId ||
+                !mergeChecked ||
+                mergeReason.trim().length < 10
+              }
+            >
               Merge and retain original evidence
             </button>
           </form>

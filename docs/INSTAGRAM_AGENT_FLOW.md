@@ -10,6 +10,11 @@ Current local models: Qwen3-VL 2B Instruct through Ollama for text/vision, and
 faster-whisper base on CPU/int8 for speech transcription. The UI and interpreted
 results are English; source content can be multilingual and needs accuracy review.
 
+8 November continuation: a [dedicated duplicate worker lane](DUPLICATE_AGENT.md)
+now reconciles saved drafts independently of reel analysis. It retains originals,
+blocks conflicting branches, and sends uncertain pairs to explicit operator review;
+merging never approves a venue or its facts.
+
 ```mermaid
 flowchart TD
     A["Topic or automatic Coimbatore area/topic queue"] --> B["Public web search finds Instagram reel links"]
