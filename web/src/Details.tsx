@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import {
   ArrowUpRight,
   BookmarkSimple,
@@ -10,6 +10,7 @@ import {
 import { post, money, time, dateText, safeLink } from "./api";
 import { Art, ErrorBox, Modal } from "./components";
 import type { Venue, Plan, PlanResponse } from "./types";
+import { MenuPanel } from "./DishDiary";
 
 export function PlanDetail({
   plan,
@@ -232,8 +233,9 @@ export function VenueDetail({
   onSave: () => void;
   onFeedback: () => void;
 }) {
+  const panelId = useId();
   const [tab, setTab] = useState<
-      "about" | "evidence" | "feedback" | "correction"
+      "about" | "menu" | "evidence" | "feedback" | "correction"
     >("about"),
     [error, setError] = useState(""),
     [message, setMessage] = useState(""),
@@ -250,6 +252,18 @@ export function VenueDetail({
     [correction, setCorrection] = useState(""),
     [source, setSource] = useState("");
   const v = venue;
+  const venueTabs = [
+    "about",
+    ...(v.category === "food" || v.category === "cafe" ? ["menu"] : []),
+    "evidence",
+    "feedback",
+    "correction",
+  ] as (typeof tab)[];
+  function selectTab(next: typeof tab) {
+    setTab(next);
+    setError("");
+    setMessage("");
+  }
   async function feedback(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -306,13 +320,15 @@ export function VenueDetail({
   }
   return (
     <Modal title={v.name} onClose={onClose}>
-      <Art category={v.category} />
-      <div className="venue-detail-heading">
+      {tab === "about" && <Art category={v.category} />}
+      <div
+        className={`venue-detail-heading ${tab !== "about" ? "compact" : ""}`}
+      >
         <div>
           <span className="eyebrow">
             {v.category} · {v.area}
           </span>
-          <h2>{v.details.speciality || v.name}</h2>
+          {tab === "about" && <h2>{v.details.speciality || v.name}</h2>}
         </div>
         <button
           className="icon-button"
@@ -327,277 +343,317 @@ export function VenueDetail({
           Fictional demo venue. These details are for testing the app.
         </div>
       )}
-      <div className="tabs" role="tablist">
-        {(["about", "evidence", "feedback", "correction"] as const).map((t) => (
+      <div
+        className="tabs venue-tabs"
+        role="tablist"
+        aria-label="Place details"
+      >
+        {venueTabs.map((t, index) => (
           <button
             role="tab"
+            id={`${panelId}-${t}`}
+            aria-controls={`${panelId}-panel`}
+            tabIndex={tab === t ? 0 : -1}
             aria-selected={tab === t}
             className={tab === t ? "active" : ""}
             key={t}
-            onClick={() => {
-              setTab(t);
-              setError("");
-              setMessage("");
+            onClick={() => selectTab(t)}
+            onKeyDown={(e) => {
+              const next =
+                e.key === "ArrowRight"
+                  ? (index + 1) % venueTabs.length
+                  : e.key === "ArrowLeft"
+                    ? (index + venueTabs.length - 1) % venueTabs.length
+                    : e.key === "Home"
+                      ? 0
+                      : e.key === "End"
+                        ? venueTabs.length - 1
+                        : -1;
+              if (next < 0) return;
+              e.preventDefault();
+              selectTab(venueTabs[next]);
+              document.getElementById(`${panelId}-${venueTabs[next]}`)?.focus();
             }}
           >
             {t === "about"
               ? "The place"
-              : t === "evidence"
-                ? "Sources"
-                : t === "feedback"
-                  ? "I visited"
-                  : "Report a change"}
+              : t === "menu"
+                ? "Menu & dishes"
+                : t === "evidence"
+                  ? "Sources"
+                  : t === "feedback"
+                    ? "I visited"
+                    : "Report a change"}
           </button>
         ))}
       </div>
-      {tab === "about" && (
-        <div className="detail-about">
-          <p>{v.details.description || "A place under review."}</p>
-          <div className="tag-row">
-            {v.tags.map((t) => (
-              <span className="tag" key={t}>
-                {t}
-              </span>
+      <div
+        id={`${panelId}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${panelId}-${tab}`}
+        tabIndex={0}
+      >
+        {tab === "about" && (
+          <div className="detail-about">
+            <p>{v.details.description || "A place under review."}</p>
+            <div className="tag-row">
+              {v.tags.map((t) => (
+                <span className="tag" key={t}>
+                  {t}
+                </span>
+              ))}
+            </div>
+            <dl>
+              <div>
+                <dt>Typical spend</dt>
+                <dd>
+                  {typeof v.details.price_per_person === "number"
+                    ? money(v.details.price_per_person) + " per person"
+                    : "Unconfirmed"}
+                </dd>
+              </div>
+              <div>
+                <dt>Time here</dt>
+                <dd>
+                  {v.details.visit_minutes || "Unconfirmed"} minutes + estimated
+                  waiting
+                </dd>
+              </div>
+              <div>
+                <dt>Location</dt>
+                <dd>{v.address}</dd>
+              </div>
+              <div>
+                <dt>Vegetarian options</dt>
+                <dd>
+                  {v.details.vegetarian === true
+                    ? "Recorded as available"
+                    : v.details.vegetarian === false
+                      ? "Not recorded as available"
+                      : "Unknown"}
+                </dd>
+              </div>
+              <div>
+                <dt>Step-free access</dt>
+                <dd>
+                  {v.details.wheelchair === true
+                    ? "Recorded as available"
+                    : "Unconfirmed / unavailable"}
+                </dd>
+              </div>
+            </dl>
+            {!v.is_demo && (
+              <div className="inline-actions">
+                <a
+                  className="secondary"
+                  target="_blank"
+                  rel="noreferrer"
+                  href={
+                    safeLink(v.details.maps_identity?.maps_url || "") ||
+                    `https://www.google.com/maps/search/?api=1&query=${v.lat},${v.lng}`
+                  }
+                >
+                  <NavigationArrow />
+                  Open in Maps
+                </a>
+                {safeLink(v.details.booking_url) && (
+                  <a
+                    className="primary"
+                    href={safeLink(v.details.booking_url)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Check booking options
+                    <ArrowUpRight />
+                  </a>
+                )}
+              </div>
+            )}
+            <p className="small-text muted">
+              A recorded option is not a guarantee of availability. Check
+              allergies, access needs and current booking conditions directly
+              with the venue.
+            </p>
+            {(v.category === "food" || v.category === "cafe") && (
+              <button className="secondary" onClick={() => selectTab("menu")}>
+                See menu & dish suggestions
+                <ArrowUpRight size={18} />
+              </button>
+            )}
+          </div>
+        )}
+        {tab === "evidence" && (
+          <div>
+            <p className="muted">
+              Each fact keeps its own source and expiry. A fetch attempt does
+              not count as successful verification.
+            </p>
+            {v.evidence.map((c) => (
+              <article className="evidence-row" key={c.id}>
+                <div>
+                  <strong>{c.field.replaceAll("_", " ")}</strong>
+                  <span className={`status ${c.status}`}>{c.status}</span>
+                </div>
+                <p className="evidence-value">
+                  {JSON.stringify(c.value.value)}
+                </p>
+                <p>{c.reason}</p>
+                <small>
+                  Observed {dateText(c.observed_at)} · expires{" "}
+                  {dateText(c.expires_at)}
+                </small>
+                {safeLink(c.source_url) ? (
+                  <a
+                    href={safeLink(c.source_url)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View source
+                    <ArrowUpRight />
+                  </a>
+                ) : (
+                  <small className="muted">Demonstration source</small>
+                )}
+              </article>
             ))}
           </div>
-          <dl>
-            <div>
-              <dt>Typical spend</dt>
-              <dd>
-                {typeof v.details.price_per_person === "number"
-                  ? money(v.details.price_per_person) + " per person"
-                  : "Unconfirmed"}
-              </dd>
+        )}
+        {tab === "feedback" && (
+          <form onSubmit={feedback} className="stack-form">
+            <p>
+              Record a visit you actually made. Saving a place never counts as a
+              visit.
+            </p>
+            <div className="two-col">
+              <label>
+                Visit date
+                <input
+                  type="date"
+                  required
+                  max={new Date().toLocaleDateString("en-CA", {
+                    timeZone: "Asia/Kolkata",
+                  })}
+                  value={visitDate}
+                  onChange={(e) => setVisitDate(e.target.value)}
+                />
+              </label>
+              <label>
+                Occasion
+                <select
+                  value={occasion}
+                  onChange={(e) => setOccasion(e.target.value)}
+                >
+                  <option value="casual">Casual outing</option>
+                  <option value="friends">With friends</option>
+                  <option value="family">Family time</option>
+                  <option value="date">A date</option>
+                  <option value="solo">Solo</option>
+                </select>
+              </label>
             </div>
-            <div>
-              <dt>Time here</dt>
-              <dd>
-                {v.details.visit_minutes || "Unconfirmed"} minutes + estimated
-                waiting
-              </dd>
-            </div>
-            <div>
-              <dt>Location</dt>
-              <dd>{v.address}</dd>
-            </div>
-            <div>
-              <dt>Vegetarian options</dt>
-              <dd>
-                {v.details.vegetarian === true
-                  ? "Recorded as available"
-                  : v.details.vegetarian === false
-                    ? "Not recorded as available"
-                    : "Unknown"}
-              </dd>
-            </div>
-            <div>
-              <dt>Step-free access</dt>
-              <dd>
-                {v.details.wheelchair === true
-                  ? "Recorded as available"
-                  : "Unconfirmed / unavailable"}
-              </dd>
-            </div>
-          </dl>
-          {!v.is_demo && (
-            <div className="inline-actions">
-              <a
-                className="secondary"
-                target="_blank"
-                rel="noreferrer"
-                href={`https://www.google.com/maps/search/?api=1&query=${v.lat},${v.lng}`}
+            {[
+              { label: "Overall experience", v: rating, set: setRating },
+              {
+                label:
+                  v.category === "food" || v.category === "cafe"
+                    ? "Food / drink"
+                    : "Activity",
+                v: dimension,
+                set: setDimension,
+              },
+              { label: "Value for money", v: value, set: setValue },
+            ].map((s) => (
+              <label key={s.label}>
+                {s.label}
+                <select value={s.v} onChange={(e) => s.set(+e.target.value)}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>
+                      {n} / 5 {n === 1 ? "· Poor" : n === 5 ? "· Loved it" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+            <label>
+              What made it work, or not?
+              <textarea
+                value={note}
+                maxLength={1000}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Loved the food; a little noisy for a quiet evening."
+              />
+            </label>
+            <button className="primary" disabled={busy || !!message}>
+              {busy ? "Saving…" : "Record my visit"}
+            </button>
+          </form>
+        )}
+        {tab === "correction" && (
+          <form className="stack-form" onSubmit={report}>
+            <p>Spotted a change? Share a specific fact and where you saw it.</p>
+            <label>
+              What changed?
+              <select
+                value={field}
+                onChange={(e) => {
+                  setField(e.target.value);
+                  setCorrection("");
+                }}
               >
-                <NavigationArrow />
-                Open in Maps
-              </a>
-              {safeLink(v.details.booking_url) && (
-                <a
-                  className="primary"
-                  href={safeLink(v.details.booking_url)}
-                  target="_blank"
-                  rel="noreferrer"
+                <option value="price_per_person">Price per person</option>
+                <option value="closed">Closed status</option>
+                <option value="address">Address</option>
+                <option value="speciality">Speciality</option>
+                <option value="wheelchair">Step-free access</option>
+                <option value="vegetarian">Vegetarian options</option>
+              </select>
+            </label>
+            <label>
+              New information
+              {["closed", "wheelchair", "vegetarian"].includes(field) ? (
+                <select
+                  required
+                  value={correction}
+                  onChange={(e) => setCorrection(e.target.value)}
                 >
-                  Check booking options
-                  <ArrowUpRight />
-                </a>
-              )}
-            </div>
-          )}
-          <p className="small-text muted">
-            A recorded option is not a guarantee of availability. Check
-            allergies, access needs and current booking conditions directly with
-            the venue.
-          </p>
-        </div>
-      )}
-      {tab === "evidence" && (
-        <div>
-          <p className="muted">
-            Each fact keeps its own source and expiry. A fetch attempt does not
-            count as successful verification.
-          </p>
-          {v.evidence.map((c) => (
-            <article className="evidence-row" key={c.id}>
-              <div>
-                <strong>{c.field.replaceAll("_", " ")}</strong>
-                <span className={`status ${c.status}`}>{c.status}</span>
-              </div>
-              <p className="evidence-value">{JSON.stringify(c.value.value)}</p>
-              <p>{c.reason}</p>
-              <small>
-                Observed {dateText(c.observed_at)} · expires{" "}
-                {dateText(c.expires_at)}
-              </small>
-              {safeLink(c.source_url) ? (
-                <a
-                  href={safeLink(c.source_url)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  View source
-                  <ArrowUpRight />
-                </a>
+                  <option value="">Choose</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
               ) : (
-                <small className="muted">Demonstration source</small>
+                <input
+                  required
+                  type={field === "price_per_person" ? "number" : "text"}
+                  min="0"
+                  maxLength={500}
+                  value={correction}
+                  onChange={(e) => setCorrection(e.target.value)}
+                />
               )}
-            </article>
-          ))}
-        </div>
-      )}
-      {tab === "feedback" && (
-        <form onSubmit={feedback} className="stack-form">
-          <p>
-            Record a visit you actually made. Saving a place never counts as a
-            visit.
-          </p>
-          <div className="two-col">
+            </label>
             <label>
-              Visit date
+              Source link
               <input
-                type="date"
+                type="url"
                 required
-                max={new Date().toLocaleDateString("en-CA", {
-                  timeZone: "Asia/Kolkata",
-                })}
-                value={visitDate}
-                onChange={(e) => setVisitDate(e.target.value)}
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="https://…"
               />
             </label>
-            <label>
-              Occasion
-              <select
-                value={occasion}
-                onChange={(e) => setOccasion(e.target.value)}
-              >
-                <option value="casual">Casual outing</option>
-                <option value="friends">With friends</option>
-                <option value="family">Family time</option>
-                <option value="date">A date</option>
-                <option value="solo">Solo</option>
-              </select>
-            </label>
+            <button className="primary" disabled={busy || !!message}>
+              Submit for checking
+            </button>
+          </form>
+        )}
+        {tab === "menu" && <MenuPanel venue={v} changed={onFeedback} />}
+        <ErrorBox message={error} />
+        {message && (
+          <div className="success" role="status">
+            {message}
           </div>
-          {[
-            { label: "Overall experience", v: rating, set: setRating },
-            {
-              label:
-                v.category === "food" || v.category === "cafe"
-                  ? "Food / drink"
-                  : "Activity",
-              v: dimension,
-              set: setDimension,
-            },
-            { label: "Value for money", v: value, set: setValue },
-          ].map((s) => (
-            <label key={s.label}>
-              {s.label}
-              <select value={s.v} onChange={(e) => s.set(+e.target.value)}>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n} value={n}>
-                    {n} / 5 {n === 1 ? "· Poor" : n === 5 ? "· Loved it" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-          <label>
-            What made it work, or not?
-            <textarea
-              value={note}
-              maxLength={1000}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Loved the food; a little noisy for a quiet evening."
-            />
-          </label>
-          <button className="primary" disabled={busy || !!message}>
-            {busy ? "Saving…" : "Record my visit"}
-          </button>
-        </form>
-      )}
-      {tab === "correction" && (
-        <form className="stack-form" onSubmit={report}>
-          <p>Spotted a change? Share a specific fact and where you saw it.</p>
-          <label>
-            What changed?
-            <select
-              value={field}
-              onChange={(e) => {
-                setField(e.target.value);
-                setCorrection("");
-              }}
-            >
-              <option value="price_per_person">Price per person</option>
-              <option value="closed">Closed status</option>
-              <option value="address">Address</option>
-              <option value="speciality">Speciality</option>
-              <option value="wheelchair">Step-free access</option>
-              <option value="vegetarian">Vegetarian options</option>
-            </select>
-          </label>
-          <label>
-            New information
-            {["closed", "wheelchair", "vegetarian"].includes(field) ? (
-              <select
-                required
-                value={correction}
-                onChange={(e) => setCorrection(e.target.value)}
-              >
-                <option value="">Choose</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            ) : (
-              <input
-                required
-                type={field === "price_per_person" ? "number" : "text"}
-                min="0"
-                maxLength={500}
-                value={correction}
-                onChange={(e) => setCorrection(e.target.value)}
-              />
-            )}
-          </label>
-          <label>
-            Source link
-            <input
-              type="url"
-              required
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="https://…"
-            />
-          </label>
-          <button className="primary" disabled={busy || !!message}>
-            Submit for checking
-          </button>
-        </form>
-      )}
-      <ErrorBox message={error} />
-      {message && (
-        <div className="success" role="status">
-          {message}
-        </div>
-      )}
+        )}
+      </div>
     </Modal>
   );
 }

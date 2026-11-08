@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+import re
 from .auth import current_user
 from .db import get_db, Visit
 
@@ -45,15 +46,29 @@ QUESTIONS = [
 def converse(data: DiscoveryInput, user=Depends(current_user), db=Depends(get_db)):
     answers = {k: v for k, v in data.answers.items() if k in {q[0] for q in QUESTIONS}}
     text = data.message.casefold()
+
+    def mentions(words):
+        return any(
+            re.search(r"(?<!\w)" + re.escape(word) + r"(?!\w)", text)
+            and not re.search(
+                r"(?:no|not|without|avoid|don't want|do not want)\s+(?:\w+\s+){0,2}" + re.escape(word), text
+            )
+            for word in words
+        )
+
     if "purpose" not in answers:
-        if any(x in text for x in ["eat", "food", "sushi", "coffee", "hungry"]):
+        food_intent = mentions(["eat", "food", "sushi", "coffee", "hungry"])
+        fun_intent = mentions(["bowling", "gaming", "play", "movie", "adventure"])
+        if food_intent and fun_intent:
+            answers["purpose"] = "combined"
+        elif food_intent:
             answers["purpose"] = "food"
-        elif any(x in text for x in ["bowling", "gaming", "play", "movie", "adventure"]):
+        elif fun_intent:
             answers["purpose"] = "entertainment"
     if "energy" not in answers:
-        if any(x in text for x in ["tired", "relax", "quiet", "peaceful"]):
+        if mentions(["tired", "relax", "quiet", "peaceful"]):
             answers["energy"] = "quiet"
-        elif any(x in text for x in ["active", "exercise", "adventure"]):
+        elif mentions(["active", "exercise", "adventure"]):
             answers["energy"] = "active"
     for key, question, choices in QUESTIONS:
         if answers.get(key) not in {c[0] for c in choices}:
@@ -67,7 +82,7 @@ def converse(data: DiscoveryInput, user=Depends(current_user), db=Depends(get_db
             }
     visited = len(list(db.scalars(select(Visit.id).where(Visit.user_id == user.id))))
     profile = user.profile
-    likes = list(profile.get("liked_tags", []))
+    likes = list(profile.get("liked_tags", [])) + list(profile.get("preferred_cuisines", []))
     if profile.get("learn_from_visits", True):
         likes += [
             k
@@ -93,6 +108,7 @@ def converse(data: DiscoveryInput, user=Depends(current_user), db=Depends(get_db
             "categories": categories,
             "outing_type": purpose,
             "mood": "comfort" if novelty == "comfort" else energy if energy != "social" else "different",
+            "novelty": {"nearby": "new_place", "different": "new_taste", "comfort": "familiar"}[novelty],
         },
         "message": (
             "We'll look for familiar tastes in a new setting."

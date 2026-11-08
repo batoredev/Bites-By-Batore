@@ -33,6 +33,10 @@ type Report = {
       { baseline: unknown; with_corrections: unknown; scope: string }
     >;
   }[];
+  performance_comparisons?: {
+    source_id: string;
+    results: Record<string, unknown>;
+  }[];
 };
 type Source = {
   id: string;
@@ -394,6 +398,32 @@ export default function Evaluation() {
                     Compare with independent corrections
                   </button>
                 )}
+                {role !== "video" && (
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      setError("");
+                      try {
+                        await post(
+                          `/admin/evaluation/sources/${sourceId}/benchmark`,
+                          { role },
+                        );
+                        setMessage(
+                          "Uncached local benchmark queued against your saved labels. Historical baseline timing may be unavailable. Refresh after processing.",
+                        );
+                      } catch (e) {
+                        setError((e as Error).message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Measure extraction against saved labels
+                  </button>
+                )}
                 <button
                   type="button"
                   className="secondary"
@@ -427,6 +457,14 @@ export default function Evaluation() {
             <details>
               <summary>Correction comparison results</summary>
               <pre>{JSON.stringify(report.comparisons, null, 2)}</pre>
+            </details>
+          )}
+          {!!report.performance_comparisons?.length && (
+            <details>
+              <summary>Extraction benchmark results</summary>
+              <pre>
+                {JSON.stringify(report.performance_comparisons, null, 2)}
+              </pre>
             </details>
           )}
         </>

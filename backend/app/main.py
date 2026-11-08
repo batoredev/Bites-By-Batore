@@ -5,11 +5,12 @@ import time
 from types import SimpleNamespace
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
-from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, Request, UploadFile, File, Query
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select, delete, text
+from sqlalchemy.exc import IntegrityError, OperationalError
 from .config import settings, ROOT
 from .db import (
     Session,
@@ -25,6 +26,9 @@ from .db import (
     Audit,
     Counter,
     now,
+    SCHEMA_VERSION,
+    DishEntry,
+    is_database_busy,
 )
 from .auth import current_user, admin_user, is_admin, create_demo_session
 from .schemas import (
@@ -37,9 +41,10 @@ from .schemas import (
     VenueInput,
     VenueOperations,
     MapsIdentityReview,
+    SavedPlaceInput,
 )
 from .seed import seed_demo
-from .planner import build_plans, demo_leg, km
+from .planner import build_plans, demo_leg, km, live_candidate_order
 from .providers import (
     Unavailable,
     safe_social_url,
@@ -63,6 +68,9 @@ from .spots_api import router as spots_router
 from .evaluation import router as evaluation_router
 from .maintenance_api import router as maintenance_router
 from .spots import spot_dict
+from .experience_api import router as experience_router, published_venue
+from .taste import rebuild_taste
+from .menu import menu_view, text_matches
 
 logging.basicConfig(level=logging.INFO)
 
@@ -90,18 +98,37 @@ async def lifespan(app):
                 "Live mode requires HTTPS Supabase Auth and a PostgreSQL database. See docs/SETUP.md"
             )
         with Session() as db:
-            if not db.get(Counter, "schema_version") or db.get(Counter, "schema_version").value != 4:
+            if (
+                not db.get(Counter, "schema_version")
+                or db.get(Counter, "schema_version").value != SCHEMA_VERSION
+            ):
                 raise RuntimeError("Run the database migration before starting live mode")
     yield
 
 
 app = FastAPI(title="Bites by Batore", version="0.1.0", lifespan=lifespan)
+
+
+@app.exception_handler(OperationalError)
+async def database_operation_error(request: Request, exc: OperationalError):
+    if is_database_busy(exc):
+        return JSONResponse(
+            status_code=503,
+            headers={"Retry-After": "2"},
+            content={"detail": "Local data updates are busy. Please retry shortly."},
+        )
+    logging.getLogger(__name__).error("Database operation failed; inspect database health")
+    return JSONResponse(status_code=500, content={"detail": "Database operation unavailable"})
+
+
 app.include_router(ingest_router)
 app.include_router(research_router)
 app.include_router(learning_router)
 app.include_router(spots_router)
 app.include_router(evaluation_router)
 app.include_router(maintenance_router)
+
+app.include_router(experience_router)
 app.include_router(discovery_router)
 app.include_router(operations_router)
 app.add_middleware(
@@ -114,6 +141,9 @@ app.add_middleware(
 
 @app.middleware("http")
 async def boundaries(request: Request, call_next):
+    import time
+
+    started = time.perf_counter()
     if settings().app_mode == "local" and (
         not request.client
         or request.client.host not in {"127.0.0.1", "::1", "testclient"}
@@ -129,6 +159,8 @@ async def boundaries(request: Request, call_next):
                 return JSONResponse({"detail": "Request exceeds the upload limit"}, status_code=413)
         request._body = bytes(body)
     response = await call_next(request)
+    if request.method == "POST" and request.url.path == "/api/plans":
+        response.headers["Server-Timing"] = f"outing;dur={(time.perf_counter() - started) * 1000:.2f}"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["X-Frame-Options"] = "DENY"
@@ -161,6 +193,7 @@ def venue_dict(db, venue, user=None):
         )
     )
     result["saved"] = bool(user and db.get(SavedVenue, (user.id, venue.id)))
+    result["menu"] = menu_view(db, venue, user, claims)
     return result
 
 
@@ -264,6 +297,7 @@ def update_me(data: ProfileUpdate, user=Depends(current_user), db=Depends(get_db
         **data.model_dump(exclude={"name"}),
         "inferred": user.profile.get("inferred", {}),
     }
+    rebuild_taste(db, user)
     db.commit()
     return {**model_dict(user), "is_admin": is_admin(user)}
 
@@ -272,14 +306,18 @@ def update_me(data: ProfileUpdate, user=Depends(current_user), db=Depends(get_db
 def clear_memory(user=Depends(current_user), db=Depends(get_db)):
     user.profile = {"learn_from_visits": True, "liked_tags": [], "avoided_tags": [], "inferred": {}}
     db.execute(delete(Visit).where(Visit.user_id == user.id))
+    db.execute(delete(DishEntry).where(DishEntry.user_id == user.id))
     db.commit()
     return {"message": "Taste memory and confirmed visit history cleared"}
 
 
 @app.get("/api/me/export")
 def export_data(user=Depends(current_user), db=Depends(get_db)):
+    from .performance import metrics_export
+
     return {
         "account": model_dict(user),
+        "research_job_metrics": metrics_export(db, user.id),
         "identified_spots": [
             spot_dict(r) for r in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user.id))
         ],
@@ -297,11 +335,23 @@ def export_data(user=Depends(current_user), db=Depends(get_db)):
             for x in db.scalars(
                 select(Audit).where(
                     Audit.actor == user.id,
-                    Audit.action.in_(["spot.merged", "spot.prepared", "spots.quality_cleanup"]),
+                    Audit.action.in_(
+                        [
+                            "spot.merged",
+                            "spot.prepared",
+                            "spots.quality_cleanup",
+                            "maintenance.alert_reviewed",
+                            "maintenance.venue_held",
+                            "maintenance.expired",
+                        ]
+                    ),
                 )
             )
         ],
         "visits": [model_dict(x) for x in db.scalars(select(Visit).where(Visit.user_id == user.id))],
+        "dish_diary": [
+            model_dict(x) for x in db.scalars(select(DishEntry).where(DishEntry.user_id == user.id))
+        ],
         "saved_venues": list(db.scalars(select(SavedVenue.venue_id).where(SavedVenue.user_id == user.id))),
         "submissions": [
             {**model_dict(x, ("content",)), "content": {k: v for k, v in x.content.items() if k != "media"}}
@@ -312,6 +362,8 @@ def export_data(user=Depends(current_user), db=Depends(get_db)):
 
 @app.delete("/api/me/data")
 def clear_account_data(user=Depends(current_user), db=Depends(get_db)):
+    submission_ids = list(db.scalars(select(Submission.id).where(Submission.user_id == user.id)))
+    db.execute(delete(Job).where(Job.payload["submission_id"].as_string().in_(submission_ids)))
     erase_cases(db, user.id)
     if settings().app_mode == "local":
         paused = db.get(Counter, "research_paused") or Counter(key="research_paused")
@@ -328,14 +380,17 @@ def clear_account_data(user=Depends(current_user), db=Depends(get_db)):
                     "spots.quality_cleanup",
                     "maintenance.alert_reviewed",
                     "maintenance.venue_held",
+                    "maintenance.expired",
                 ]
             ),
         )
     )
-    for job in db.scalars(select(Job).where(Job.kind.in_(["spot_inventory", "spot_enrich", "spot_refresh"]))):
+    for job in db.scalars(
+        select(Job).where(Job.kind.in_(["spot_inventory", "spot_enrich", "spot_refresh", "city_directory"]))
+    ):
         if job.payload.get("user_id") == user.id or job.payload.get("spot_id") in spot_ids:
             db.delete(job)
-    for table in [Plan, Visit, SavedVenue, Submission, IdentifiedSpot]:
+    for table in [Plan, Visit, DishEntry, SavedVenue, Submission, IdentifiedSpot]:
         db.execute(delete(table).where(table.user_id == user.id))
     user.profile = {}
     db.commit()
@@ -343,16 +398,81 @@ def clear_account_data(user=Depends(current_user), db=Depends(get_db)):
 
 
 @app.get("/api/venues")
-def venues(category: str = "", q: str = "", user=Depends(current_user), db=Depends(get_db)):
+def venues(
+    category: str = "",
+    q: str = Query(default="", max_length=150),
+    area: str = "",
+    cuisine: str = "",
+    dining_format: str = "",
+    vegetarian: bool = False,
+    parking: bool = False,
+    washroom: bool = False,
+    max_price: float | None = Query(default=None, ge=0, le=100000, allow_inf_nan=False),
+    limit: int = Query(default=300, ge=1, le=300),
+    offset: int = Query(default=0, ge=0),
+    user=Depends(current_user),
+    db=Depends(get_db),
+):
     query = select(Venue).where(Venue.is_demo == (settings().app_mode == "demo"), Venue.status == "published")
     if category:
         query = query.where(Venue.category == category)
-    rows = list(db.scalars(query.order_by(Venue.name).limit(300)))
-    if q:
-        rows = [
-            v for v in rows if q.casefold() in (v.name + " " + " ".join(v.tags) + " " + v.area).casefold()
+    rows = list(db.scalars(query.order_by(Venue.name, Venue.id)))
+    output = []
+    for v in rows:
+        if not v.is_demo and not (
+            v.details.get("location_approval") and v.details.get("maps_identity", {}).get("confirmed_by")
+        ):
+            continue
+        item = venue_dict(db, v, user)
+        menu = item["menu"]
+        place_matches = not q or any(text_matches(q, word) for word in [v.name, v.area, *v.tags])
+        dishes = [
+            d
+            for d in menu["items"]
+            if d["available"] is not False
+            and (place_matches or text_matches(q, d["name"]) or text_matches(q, d["cuisine"]))
         ]
-    return [venue_dict(db, v, user) for v in rows]
+        if not place_matches and not dishes:
+            continue
+        if area and not text_matches(area, v.area):
+            continue
+        dishes = [
+            d
+            for d in dishes
+            if (not cuisine or text_matches(cuisine, d["cuisine"]))
+            and (not vegetarian or d["vegetarian"] is True)
+            and (max_price is None or (d["price_inr"] is not None and d["price_inr"] <= max_price))
+        ]
+        if (cuisine or vegetarian or max_price is not None) and not dishes:
+            continue
+        if dining_format and menu["dining_format"] != dining_format:
+            continue
+        if (parking and menu["amenities"].get("parking") is not True) or (
+            washroom and menu["amenities"].get("washroom") is not True
+        ):
+            continue
+        output.append(item)
+    return output[offset : offset + limit]
+
+
+@app.get("/api/me/saved-venues")
+def saved_venues(user=Depends(current_user), db=Depends(get_db)):
+    rows = db.scalars(
+        select(Venue)
+        .join(SavedVenue, Venue.id == SavedVenue.venue_id)
+        .where(
+            SavedVenue.user_id == user.id,
+            Venue.is_demo == (settings().app_mode == "demo"),
+            Venue.status == "published",
+        )
+        .order_by(Venue.name, Venue.id)
+    )
+    return [
+        venue_dict(db, v, user)
+        for v in rows
+        if v.is_demo
+        or (v.details.get("location_approval") and v.details.get("maps_identity", {}).get("confirmed_by"))
+    ]
 
 
 @app.get("/api/venues/{venue_id}")
@@ -365,7 +485,9 @@ def venue_detail(venue_id: str, user=Depends(current_user), db=Depends(get_db)):
 
 @app.post("/api/venues/{venue_id}/save")
 def save_venue(venue_id: str, user=Depends(current_user), db=Depends(get_db)):
-    accessible_venue(db, venue_id)
+    from .experience_api import published_venue
+
+    published_venue(db, venue_id)
     row = db.get(SavedVenue, (user.id, venue_id))
     if row:
         db.delete(row)
@@ -375,13 +497,31 @@ def save_venue(venue_id: str, user=Depends(current_user), db=Depends(get_db)):
     return {"saved": not bool(row)}
 
 
+@app.put("/api/venues/{venue_id}/save")
+def set_saved_venue(venue_id: str, data: SavedPlaceInput, user=Depends(current_user), db=Depends(get_db)):
+    published_venue(db, venue_id)
+    if data.saved:
+        from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+        insert = sqlite_insert if db.bind.dialect.name == "sqlite" else pg_insert
+        db.execute(
+            insert(SavedVenue)
+            .values(user_id=user.id, venue_id=venue_id)
+            .on_conflict_do_nothing(index_elements=["user_id", "venue_id"])
+        )
+    else:
+        db.execute(delete(SavedVenue).where(SavedVenue.user_id == user.id, SavedVenue.venue_id == venue_id))
+    db.commit()
+    return {"saved": data.saved}
+
+
 @app.post("/api/plans")
 def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get_db)):
     def investigate_gap():
         if not settings().autonomous_discovery or settings().app_mode == "demo":
             return None
         from .research import start_case
-        from .providers import increment_bounded
 
         query = data.query + " Coimbatore"
         existing = db.scalar(
@@ -394,7 +534,9 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
         if existing:
             return existing.id
         day = datetime.now(timezone.utc).date().isoformat()
-        if not increment_bounded(db, f"research:{user.id}:{day}", settings().research_daily_limit):
+        from .collection_control import count_request, daily_limits
+
+        if not count_request(db, f"research:{user.id}:{day}", daily_limits()["investigations"]):
             return None
         return start_case(db, user.id, query, {"planning_gap": True}).id
 
@@ -425,7 +567,7 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
                 "excluded": {},
                 "candidate_count": 0,
             }
-        candidates = sorted(rows, key=lambda v: km((v.lat, v.lng), (data.lat, data.lng)))[:10]
+        candidates = live_candidate_order(data, rows, claims)[:10]
         checked = []
         for v in candidates:
             try:
@@ -514,7 +656,7 @@ def save_plan(plan_id: str, user=Depends(current_user), db=Depends(get_db)):
 
 @app.post("/api/visits")
 def feedback(data: Feedback, user=Depends(current_user), db=Depends(get_db)):
-    v = accessible_venue(db, data.venue_id)
+    v = published_venue(db, data.venue_id)
     previous = db.scalar(
         select(Visit).where(
             Visit.user_id == user.id, Visit.venue_id == v.id, Visit.visited_on == data.visited_on.isoformat()
@@ -522,31 +664,20 @@ def feedback(data: Feedback, user=Depends(current_user), db=Depends(get_db)):
     )
     if previous:
         raise HTTPException(409, "You already recorded a visit to this venue on that date")
-    visit = Visit(user_id=user.id, **data.model_dump(mode="json"))
+    if v.status != "published":
+        raise HTTPException(404, "Published venue not found")
+    visit = Visit(
+        user_id=user.id,
+        **data.model_dump(mode="json"),
+        experience={"tags": v.tags, "category": v.category, "venue_name": v.name},
+    )
     db.add(visit)
-    # Taste updates are modest and reason-specific, never a budget change.
-    if user.profile.get("learn_from_visits", True):
-        inferred = dict(user.profile.get("inferred", {}))
-        dimension = "food" if v.category in {"food", "cafe"} else "activity"
-        score = data.dimensions.get(dimension)
-        if score is not None:
-            for tag in v.tags:
-                if tag not in {"quiet", "social", "outdoor", "indoor", "active"}:
-                    inferred[tag] = round(max(-3, min(3, inferred.get(tag, 0) + (score - 3) * 0.2)), 2)
-        user.profile = {**user.profile, "inferred": inferred}
-        contexts = dict(user.profile.get("occasion_preferences", {}))
-        occasion = dict(contexts.get(data.occasion, {}))
-        atmosphere = data.dimensions.get("atmosphere")
-        if atmosphere is not None:
-            for tag in set(v.tags) & {"quiet", "social", "outdoor", "indoor", "active"}:
-                occasion[tag] = round(max(-3, min(3, occasion.get(tag, 0) + (atmosphere - 3) * 0.2)), 2)
-        contexts[data.occasion] = occasion
-        user.profile = {
-            **user.profile,
-            "occasion_preferences": contexts,
-            "learning_basis": "Confirmed visit dimension ratings; free-text notes are retained without assuming their meaning",
-        }
-    db.commit()
+    try:
+        rebuild_taste(db, user)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "You already recorded a visit to this venue on that date")
     return model_dict(visit)
 
 
@@ -648,8 +779,13 @@ def delete_submission(submission_id: str, user=Depends(current_user), db=Depends
     ]
     source_ids = list(db.scalars(select(ResearchSource.id).where(ResearchSource.case_id.in_(related))))
     db.execute(delete(SourceAssessment).where(SourceAssessment.source_id.in_(source_ids)))
-    for job in db.scalars(select(Job).where(Job.kind == "investigation")):
-        if job.payload.get("case_id") in related:
+    db.execute(delete(ResearchCorrection).where(ResearchCorrection.source_id.in_(source_ids)))
+    for job in db.scalars(select(Job)):
+        if (
+            job.payload.get("case_id") in related
+            or job.payload.get("source_id") in source_ids
+            or job.payload.get("submission_id") == s.id
+        ):
             db.delete(job)
     db.execute(delete(ResearchSource).where(ResearchSource.case_id.in_(related)))
     db.execute(delete(ResearchTask).where(ResearchTask.case_id.in_(related)))
@@ -673,6 +809,8 @@ def correction(data: ClaimInput, user=Depends(current_user), db=Depends(get_db))
 
 @app.get("/api/admin/overview")
 def admin_overview(user=Depends(admin_user), db=Depends(get_db)):
+    from .collection_control import daily_limits
+
     venues = list(db.scalars(select(Venue).where(Venue.is_demo == (settings().app_mode == "demo"))))
     claims = (
         list(db.scalars(select(Claim).where(Claim.venue_id.in_([v.id for v in venues])))) if venues else []
@@ -693,7 +831,7 @@ def admin_overview(user=Depends(admin_user), db=Depends(get_db)):
         "integrations": integration_status(),
         "provider_calls_today": counter.value if counter else 0,
         "worker_heartbeat_age_seconds": max(0, int(time.time()) - heartbeat.value) if heartbeat else None,
-        "provider_limit": settings().max_provider_calls_per_day,
+        "provider_limit": daily_limits()["external"],
         "audit": [
             model_dict(a) for a in db.scalars(select(Audit).order_by(Audit.created_at.desc()).limit(40))
         ],

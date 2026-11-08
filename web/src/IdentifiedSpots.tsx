@@ -18,6 +18,7 @@ interface Spot {
     aliases?: string[];
     possible_duplicates?: string[];
     quality_issues?: string[];
+    duplicate_review_candidates?: string[];
     unassigned_observations?: {
       text: string;
       basis: string;
@@ -26,6 +27,8 @@ interface Spot {
     merged_into?: string;
     address?: string;
     hours?: string;
+    source_licenses?: { attribution: string; url: string; license: string }[];
+    hours_candidates?: { value: string; basis: string; source_url: string }[];
     coordinates?: { lat: number; lng: number; basis: string };
     maps_links?: string[];
     menu_links?: string[];
@@ -290,13 +293,27 @@ export default function IdentifiedSpots({
   const [targetId, setTargetId] = useState(""),
     [mergeReason, setMergeReason] = useState(""),
     [mergeChecked, setMergeChecked] = useState(false);
+  const [coverage, setCoverage] = useState<{
+    active_drafts: number;
+    directory_linked: number;
+    missing_menu_or_price: number;
+    missing_hours_observation: number;
+    missing_vibes: number;
+    maps_unreviewed: number;
+    queries_scheduled: number;
+    discovery_queries: number;
+  } | null>(null);
   async function refresh() {
     try {
-      const result = await api<{ spots: Spot[]; held: number }>(
-        `/admin/spots?include_held=${showHeld}`,
-      );
+      const [result, report] = await Promise.all([
+        api<{ spots: Spot[]; held: number }>(
+          `/admin/spots?include_held=${showHeld}`,
+        ),
+        api<NonNullable<typeof coverage>>("/admin/city-collection"),
+      ]);
       setSpots(result.spots);
       setHeld(result.held);
+      setCoverage(report);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -326,6 +343,10 @@ export default function IdentifiedSpots({
   return (
     <section className="panel identified-spots">
       <h2>Coimbatore identified spots</h2>
+      <p className="notice">
+        These locations are saved in your local database for your later location
+        check. They remain unapproved until you review them.
+      </p>
       <p>
         Maps, menus, activities and atmosphere evidence for the itinerary
         planner. Every location needs your approval before it can appear in
@@ -357,6 +378,27 @@ export default function IdentifiedSpots({
           Check duplicates and relevance
         </button>
       </div>
+      {coverage && (
+        <div className="notice" aria-label="Coimbatore collection coverage">
+          <p>
+            {coverage.active_drafts} active drafts · {coverage.directory_linked}{" "}
+            with open-map evidence. City-wide completeness and accuracy are
+            unverified.
+          </p>
+          <p>
+            Still missing: menu / price evidence for{" "}
+            {coverage.missing_menu_or_price}, hours observations for{" "}
+            {coverage.missing_hours_observation}, vibe evidence for{" "}
+            {coverage.missing_vibes}, and Maps review for{" "}
+            {coverage.maps_unreviewed}.
+          </p>
+          <p>
+            {coverage.queries_scheduled} of {coverage.discovery_queries}{" "}
+            area/topic searches scheduled. Scheduled searches do not mean
+            completed coverage. Refresh to see the latest saved progress.
+          </p>
+        </div>
+      )}
       <label className="check-row">
         <input
           type="checkbox"
@@ -378,6 +420,13 @@ export default function IdentifiedSpots({
             {spots.map((spot) => (
               <article className="review-card" key={spot.id}>
                 <h3>{spot.name}</h3>
+                {spot.data.source_licenses?.map((source) => (
+                  <p className="small-text" key={source.url}>
+                    <a href={source.url} target="_blank" rel="noreferrer">
+                      {source.attribution} · {source.license}
+                    </a>
+                  </p>
+                ))}
                 <p className="small-text">
                   {spot.data.maps_identity?.confirmed_by
                     ? "Name and Maps branch checked by operator"
@@ -389,6 +438,16 @@ export default function IdentifiedSpots({
                 {spot.data.quality_issues?.map((issue) => (
                   <p key={issue}>{issue}</p>
                 ))}
+                {!!spot.data.duplicate_review_candidates?.length && (
+                  <p className="notice">
+                    Potential duplicate held for your branch check. Related
+                    records:{" "}
+                    {spot.data.duplicate_review_candidates
+                      .map((id) => spots.find((s) => s.id === id)?.name || id)
+                      .join(", ")}
+                    . No branches were automatically merged.
+                  </p>
+                )}
                 {spot.data.merged_into && (
                   <p>
                     Merged into{" "}
@@ -412,6 +471,11 @@ export default function IdentifiedSpots({
                 </p>
                 <p>{spot.data.address || "Exact address not yet confirmed."}</p>
                 <p>{spot.data.hours || "Opening hours unknown."}</p>
+                {spot.data.hours_candidates?.map((hours) => (
+                  <p className="small-text" key={hours.source_url}>
+                    Unverified hours observation: {hours.value}. {hours.basis}
+                  </p>
+                ))}
                 <div className="inline-actions">
                   <a
                     target="_blank"

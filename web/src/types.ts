@@ -7,6 +7,8 @@ export type Profile = {
   wheelchair?: boolean;
   learn_from_visits?: boolean;
   inferred?: Record<string, number>;
+  preferred_cuisines?: string[];
+  spice_preference?: "any" | "mild" | "medium" | "hot";
 };
 export type User = {
   id: string;
@@ -36,6 +38,7 @@ export type Claim = {
   reason: string;
 };
 export type Venue = {
+  menu?: MenuView;
   id: string;
   name: string;
   category: Category;
@@ -64,6 +67,7 @@ export type Venue = {
     booking_url?: string;
     google_place_id?: string;
     max_group?: number;
+    maps_identity?: { maps_url: string; confirmed_by?: string };
     [key: string]: unknown;
   };
 };
@@ -84,6 +88,7 @@ export type OutingRequest = {
   categories: Category[];
   outing_type: "any" | "food" | "entertainment" | "combined";
   mood: "different" | "comfort" | "quiet" | "social" | "active";
+  novelty?: "new_place" | "new_taste" | "familiar" | null;
   vegetarian: boolean;
   wheelchair: boolean;
   children: boolean;
@@ -155,6 +160,54 @@ export type Visit = {
   note: string;
   occasion: string;
   visited_on: string;
+  experience?: { venue_name?: string; category?: string; tags?: string[] };
+};
+
+export type DishStatus = "want_to_try" | "tried" | "favourite" | "not_for_me";
+export type MenuItem = {
+  key: string;
+  name: string;
+  cuisine: string;
+  category: string;
+  tags: string[];
+  price_inr: number | null;
+  unit: "item" | "person" | "group";
+  vegetarian: boolean | null;
+  spice: string | null;
+  available: boolean | null;
+  eligible_pick: boolean;
+  reasons: string[];
+  diary_status: DishStatus | null;
+  review_support?: {
+    groups: number;
+    counts: Record<string, number>;
+    basis: string;
+    sources: {
+      sentiment: string;
+      sources: { url: string; observed_at: string; expires_at: string }[];
+    }[];
+  };
+  source_url: string;
+  observed_at: string;
+  expires_at: string;
+};
+export type MenuView = {
+  status: "current" | "expired" | "not_reviewed";
+  items: MenuItem[];
+  dining_format: string | null;
+  amenities: Record<string, boolean | null>;
+  basis: string;
+  price_note: string;
+};
+export type DishEntry = {
+  id: string;
+  venue_id: string;
+  venue_name: string;
+  offering_key: string;
+  name: string;
+  status: DishStatus;
+  note: string;
+  tried_on: string | null;
 };
 export type Submission = {
   id: string;

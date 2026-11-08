@@ -1,5 +1,51 @@
 # Project continuity
 
+Latest continuation: read docs/SQLITE_RELIABILITY.md. Duplicate-cleanup indexing/
+cache repair, transient SQLite busy handling, API read-only retries and safer
+Windows launcher are implemented. 292 backend tests/12 browser checks passed;
+separate full-size copy cleanup ~3.6–3.8s, live cleanup plus 24 concurrent reads
+returned 200. Four interrupted/stale jobs recovered with worker stopped. Initial
+unlimited collection is running; 09:43 UTC snapshot 692 active/111 held/12 merged,
+168 research sources, zero real venues/accepted claims. Short smoke has no new
+locks; sustained/growing-inventory reliability and real accuracy remain unverified.
+
+Latest user direction (8 November, after initial import): remove app daily request
+caps until initial collection finishes and continue collection improvements. Read
+docs/BULK_COLLECTION.md. LOCAL_BULK_COLLECTION=true is enabled locally: effective
+request/browser/daily-case limits are zero (unlimited counts), counters retained.
+Paid monetary guards, source pacing/cooldowns, caches, ownership and approval gates
+remain. Zero monetary budget never means unlimited spending. This supersedes the
+older daily/two-call app-count allowance statements below during initial mode.
+283 backend tests and eight desktop/mobile checks passed. 541 queued waits resumed;
+live aggregate count passed 300, sources grew 83 to 86 at the recorded snapshot.
+Later 07:17 UTC: counter 410, sources 88, 574 active drafts / 98 held / 12 merged;
+zero real venues/accepted claims. Final focused 12-test suite also covers HTTP-429
+adapter Retry-After persistence. Counts are snapshots; use current DB/receipts.
+No city completeness/accuracy or newly trained model/approval claim is justified.
+
+Latest collection checkpoint (8 November): read docs/COIMBATORE_COLLECTION.md.
+Local Overpass baseline is live fetched/imported, using Coimbatore administrative
+areas clipped to the existing 40km radius; not a municipal census. Require district
+boundary metadata, preserve ODbL attribution, cache seven days and keep the two-call
+weekly allowance. Broad-radius Kerala leads were held, not deleted. Current private
+SQL inventory: 568 active unapproved drafts, 98 held and 12 merged originals, 83
+research sources, zero real venues/accepted claims. Six retained-caption jobs
+completed locally. These counts supersede earlier checkpoints; facts/accuracy and
+operator approvals remain unfinished. Public OSM listing pages are not daily HTML
+maintenance targets. Do not reset shared external pacing or claim all city data is
+collected; data/city-collection/PROGRESS.md and runtime/coverage/CSV snapshots retain
+gaps. Existing autonomous worker runs separately while the computer stays awake.
+
+Latest user direction (8 November): prioritize new locations. Stop remaining reel
+processing when its previously recorded location(s) are matched, retain the source
+and an explicit skipped-coverage receipt, and advance to the next reel. Preserve
+ambiguous/new branches and unaccounted multi-venue candidates. Backfill existing
+extractions into the canonical local identified_spots SQL inventory and persist
+new discoveries immediately; operator location review happens later. This does
+not approve facts/locations or publish suggestions. Maintenance/full-review paths
+must bypass discovery skipping. GPU use is authorized; preserve model precision
+and evidence requirements while verifying local memory and actual GPU placement.
+
 Read `PROJECT_MASTER.md` before changing product scope. It is the canonical record
 of user decisions, implementation status, evidence and unfinished work.
 

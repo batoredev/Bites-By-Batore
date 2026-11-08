@@ -105,12 +105,17 @@ export function Modal({
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const d = ref.current!;
+    const trigger =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     d.showModal();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       d.close();
       document.body.style.overflow = previous;
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
     };
   }, []);
   return (

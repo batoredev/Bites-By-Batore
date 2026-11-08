@@ -6,7 +6,6 @@ from sqlalchemy import select
 from .auth import current_user, admin_user, is_admin
 from .config import settings
 from .db import get_db, Investigation, ResearchTask, ResearchSource, Submission, Venue, Audit, Job, now
-from .providers import increment_bounded
 from .social import canonical_url
 from .research import start_case, public_case, verification_stage
 from .schemas import VenueInput
@@ -15,6 +14,13 @@ from .research import creator_assessment, creator_key
 from .analysts import evidence_fingerprint
 
 router = APIRouter(prefix="/api")
+
+
+@router.get("/admin/research-performance")
+def research_performance(user=Depends(admin_user), db=Depends(get_db)):
+    from .performance import owner_report
+
+    return owner_report(db, user.id)
 
 
 class AssessmentInput(BaseModel):
@@ -99,6 +105,7 @@ class ResearchInput(BaseModel):
     query: str = Field(min_length=2, max_length=500)
     url: str = Field(default="", max_length=2000)
     submission_id: str = Field(default="", max_length=100)
+    force_full_analysis: bool = False
 
 
 class ResolutionInput(BaseModel):
@@ -118,6 +125,8 @@ def own_case(db, case_id, user):
 @router.post("/investigations")
 def create(data: ResearchInput, user=Depends(current_user), db=Depends(get_db)):
     context = {}
+    if data.force_full_analysis:
+        context["force_full_analysis"] = True
     if data.url:
         try:
             context["url"] = canonical_url(data.url)
@@ -138,7 +147,9 @@ def create(data: ResearchInput, user=Depends(current_user), db=Depends(get_db)):
     if existing and existing.context == context:
         return public_case(db, existing)
     date = datetime.now(timezone.utc).date().isoformat()
-    if not increment_bounded(db, f"research:{user.id}:{date}", settings().research_daily_limit):
+    from .collection_control import count_request, daily_limits
+
+    if not count_request(db, f"research:{user.id}:{date}", daily_limits()["investigations"]):
         raise HTTPException(
             429, "Daily investigation allowance reached; existing investigations remain available"
         )
@@ -173,7 +184,9 @@ def cancel(case_id: str, user=Depends(current_user), db=Depends(get_db)):
     if not case or case.user_id != user.id:
         raise HTTPException(404, "Investigation not found")
     case.state, case.updated_at = "cancelled", now()
-    for job in db.scalars(select(Job).where(Job.kind == "investigation", Job.state == "queued")):
+    for job in db.scalars(
+        select(Job).where(Job.kind.in_(["investigation", "source_analysis"]), Job.state == "queued")
+    ):
         if job.payload.get("case_id") == case.id:
             job.state = "cancelled"
     for source in db.scalars(select(ResearchSource).where(ResearchSource.case_id == case.id)):

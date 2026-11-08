@@ -9,6 +9,22 @@ from .config import settings
 from .providers import Unavailable
 
 
+def frame_points(seconds, maximum, cuts):
+    """Preserve clip endpoints and distribute remaining samples over the timeline."""
+    end = max(0, seconds - 0.15)
+    if maximum <= 1 or end == 0:
+        return [0.0]
+    selected = [0.0, end]
+    candidates = sorted(set([*cuts, *(i * end / (maximum - 1) for i in range(maximum))]))
+    candidates = [p for p in candidates if 0 < p < end]
+    while candidates and len(selected) < maximum:
+        # Farthest-point selection keeps coverage when cuts cluster near the start.
+        point = max(candidates, key=lambda p: (min(abs(p - s) for s in selected), p in cuts))
+        selected.append(point)
+        candidates.remove(point)
+    return sorted(selected)
+
+
 def extract_frames(media, timestamps=None):
     from imageio_ffmpeg import get_ffmpeg_exe
 
@@ -36,7 +52,6 @@ def extract_frames(media, timestamps=None):
                 seconds = min(seconds, int(duration[1]) * 3600 + int(duration[2]) * 60 + float(duration[3]))
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise Unavailable("Local media duration inspection failed") from exc
-        uniform = [i * max(0, seconds - 0.15) / max(1, maximum - 1) for i in range(maximum)]
         cuts = []
         if timestamps is None and maximum > 2:
             try:
@@ -71,18 +86,7 @@ def extract_frames(media, timestamps=None):
                     ]
             except (OSError, subprocess.TimeoutExpired):
                 pass  # Evenly spaced frames remain available if scene detection fails.
-        points = (
-            timestamps
-            if timestamps is not None
-            else sorted(dict.fromkeys([uniform[0], uniform[-1], *cuts, *uniform]))
-        )
-        if timestamps is None:
-            # Preserve both ends and prioritize scene changes within the frame budget.
-            points = (
-                sorted(dict.fromkeys([uniform[0], uniform[-1], *cuts, *uniform]))
-                if len(points) <= maximum
-                else sorted(list(dict.fromkeys([uniform[0], uniform[-1], *cuts, *uniform]))[:maximum])
-            )
+        points = timestamps if timestamps is not None else frame_points(seconds, maximum, cuts)
         for index, second in enumerate(points[:maximum]):
             second = float(second)
             if not 0 <= second < seconds:

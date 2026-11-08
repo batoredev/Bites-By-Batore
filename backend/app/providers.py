@@ -29,9 +29,10 @@ class Unavailable(Exception):
 class DeferredCollection(Unavailable):
     """Resource limits defer durable work rather than marking a source inaccessible."""
 
-    def __init__(self, message, retry_seconds=3600):
+    def __init__(self, message, retry_seconds=3600, reason="quota_or_collection_cooldown"):
         super().__init__(message)
         self.retry_seconds = retry_seconds
+        self.reason = reason
 
 
 def increment_bounded(db, key, maximum, amount=1):
@@ -44,6 +45,27 @@ def increment_bounded(db, key, maximum, amount=1):
     )
     db.commit()
     return result.rowcount == 1
+
+
+def reserve_browser_call(db):
+    """Reserve both allowances atomically; a deferred request is not a browser visit."""
+    renew_job(db)
+    from .collection_control import daily_limits, count_request, pace
+
+    limits = daily_limits()
+    pace(db, "www.instagram.com")
+    day = datetime.now(timezone.utc).date().isoformat()
+    with db.begin_nested():
+        for key, maximum, message in [
+            (f"provider:{day}", limits["external"], "Daily provider-call limit reached"),
+            (f"instagram-browser:{day}", limits["browser"], "Daily direct-browser visit limit reached"),
+            (f"collection-free:{day}", 0, ""),
+        ]:
+            if not count_request(db, key, maximum, commit=False):
+                raise DeferredCollection(
+                    message + "; remaining sources stay queued", reason="local_daily_limit"
+                )
+    db.commit()
 
 
 def renew_job(db):
@@ -69,17 +91,25 @@ def renew_job(db):
             db.commit()
 
 
-def quota(db):
+def quota(db, *, host=None, paid=False):
     if settings().app_mode == "demo":
         raise Unavailable("External providers are disabled in demonstration mode")
     renew_job(db)
+    from .collection_control import daily_limits, count_request, pace
+
+    if host:
+        pace(db, host)
     key = "provider:" + datetime.now(timezone.utc).date().isoformat()
-    if not increment_bounded(db, key, settings().max_provider_calls_per_day):
-        raise DeferredCollection("Daily provider-call limit reached; remaining sources stay queued")
+    if not count_request(db, key, daily_limits()["external"]):
+        raise DeferredCollection(
+            "Daily provider-call limit reached; remaining sources stay queued", reason="local_daily_limit"
+        )
+    kind = "paid" if paid else "free"
+    count_request(db, f"collection-{kind}:" + datetime.now(timezone.utc).date().isoformat(), 0)
 
 
 def call(db, method, url, **kwargs):
-    quota(db)
+    quota(db, paid=True, host=urlparse(url).hostname)
     cfg = settings()
     host = urlparse(url).hostname or ""
     provider = (
@@ -104,6 +134,10 @@ def call(db, method, url, **kwargs):
     try:
         with httpx.Client(timeout=35, follow_redirects=False) as client:
             response = client.request(method, url, **kwargs)
+            if response.status_code in {429, 503, 504}:
+                from .collection_control import backoff
+
+                backoff(db, host, headers=response.headers)
             if response.status_code >= 400:
                 raise Unavailable(
                     f"Provider returned HTTP {response.status_code}; check service access and quota"

@@ -10,6 +10,10 @@ from .providers import Unavailable, quota
 from .social import allowed_media_url
 
 
+from .performance import measured
+
+
+@measured("audio_download")
 def download_audio(db, url):
     quota(db)
     maximum = min(settings().max_media_mb, 8) * 1024 * 1024
@@ -30,6 +34,7 @@ def download_audio(db, url):
         raise Unavailable("Public audio download failed or timed out") from exc
 
 
+@measured("audio_video_join")
 def join_tracks(media, audio):
     from imageio_ffmpeg import get_ffmpeg_exe
 

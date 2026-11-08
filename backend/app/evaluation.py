@@ -159,7 +159,9 @@ def save_label(source_id: str, data: Label, user=Depends(admin_user), db=Depends
 def remove_labels(source_id: str, user=Depends(admin_user), db=Depends(get_db)):
     source = owned_source(db, user.id, source_id)
     source.analysis = {
-        k: v for k, v in source.analysis.items() if k not in {"evaluation_labels", "evaluation_comparisons"}
+        k: v
+        for k, v in source.analysis.items()
+        if k not in {"evaluation_labels", "evaluation_comparisons", "performance_comparisons"}
     }
     db.commit()
     return {"removed": True}
@@ -246,6 +248,11 @@ def report(db, user_id):
             for s in rows
             if s.analysis.get("evaluation_comparisons")
         ],
+        "performance_comparisons": [
+            {"source_id": s.id, "results": s.analysis["performance_comparisons"]}
+            for s in rows
+            if s.analysis.get("performance_comparisons")
+        ],
         "sources": [
             {
                 "id": s.id,
@@ -282,6 +289,96 @@ def source_for_review(source_id: str, user=Depends(admin_user), db=Depends(get_d
 
 class Comparison(BaseModel):
     role: Literal["caption", "comments"]
+
+
+@router.post("/sources/{source_id}/benchmark")
+def benchmark_source(source_id: str, data: Comparison, user=Depends(admin_user), db=Depends(get_db)):
+    from .jobs import enqueue
+
+    source = owned_source(db, user.id, source_id)
+    label = source.analysis.get("evaluation_labels", {}).get(data.role)
+    if settings().app_mode != "local" or not label or label.get("input_fingerprint") != fingerprint(source):
+        raise HTTPException(
+            409, "Local benchmark requires independent labels for the unchanged retained input"
+        )
+    job = enqueue(
+        db,
+        "evaluation_compare",
+        {"source_id": source.id, "user_id": user.id, "role": data.role, "mode": "performance"},
+        f"performance:{source.id}:{data.role}:{now()}",
+        priority=20,
+    )
+    return {"job_id": job.id, "state": job.state, "publication": False}
+
+
+def run_benchmark(db, user_id, source_id, role):
+    """Compare a saved independently labelled prediction to fresh uncached inference."""
+    from .analysts import analyze
+    from .learning import relevant_examples
+    from .analysis_reuse import PIPELINE_VERSION, model_digest
+    from .performance import Trace, ACTIVE_TRACE
+    from .providers import renew_job
+    from types import SimpleNamespace
+
+    source = owned_source(db, user_id, source_id)
+    label = source.analysis.get("evaluation_labels", {}).get(role)
+    if not label or fingerprint(source) != label["input_fingerprint"] or not source.content.get(role):
+        raise Unavailable("Labelled source input expired or changed; benchmark cannot run")
+    baseline = label["prediction"]
+    examples = relevant_examples(db, user_id, source, role)
+    if sorted(e["correction_id"] for e in examples) != sorted(baseline.get("learning_example_ids", [])):
+        raise Unavailable("Correction context changed since baseline; save a new independent baseline")
+    content = {"source_url": source.canonical_url, "reviewed_examples": examples}
+    keys = ["comments", "comments_coverage"] if role == "comments" else ["caption", "transcript"]
+    content.update({k: source.content[k] for k in keys if k in source.content})
+    if role == "caption" and source.content.get("machine_transcript"):
+        content.pop("transcript", None)
+    digest = model_digest()
+    trace = Trace()
+    token = ACTIVE_TRACE.set(trace)
+    try:
+        if role == "comments":
+            from .comment_analysis import analyze_comments
+
+            prediction = analyze_comments(
+                db,
+                SimpleNamespace(content=source.content, analysis={}),
+                content,
+                analyze,
+                context_version=digest,
+            )
+        else:
+            prediction = analyze(db, role, content)
+    finally:
+        ACTIVE_TRACE.reset(token)
+    renew_job(db)
+    db.refresh(source)
+    if (
+        source.analysis.get("evaluation_labels", {}).get(role) != label
+        or fingerprint(source) != label["input_fingerprint"]
+    ):
+        raise Unavailable("Input or label changed during benchmark; result discarded")
+    if relevant_examples(db, user_id, source, role) != examples:
+        raise Unavailable("Correction context changed during benchmark; result discarded")
+    result = {
+        "at": now(),
+        "pipeline": PIPELINE_VERSION,
+        "model": settings().ollama_model,
+        "model_digest": digest,
+        "input_fingerprint": label["input_fingerprint"],
+        "baseline_metrics": measure(baseline, label),
+        "current_metrics": measure(prediction, label),
+        "execution": trace.summary(),
+        "baseline_execution_seconds": None,
+        "baseline_model": baseline.get("model"),
+        "scope": "Fresh uncached local inference versus a saved human-labelled prediction. Historical baseline wall time is unavailable; no speedup or general accuracy guarantee. Video/branch and sustained-load evaluation remain separate.",
+    }
+    source.analysis = {
+        **source.analysis,
+        "performance_comparisons": {**source.analysis.get("performance_comparisons", {}), role: result},
+    }
+    db.commit()
+    return result
 
 
 @router.post("/sources/{source_id}/compare")

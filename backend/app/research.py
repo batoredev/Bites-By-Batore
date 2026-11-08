@@ -28,6 +28,7 @@ from .providers import (
     youtube_context,
     youtube_id,
     google_search,
+    renew_job,
 )
 from .social import (
     canonical_url,
@@ -236,6 +237,11 @@ def rank_discovery(db, case, task):
     cfg, errors = settings(), task.result.get("search_errors", {})
     # Date probes are resumable; no discovered source is discarded.
     sources = case_sources(db, case)
+    from .known_spots import try_skip
+
+    for source in sources:
+        if not source.content.get("streamed"):
+            try_skip(db, case, source, stage="before_recency_probe")
     if cfg.local_search_enabled:
         from .public_sources import public_instagram
 
@@ -245,6 +251,7 @@ def rank_discovery(db, case, task):
             source
             for source in sources
             if source.platform == "instagram"
+            and not source.content.get("streamed")
             and not source.content.get("recency_checked_at")
             and not source.content.get("published_at")
         ]
@@ -288,9 +295,30 @@ def rank_discovery(db, case, task):
 def stream_source(db, case, source):
     from types import SimpleNamespace
     from .spots import identify_from_source
+    from .known_spots import try_skip
 
-    for role in ("caption", "comments", "video"):
+    if try_skip(db, case, source):
+        return
+    roles = (
+        ("caption", "video", "comments")
+        if settings().known_spot_skip_enabled
+        else ("caption", "comments", "video")
+    )
+    for role in roles:
         analysis_stage(db, case, SimpleNamespace(role=role), only_source=source)
+        if role in {"caption", "video"}:
+            candidates = [
+                c
+                for r in ("caption", "video")
+                for c in source.analysis.get(r, {}).get("venue_candidates", [])
+            ]
+            if try_skip(db, case, source, candidates=candidates, stage="after_" + role):
+                return
+            identify_from_source(db, case, source)
+            db.commit()  # Save each newly identified place before remaining specialist work.
+    from .providers import renew_job
+
+    renew_job(db)
     identify_from_source(db, case, source)
     source.content = {
         **{
@@ -299,6 +327,7 @@ def stream_source(db, case, source):
             if k not in {"media", "media_url", "video_url", "audio_url"}
         },
         "streamed": True,
+        "analysis_pending": False,
     }
     db.commit()
 
@@ -306,13 +335,47 @@ def stream_source(db, case, source):
 def collect_stage(db, case, task):
     errors, processed = [], 0
     streaming = settings().research_streaming and settings().app_mode != "demo"
+    pipeline = streaming and settings().research_pipeline_enabled
+
+    def dispatch(source):
+        if pipeline:
+            from .jobs import enqueue
+
+            source.content = {**source.content, "analysis_pending": True}
+            db.commit()
+            enqueue(
+                db,
+                "source_analysis",
+                {"case_id": case.id, "source_id": source.id},
+                f"source-analysis:{source.id}",
+                priority=90,
+            )
+        else:
+            stream_source(db, case, source)
+
     for source in case_sources(db, case):
+        from .known_spots import try_skip
+
+        if source.state == "lead" and try_skip(db, case, source):
+            continue
         if source.state != "lead":
             if streaming and not source.content.get("streamed"):
-                stream_source(db, case, source)
+                dispatch(source)
             continue
         if processed >= max(1, settings().research_max_sources):
             raise PendingSource()
+        if pipeline:
+            from .db import Job
+
+            backlog = list(
+                db.scalars(
+                    select(Job.id)
+                    .where(Job.kind == "source_analysis", Job.state.in_(["queued", "running"]))
+                    .limit(max(2, settings().research_max_sources * 2))
+                )
+            )
+            if len(backlog) >= max(2, settings().research_max_sources * 2):
+                raise PendingSource(5)  # Bound retained media/preparation backlog without dropping leads.
         content = dict(source.content)
         try:
             if settings().app_mode == "demo":
@@ -435,15 +498,48 @@ def collect_stage(db, case, task):
         source.creator = str(content.get("creator", ""))[:100]
         db.commit()
         if streaming:
-            stream_source(db, case, source)
+            dispatch(source)
         processed += 1
     return {"source_count": len(case_sources(db, case)), "gaps": errors}
 
 
 def analysis_stage(db, case, task, only_source=None):
-    role, gaps, completed = task.role, [], 0
+    from .performance import span
+    from .analysis_reuse import analysis_key, reusable, mark, model_digest, valid_result
+
+    role, gaps, completed, skipped_known = task.role, [], 0, 0
     for source in [only_source] if only_source else case_sources(db, case):
-        if source.analysis.get(role, {}).get("status") == "observations_only":
+        skipped = source.analysis.get("discovery_skip")
+        if skipped:
+            skipped_known += 1
+            gaps.append(
+                {
+                    "source_id": source.id,
+                    "reason": "Remaining evidence skipped: location already in private inventory",
+                }
+            )
+            continue
+        if not only_source and source.content.get("analysis_pending"):
+            from .db import Job
+
+            pending = db.scalar(select(Job).where(Job.key == f"source-analysis:{source.id}"))
+            if pending and pending.state in {"queued", "running"}:
+                raise PendingSource(5)
+            if pending and pending.state == "failed":
+                result = source.analysis.get(role) or {
+                    "status": "unavailable",
+                    "reason": "Source analysis failed; retry the recorded job",
+                    "video_analyzed": False,
+                }
+                gaps.append(
+                    {"source_id": source.id, "reason": result.get("reason", "Source analysis incomplete")}
+                )
+                source.analysis = {**source.analysis, role: result}
+                db.commit()
+                continue
+        if source.analysis.get(role, {}).get("status") == "observations_only" and not source.analysis[
+            role
+        ].get("reuse"):
             completed += 1
             continue
         content = source.content
@@ -474,21 +570,58 @@ def analysis_stage(db, case, task, only_source=None):
                     "video": [],
                 }[role]
                 data.update({k: content[k] for k in keys if k in content})
-                if role == "comments":
+                if role == "caption" and content.get("machine_transcript"):
+                    data.pop("transcript", None)
+                digest = model_digest() if settings().app_mode == "local" else None
+                key = analysis_key(role, data, content, digest)
+                existing = source.analysis.get(role, {})
+                if valid_result(existing, key) and (digest or not settings().analysis_reuse_enabled):
+                    completed += 1
+                    continue
+                result = reusable(db, case, source, role, key, digest)
+                if result is not None:
+                    pass
+                elif role == "comments":
                     from .comment_analysis import analyze_comments
 
-                    result = analyze_comments(db, source, data, analyze)
+                    with span("comments"):
+                        result = mark(
+                            analyze_comments(db, source, data, analyze, context_version=digest), key, digest
+                        )
                 else:
-                    result = analyze(
-                        db,
-                        role,
-                        data,
-                        content.get("media") if role == "video" else None,
-                        content.get("video_url") if role == "video" else None,
-                    )
+                    options = {}
+                    if role == "video":
+                        from .known_spots import allowed, decision
+
+                        if allowed(case, source):
+
+                            def stop_known(partial):
+                                candidates = [
+                                    *source.analysis.get("caption", {}).get("venue_candidates", []),
+                                    *partial.get("venue_candidates", []),
+                                ]
+                                return bool(
+                                    decision(db, case, source, candidates=candidates, stage="during_video")
+                                )
+
+                            options["on_pass"] = stop_known
+                    with span(role):
+                        result = mark(
+                            analyze(
+                                db,
+                                role,
+                                data,
+                                content.get("media") if role == "video" else None,
+                                content.get("video_url") if role == "video" else None,
+                                **options,
+                            ),
+                            key,
+                            digest,
+                        )
+                renew_job(db)
                 speech = result.pop("_transcription", None)
                 signatures = result.pop("_visual_signatures", [])
-                if role == "video":
+                if role == "video" and not result.get("reuse", {}).get("reused"):
                     from .visual_places import match_frames
 
                     result["visual_reference_matches"] = match_frames(db, case.user_id, signatures)
@@ -502,9 +635,24 @@ def analysis_stage(db, case, task, only_source=None):
                         "speech_model": speech.get("model"),
                         "machine_transcript": True,
                     }
+                if role == "video":
+                    requested = list(result.get("followup_seconds", []))
+                    requested += [
+                        o["timestamp_seconds"]
+                        for o in result.get("observations", [])
+                        if o.get("uncertainty") and o.get("timestamp_seconds") is not None
+                    ]
+                    result["followup_seconds"] = list(dict.fromkeys(requested))[:4]
+                    result["attention"] = {
+                        "baseline_sampling_retained": True,
+                        "requested_seconds": result["followup_seconds"],
+                        "reason": "Model-requested or explicitly uncertain timestamped clues; no location approval inferred",
+                    }
                 if (
                     role == "video"
                     and content.get("media")
+                    and not result.get("reuse", {}).get("reused")
+                    and not result.get("early_exit")
                     and (
                         result.get("followup_seconds")
                         or (settings().app_mode != "local" and settings().analysis_provider != "ollama")
@@ -515,6 +663,14 @@ def analysis_stage(db, case, task, only_source=None):
                         result["frame_times"] = [f["seconds"] for f in frames]
                         if frames:
                             result["frame_inspection"] = analyze(db, "reinspect", data, frames=frames)
+                            result["observations"] = [
+                                *result.get("observations", []),
+                                *result["frame_inspection"].get("observations", []),
+                            ]
+                            result["venue_candidates"] = [
+                                *result.get("venue_candidates", []),
+                                *result["frame_inspection"].get("venue_candidates", []),
+                            ]
                     except Unavailable as exc:
                         result["frame_inspection"] = {"unavailable": str(exc)}
                 completed += 1
@@ -526,7 +682,7 @@ def analysis_stage(db, case, task, only_source=None):
             gaps.append({"source_id": source.id, "reason": result["reason"]})
         source.analysis = {**source.analysis, role: result}
         db.commit()
-    return {"analyzed_sources": completed, "gaps": gaps}
+    return {"analyzed_sources": completed, "skipped_known_sources": skipped_known, "gaps": gaps}
 
 
 def location_stage(db, case, task):
@@ -542,12 +698,13 @@ def location_stage(db, case, task):
         for role in ["caption", "video"]:
             candidates.extend(source.analysis.get(role, {}).get("venue_candidates", []))
         seen = set()
-        for candidate in candidates[:10]:
+        for candidate in candidates:
             name = normalized(candidate.get("name", ""))
-            if not name or name in seen:
-                continue
-            seen.add(name)
             clues = normalized(" ".join(candidate.get("address_clues", [])))
+            identity = (name, clues)
+            if not name or identity in seen:
+                continue
+            seen.add(identity)
             matches = []
             for venue in inventory:
                 similarity = SequenceMatcher(None, name, normalized(venue.name)).ratio()
@@ -670,6 +827,15 @@ def verification_stage(db, case, task):
     eligible, gaps = set(), []
     sources = case_sources(db, case)
     for source in sources:
+        if source.analysis.get("discovery_skip"):
+            gaps.append(
+                {
+                    "source_id": source.id,
+                    "missing": [
+                        "Remaining reel evidence skipped under known-location discovery policy; not a complete fresh investigation"
+                    ],
+                }
+            )
         for role in ["caption", "comments", "video"]:
             corrections = source.analysis.get(role, {}).get("corrections", [])
             if corrections:
@@ -833,7 +999,10 @@ def execute_case(db, case_id, expected_ordinal=None):
         "verification": verification_stage,
     }
     try:
-        result = stages.get(task.role, analysis_stage)(db, case, task)
+        from .performance import span
+
+        with span("stage." + task.role):
+            result = stages.get(task.role, analysis_stage)(db, case, task)
     except PendingSource:
         task.state = "waiting"
         db.commit()
@@ -872,6 +1041,8 @@ def execute_case(db, case_id, expected_ordinal=None):
 
 
 def public_case(db, case):
+    from .performance import case_metrics
+
     tasks = list(
         db.scalars(select(ResearchTask).where(ResearchTask.case_id == case.id).order_by(ResearchTask.ordinal))
     )
@@ -882,6 +1053,7 @@ def public_case(db, case):
         "created_at": case.created_at,
         "updated_at": case.updated_at,
         "result": case.result,
+        "performance": case_metrics(db, case),
         "tasks": [{"role": t.role, "state": t.state, "result": t.result, "error": t.error} for t in tasks],
         "sources": [
             {
@@ -911,7 +1083,15 @@ def erase_cases(db, user_id):
     db.execute(delete(SourceAssessment).where(SourceAssessment.source_id.in_(source_ids)))
     for job in db.scalars(
         select(Job).where(
-            Job.kind.in_(["investigation", "evaluation_compare", "source_quality_upgrade", "source_watch"])
+            Job.kind.in_(
+                [
+                    "investigation",
+                    "source_analysis",
+                    "evaluation_compare",
+                    "source_quality_upgrade",
+                    "source_watch",
+                ]
+            )
         )
     ):
         if job.payload.get("case_id") in ids or job.payload.get("source_id") in source_ids:
@@ -923,6 +1103,21 @@ def erase_cases(db, user_id):
 
 def purge_expired_sources(db):
     for source in db.scalars(select(ResearchSource)):
+        watch = source.analysis.get("source_watch", {})
+        if "observed_caption" in watch:
+            try:
+                watched_at = datetime.fromisoformat(watch.get("checked_at", ""))
+                expired_watch = (
+                    watched_at.tzinfo is None
+                    or (datetime.now(timezone.utc) - watched_at).total_seconds() > 86400
+                )
+            except (ValueError, TypeError):
+                expired_watch = True
+            if expired_watch:
+                source.analysis = {
+                    **source.analysis,
+                    "source_watch": {k: v for k, v in watch.items() if k != "observed_caption"},
+                }
         try:
             fetched = datetime.fromisoformat(source.content.get("fetched_at") or source.created_at)
             if fetched.tzinfo is None or fetched > datetime.now(timezone.utc):

@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from .auth import admin_user
 from .config import settings
-from .db import get_db, IdentifiedSpot, Investigation, Venue, Audit, now
-from .spots import spot_dict, identify_from_source, reconcile_spots, INACTIVE, merge_data
+from .db import get_db, IdentifiedSpot, Venue, Audit, now
+from .spots import spot_dict, reconcile_spots, INACTIVE, merge_data
 from .spot_identity import maps_reference, quality_issues, name_key, clean_name
 from .schemas import VenueInput, VenueOperations
 
@@ -110,15 +110,9 @@ def maps_candidates(spot_id: str, user=Depends(admin_user), db=Depends(get_db)):
 
 @router.post("/sync-investigations")
 def sync(user=Depends(admin_user), db=Depends(get_db)):
-    from .research import case_sources
+    from .spots import sync_inventory
 
-    ids = set()
-    for case in db.scalars(select(Investigation).where(Investigation.user_id == user.id)):
-        for source in case_sources(db, case):
-            ids.update(identify_from_source(db, case, source))
-    reconcile_spots(db, user.id)
-    db.commit()
-    return {"identified_spots": len(ids), "published": 0}
+    return sync_inventory(db, user.id)
 
 
 @router.post("/collect")

@@ -10,7 +10,6 @@ import {
 import { post } from "./api";
 import DiscoveryGuide from "./DiscoveryGuide";
 import {
-  Art,
   categories,
   ErrorBox,
   Loading,
@@ -160,39 +159,33 @@ export default function Discover({
           </div>
           <h1>
             Your next good plan
-            <br />
-            starts <em>here.</em>
+            <span>
+              starts <em>here.</em>
+            </span>
           </h1>
           <p>
-            A new flavour. A little adventure. A great few hours.
-            <br className="desktop-break" /> Let’s find what feels right for
-            you.
+            Find a little food, a little play, or both — in the time and budget
+            you have.
           </p>
           <div className="hero-footnote">
             <Compass size={18} />
             <span>Made for your taste, time & budget</span>
           </div>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="hero-stamp">
-            LESS SCROLLING
-            <br />
-            <strong>more going.</strong>
-          </div>
-          <div className="hero-tile tile-food">
-            <Art category="food" />
-            <span>Something delicious</span>
-          </div>
-          <div className="hero-tile tile-play">
-            <Art category="bowling" />
-            <span>A little friendly competition</span>
-          </div>
-          <span className="hero-spark">✳</span>
+        <div className="city-callout">
+          <Compass size={32} weight="duotone" />
+          <span>
+            COIMBATORE, AT YOUR PACE
+            <strong>
+              A few hours.
+              <br />A good change of scene.
+            </strong>
+          </span>
         </div>
       </section>
       <form className="planner-form" onSubmit={submit}>
         <div className="form-intro">
-          <h2>What are you in the mood for?</h2>
+          <h2>Start with a craving or a feeling.</h2>
           <span>No idea is a good starting point.</span>
         </div>
         <label className="query-field">
@@ -224,7 +217,32 @@ export default function Discover({
             </button>
           ))}
         </div>
-        <DiscoveryGuide request={request} apply={setRequest} />
+        <div className="discovery-options">
+          <label className="novelty-control">
+            How different should it feel?
+            <select
+              value={
+                request.novelty ||
+                (request.mood === "different" ? "new_place" : "familiar")
+              }
+              onChange={(e) =>
+                change("novelty", e.target.value as OutingRequest["novelty"])
+              }
+            >
+              <option value="new_place">
+                A new place, familiar tastes welcome
+              </option>
+              <option value="new_taste">Explore beyond my usual tastes</option>
+              <option value="familiar">Familiar favourites</option>
+            </select>
+          </label>
+          <DiscoveryGuide request={request} apply={setRequest} />
+        </div>
+        <div className="planner-section-label">
+          <MapPin size={18} />
+          <h3>Make it fit your day</h3>
+          <span>Travel and stops share your time.</span>
+        </div>
         <div className="parameter-grid">
           <label>
             Starting from
@@ -244,7 +262,9 @@ export default function Discover({
               }}
             >
               {starts.map((s) => (
-                <option key={s[0]}>{s[0]}</option>
+                <option key={s[0]} value={s[0]}>
+                  {s[0].replace(", Coimbatore", "")}
+                </option>
               ))}
               <option value="custom">My location / coordinates</option>
             </select>
@@ -378,7 +398,7 @@ export default function Discover({
                 )
               }
             >
-              <option value="any">Open to anything</option>
+              <option value="any">Any outing</option>
               <option value="food">Food & cafés</option>
               <option value="entertainment">Entertainment</option>
               <option value="combined">Food + entertainment</option>

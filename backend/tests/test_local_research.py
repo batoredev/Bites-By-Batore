@@ -166,7 +166,8 @@ def test_text_schema_has_no_invented_clip_timestamps(local_client, monkeypatch):
             captured.append(kwargs["json"])
             return Response()
 
-    monkeypatch.setattr(models.httpx, "Client", Client)
+    monkeypatch.setattr(models, "inference_client", lambda: Client())
+    monkeypatch.setattr("app.local_tokenizer.input_tokens", lambda *args: 50)
     models.local_chat("Read comments", {"comments": "Location?"}, {})
     properties = captured[0]["format"]["properties"]
     assert properties["observations"]["items"]["properties"]["timestamp_seconds"] == {"type": "null"}

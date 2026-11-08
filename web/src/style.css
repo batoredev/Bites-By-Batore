@@ -2856,15 +2856,137 @@ td:last-child {
   }
 }
 /* Investigations keep dense evidence readable on narrow screens. */
-.research-section { margin: 2rem 0; }
-.research-tasks { padding-left: 1.4rem; display: grid; gap: 1rem; }
-.research-tasks li > strong { text-transform: capitalize; margin-right: 1rem; }
-.research-tasks details, .research-source details { margin-top: .65rem; }
-.research-evidence { margin: .5rem 0; overflow-wrap: anywhere; }
-.research-evidence > div { padding: .4rem 0; border-bottom: 1px solid #deded4; }
-.research-evidence dt { font-weight: 600; text-transform: capitalize; }
-.research-evidence dd { margin: .2rem 0 .4rem .5rem; }
-.research-source { padding: 1rem 0; border-top: 1px solid #deded4; }
-.discovery-guide { padding: .5rem 0 1rem; }
+.research-section {
+  margin: 2rem 0;
+}
+.research-tasks {
+  padding-left: 1.4rem;
+  display: grid;
+  gap: 1rem;
+}
+.research-tasks li > strong {
+  text-transform: capitalize;
+  margin-right: 1rem;
+}
+.research-tasks details,
+.research-source details {
+  margin-top: 0.65rem;
+}
+.research-evidence {
+  margin: 0.5rem 0;
+  overflow-wrap: anywhere;
+}
+.research-evidence > div {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #deded4;
+}
+.research-evidence dt {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.research-evidence dd {
+  margin: 0.2rem 0 0.4rem 0.5rem;
+}
+.research-source {
+  padding: 1rem 0;
+  border-top: 1px solid #deded4;
+}
+.discovery-guide {
+  padding: 0.5rem 0 1rem;
+}
 
-.identified-spots a { text-decoration: underline; text-underline-offset: 0.15em; }
+.identified-spots a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.menu-panel {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+.menu-list {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0;
+}
+.menu-item {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.menu-item h4 {
+  margin: 0;
+  font-size: 15px;
+}
+.menu-item .section-heading {
+  margin: 0 0 8px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.menu-item .section-heading strong {
+  font-size: 12px;
+}
+.menu-item p {
+  overflow-wrap: anywhere;
+}
+.menu-item .inline-actions {
+  margin-top: 12px;
+}
+.menu-item button {
+  white-space: normal;
+  text-align: left;
+}
+.dish-diary {
+  margin: 34px 0;
+}
+.dish-diary > label {
+  display: block;
+  max-width: 280px;
+  margin-bottom: 16px;
+}
+.dish-diary .visit-list article {
+  flex-wrap: wrap;
+}
+.dish-diary .visit-list article > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.visit-list .visit-history-item > div:last-child {
+  width: 100%;
+  text-align: left;
+  min-width: 0;
+}
+.visit-history-item .stack-form {
+  margin-top: 18px;
+  max-width: 560px;
+}
+.novelty-control {
+  display: block;
+  max-width: 420px;
+  margin: 16px 0;
+}
+.explore-filters {
+  margin: 18px 0;
+}
+.explore-filters summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.explore-filters .parameter-grid {
+  margin-top: 18px;
+}
+@media (max-width: 600px) {
+  .menu-item {
+    padding: 14px;
+  }
+  .dish-diary .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+.review-sources a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}

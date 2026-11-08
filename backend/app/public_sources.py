@@ -13,12 +13,13 @@ from urllib.parse import urlparse
 import httpx
 from .db import now
 from .providers import Unavailable, quota
+from .collection_control import backoff, success
 from .social import canonical_url
 from .recency import publication_date, snippet_publication, recency_key
 
 
 def public_search(db, query):
-    quota(db)
+    quota(db, host="public-search")
     try:
         result = subprocess.run(
             [sys.executable, "-m", "app.public_sources", query],
@@ -28,10 +29,11 @@ def public_search(db, query):
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if result.returncode:
-            raise Unavailable("Public search is temporarily unavailable; retry after the cooldown")
+            backoff(db, "public-search")
         rows = json.loads(result.stdout)
-    except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
-        raise Unavailable("Public search timed out or returned unreadable results") from exc
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        backoff(db, "public-search")
+    success(db, "public-search")
     output = []
     for row in rows:
         url = row.get("href", "")
@@ -88,14 +90,20 @@ def metadata_details(description):
     }
 
 
+from .performance import measured
+
+
+@measured("public_metadata")
 def public_instagram(db, url):
     url = canonical_url(url)
     if urlparse(url).hostname != "www.instagram.com":
         raise Unavailable("Public collector supports Instagram permalinks only")
-    quota(db)
+    quota(db, host="www.instagram.com")
     try:
         with httpx.Client(timeout=25, trust_env=False, follow_redirects=False) as client:
             with client.stream("GET", url, headers={"User-Agent": "BatoreResearch/0.3"}) as response:
+                if response.status_code in {429, 503, 504}:
+                    backoff(db, "www.instagram.com", headers=response.headers)
                 if response.status_code != 200:
                     raise Unavailable(
                         f"Instagram public page returned HTTP {response.status_code}; source access required"

@@ -7,6 +7,7 @@ from itertools import permutations, chain
 from zoneinfo import ZoneInfo
 from collections import Counter
 from .schemas import OutingRequest
+from .menu import current_fact, text_matches
 
 IST = ZoneInfo("Asia/Kolkata")
 FOOD = {"food", "cafe"}
@@ -60,7 +61,7 @@ def parse_interest(query):
         "quiet",
     ]
     q = query.casefold().replace("go-karting", "go karting")
-    return [tag for tag in vocabulary if tag in q]
+    return [tag for tag in vocabulary if text_matches(tag, q)]
 
 
 def window_fits(details, start, end):
@@ -102,11 +103,92 @@ def fresh_fields(venue, claims, request):
     return all(f in valid for f in needed)
 
 
+def live_candidate_order(request, venues, claims):
+    """Spend bounded live checks on requested dishes/locked branches before proximity."""
+    query = request.query.casefold()
+    words = {word for word in re.findall(r"\w+", query) if len(word) > 2} - {
+        "something",
+        "different",
+        "surprise",
+        "want",
+        "with",
+        "near",
+        "from",
+        "food",
+        "place",
+        "please",
+        "the",
+        "and",
+        "not",
+        "without",
+        "avoid",
+    }
+    words = {
+        word
+        for word in words
+        if not re.search(
+            r"(?:no|not|without|avoid|don't want|do not want)\s+(?:\w+\s+){0,2}" + re.escape(word), query
+        )
+    }
+
+    def relevance(venue):
+        fact = current_fact([c for c in claims if c.venue_id == venue.id], "offerings")
+        fields = [venue.name, *venue.tags] + (
+            [item["name"] for item in fact.value["value"] if item.get("available") is not False]
+            if fact
+            else []
+        )
+        return sum(any(text_matches(word, field) for field in fields) for word in words)
+
+    candidates = [v for v in venues if v.id not in request.exclude_ids and v.category in request.categories]
+    if request.outing_type == "food":
+        candidates = [v for v in candidates if v.category in FOOD]
+    elif request.outing_type == "entertainment":
+        candidates = [v for v in candidates if v.category not in FOOD]
+    return sorted(
+        candidates,
+        key=lambda v: (
+            v.id not in request.lock_ids,
+            -relevance(v),
+            km((v.lat, v.lng), (request.lat, request.lng)),
+            v.id,
+        ),
+    )
+
+
 def build_plans(request: OutingRequest, venues, claims, profile, visited, route):
     rejected = Counter()
     selected = []
     q = request.query.casefold()
-    vocabulary = {t.casefold() for v in venues for t in v.tags}
+    menu_terms = {}
+    for v in venues:
+        claim = current_fact([c for c in claims if c.venue_id == v.id], "offerings")
+        menu_terms[v.id] = (
+            [
+                term.casefold()
+                for item in claim.value["value"]
+                if item.get("available") is not False
+                for term in [item["name"], item.get("cuisine", "")]
+                if term
+            ]
+            if claim
+            else []
+        )
+
+    def venue_terms(v):
+        return set(v.tags) | set(menu_terms[v.id])
+
+    def requested(v):
+        return {t for t in interests if any(text_matches(t, term) for term in venue_terms(v))}
+
+    vocabulary = {t.casefold() for v in venues for t in venue_terms(v)}
+    vocabulary |= {
+        word
+        for terms in menu_terms.values()
+        for term in terms
+        for word in term.split()
+        if len(word) > 2 and word not in {"and", "with", "the"}
+    }
     interests = sorted(
         set(parse_interest(q))
         | {t for t in vocabulary if re.search(r"(?<!\w)" + re.escape(t) + r"(?!\w)", q)}
@@ -117,7 +199,7 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
         if re.search(r"(?:no|not|without|avoid|don't want|do not want)\s+(?:\w+\s+){0,2}" + re.escape(t), q)
     }
     interests = [t for t in interests if t not in negated]
-    explicit = set(profile.get("liked_tags", []))
+    explicit = set(profile.get("liked_tags", [])) | set(profile.get("preferred_cuisines", []))
     avoided = set(profile.get("avoided_tags", [])) | set(request.avoid_tags) | negated
     vegetarian = request.vegetarian or profile.get("vegetarian", False)
     accessible = request.wheelchair or profile.get("wheelchair", False)
@@ -140,6 +222,12 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
             "friends",
             "family",
         ]
+    )
+    novelty = request.novelty or ("new_place" if request.mood == "different" else "familiar")
+    familiar_tags = (
+        explicit | {t for t, score in profile.get("inferred", {}).items() if score > 0}
+        if profile.get("learn_from_visits", True)
+        else explicit
     )
     named = [v for v in venues if v.name.casefold() in q]
     if q.strip() and not interests and not generic and not negated and not named:
@@ -187,9 +275,9 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
     # Bounded candidate pool prioritizes the user's explicit request before combinations.
     def candidate_score(v):
         return (
-            len(set(v.tags) & set(interests)) * 20
+            len(requested(v)) * 20
             + len(set(v.tags) & explicit) * 4
-            + (v.id not in visited) * 2
+            + ((v.id not in visited) * 2 if novelty != "familiar" else (v.id in visited) * 2)
         )
 
     selected = sorted(selected, key=candidate_score, reverse=True)
@@ -205,7 +293,7 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
         ids = {v.id for v in sequence}
         if not set(request.lock_ids).issubset(ids):
             continue
-        if interests and not any(set(interests) & set(v.tags) for v in sequence):
+        if interests and not any(requested(v) for v in sequence):
             continue
         if named and not any(v.id in {n.id for n in named} for v in sequence):
             continue
@@ -348,13 +436,14 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
             rejected["spending budget"] += 1
             continue
         tags = set(t for v in sequence for t in v.tags)
+        matched_interests = set().union(*(requested(v) for v in sequence))
         novel = sum(v.id not in visited for v in sequence)
         reasons = []
         if interests:
-            reasons.append("Matches your request for " + ", ".join(sorted(tags & set(interests))))
+            reasons.append("Matches your request for " + ", ".join(sorted(matched_interests)))
         if explicit & tags:
             reasons.append("Matches saved interests: " + ", ".join(sorted(explicit & tags)))
-        if request.mood == "different" and novel:
+        if novelty != "familiar" and novel:
             reasons.append("Includes a place outside your confirmed visit history")
         if request.mood in tags:
             reasons.append(f"Suits a {request.mood} outing")
@@ -375,10 +464,26 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
                 for t in tags
             )
         score = (
-            len(tags & set(interests)) * 20
+            len(matched_interests) * 20
             + len(explicit & tags) * 5
-            + (novel * 6 if request.mood == "different" else 0)
+            + (novel * 6 if novelty != "familiar" else (len(sequence) - novel) * 4)
         )
+        if novelty == "new_taste" and familiar_tags:
+            food_tags = {t for v in sequence if v.category in FOOD for t in v.tags} - {
+                "quiet",
+                "social",
+                "outdoor",
+                "indoor",
+                "active",
+                "vegetarian",
+                "different",
+            }
+            unfamiliar = food_tags - familiar_tags
+            score += min(3, len(unfamiliar)) * 3
+            if unfamiliar:
+                reasons.append(
+                    "Offers tastes beyond your saved preferences: " + ", ".join(sorted(unfamiliar))
+                )
         score += (
             (5 if request.mood in tags else 0)
             + len(tags & set(request.companion_interests)) * 3

@@ -1,3 +1,7 @@
+> Latest continuation: [STAGES_1_2_3_6.md](STAGES_1_2_3_6.md) adds the real evaluation queue, holdout correction exclusion, source monitoring and approval packets. Six reference images are now indexed, but no independently verified visual branch match or accuracy result is claimed. Zero human evaluation labels and zero approved venues at this checkpoint.
+
+> 7 November: [PERFORMANCE_IMPLEMENTATION.md](PERFORMANCE_IMPLEMENTATION.md) records completed speed/coverage mechanisms, local test receipts and remaining real quality validation. This is not a claim of complete Instagram access, independent accuracy or approved customer inventory.
+
 # Instagram implementation and validation record — 6 November 2026
 
 This supplements PROJECT_MASTER.md. The local collector operates independently of Codex while the workstation, API, worker and Ollama are running. Completing code is different from demonstrating factual accuracy, exhaustive Instagram access or a verified Coimbatore inventory.

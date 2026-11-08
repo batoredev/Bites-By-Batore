@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from uuid import uuid4
-from sqlalchemy import JSON, Boolean, Float, Integer, String, Text, create_engine, event, inspect, text
+from sqlalchemy import JSON, Boolean, Float, Integer, String, Text, Index, create_engine, event, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from .config import ROOT, settings
 
@@ -13,8 +13,38 @@ def uid():
     return str(uuid4())
 
 
+def is_database_busy(error):
+    """Recognize SQLite lock contention through wrapped exceptions, without SQL text."""
+    import sqlite3
+
+    seen = set()
+    while error is not None and id(error) not in seen:
+        seen.add(id(error))
+        original = getattr(error, "orig", error)
+        if isinstance(original, sqlite3.OperationalError):
+            code = getattr(original, "sqlite_errorcode", 0) & 255
+            if code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or str(original).lower() in {
+                "database is locked",
+                "database table is locked",
+                "database schema is locked",
+            }:
+                return True
+        error = getattr(error, "__cause__", None) or getattr(error, "__context__", None)
+    return False
+
+
 class Base(DeclarativeBase):
     pass
+
+
+SCHEMA_VERSION = 7
+
+
+class SchemaMigration(Base):
+    __tablename__ = "schema_migrations"
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    description: Mapped[str] = mapped_column(String)
+    applied_at: Mapped[str] = mapped_column(String, default=now)
 
 
 class User(Base):
@@ -91,7 +121,22 @@ class Visit(Base):
     note: Mapped[str] = mapped_column(Text, default="")
     occasion: Mapped[str] = mapped_column(String, default="casual")
     visited_on: Mapped[str] = mapped_column(String)
+    experience: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[str] = mapped_column(String, default=now)
+
+
+class DishEntry(Base):
+    __tablename__ = "dish_entries"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=uid)
+    user_id: Mapped[str] = mapped_column(String, index=True)
+    venue_id: Mapped[str] = mapped_column(String, index=True)
+    offering_key: Mapped[str] = mapped_column(String)
+    name: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String)
+    note: Mapped[str] = mapped_column(Text, default="")
+    tried_on: Mapped[str | None] = mapped_column(String, nullable=True)
+    preferences: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[str] = mapped_column(String, default=now)
 
 
 class Submission(Base):
@@ -241,23 +286,92 @@ engine = make_engine(settings().database_url)
 Session = sessionmaker(engine, expire_on_commit=False)
 
 
-def migrate():
-    # Additive, versioned migrations. Back up before upgrading a live database.
-    Base.metadata.create_all(engine)
-    if "priority" not in {c["name"] for c in inspect(engine).get_columns("jobs")}:
-        with engine.begin() as connection:
-            connection.execute(text("ALTER TABLE jobs ADD COLUMN priority INTEGER NOT NULL DEFAULT 20"))
-    with Session.begin() as db:
-        version = db.get(Counter, "schema_version")
-        if not version:
-            db.add(Counter(key="schema_version", value=5))
+def operational_indexes():
+    specs = [
+        ("uq_source_case_url", ResearchSource, ("case_id", "canonical_url"), True),
+        ("uq_task_case_ordinal", ResearchTask, ("case_id", "ordinal"), True),
+        ("ix_job_dispatch", Job, ("state", "priority", "due_at"), False),
+        ("ix_job_recovery", Job, ("state", "lease_until"), False),
+        ("ix_spot_owner_status", IdentifiedSpot, ("user_id", "status"), False),
+        ("ix_claim_current", Claim, ("venue_id", "status", "expires_at"), False),
+        ("ix_case_owner_state", Investigation, ("user_id", "state"), False),
+        ("ix_audit_owner_action", Audit, ("actor", "action"), False),
+        ("uq_dish_owner_venue_item", DishEntry, ("user_id", "venue_id", "offering_key"), True),
+        ("uq_visit_owner_venue_date", Visit, ("user_id", "venue_id", "visited_on"), True),
+    ]
+    result = []
+    for name, model, columns, unique in specs:
+        existing = next((i for i in model.__table__.indexes if i.name == name), None)
+        result.append(
+            existing
+            if existing is not None
+            else Index(name, *(model.__table__.c[c] for c in columns), unique=unique)
+        )
+    return result
+
+
+def migrate(target_engine=None):
+    """Serialized, transactional additive migration; duplicates fail closed without deleting evidence."""
+    target_engine = target_engine or engine
+    with target_engine.connect() as connection:
+        if target_engine.dialect.name == "sqlite":
+            connection.exec_driver_sql("BEGIN IMMEDIATE")
         else:
-            version.value = 5
-    if engine.dialect.name == "postgresql":
-        # These are backend-owned tables. Supabase browsers must never read them directly.
-        with engine.begin() as connection:
-            for table in Base.metadata.sorted_tables:
-                connection.execute(text(f'ALTER TABLE "{table.name}" ENABLE ROW LEVEL SECURITY'))
+            connection.begin()
+            if target_engine.dialect.name == "postgresql":
+                connection.execute(text("SELECT pg_advisory_xact_lock(672806)"))
+        try:
+            existing = inspect(connection).get_table_names()
+            version = (
+                connection.execute(text("SELECT value FROM counters WHERE key='schema_version'")).scalar()
+                if "counters" in existing
+                else None
+            )
+            if version and version > SCHEMA_VERSION:
+                raise RuntimeError("Database schema is newer than this application; refusing downgrade")
+            if "jobs" in existing and "priority" not in {
+                c["name"] for c in inspect(connection).get_columns("jobs")
+            }:
+                connection.execute(text("ALTER TABLE jobs ADD COLUMN priority INTEGER NOT NULL DEFAULT 20"))
+            if "visits" in existing and "experience" not in {
+                c["name"] for c in inspect(connection).get_columns("visits")
+            }:
+                connection.execute(
+                    text("ALTER TABLE visits ADD COLUMN experience JSON NOT NULL DEFAULT '{}'")
+                )
+            Base.metadata.create_all(connection)
+            for index in operational_indexes():
+                index.create(connection, checkfirst=True)
+            for number, description in [
+                (5, "Existing application baseline; earlier migration timestamps unknown"),
+                (6, "Serialized migrations and evidence/queue integrity indexes"),
+                (7, "Private dish diary and reversible visit preference snapshots"),
+            ]:
+                if not connection.execute(
+                    text("SELECT version FROM schema_migrations WHERE version=:v"), {"v": number}
+                ).scalar():
+                    connection.execute(
+                        SchemaMigration.__table__.insert().values(
+                            version=number, description=description, applied_at=now()
+                        )
+                    )
+            if version is None:
+                connection.execute(
+                    Counter.__table__.insert().values(key="schema_version", value=SCHEMA_VERSION)
+                )
+            else:
+                connection.execute(
+                    Counter.__table__.update()
+                    .where(Counter.key == "schema_version")
+                    .values(value=SCHEMA_VERSION)
+                )
+            if target_engine.dialect.name == "postgresql":
+                for table in Base.metadata.sorted_tables:
+                    connection.execute(text(f'ALTER TABLE "{table.name}" ENABLE ROW LEVEL SECURITY'))
+            connection.commit()
+        except Exception:
+            connection.rollback()
+            raise
 
 
 def get_db():

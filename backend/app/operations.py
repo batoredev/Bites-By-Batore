@@ -11,6 +11,22 @@ from .db import get_db, Venue, Claim, Job, Counter, Audit, now
 router = APIRouter(prefix="/api/admin")
 
 
+@router.post("/city-collection/start")
+def start_city_collection(user=Depends(admin_user), db=Depends(get_db)):
+    from .city_collection import start_collection
+
+    if settings().app_mode != "local" or not settings().city_directory_enabled:
+        raise HTTPException(409, "Enable the local city collection profile first")
+    return start_collection(db, user.id)
+
+
+@router.get("/city-collection")
+def city_collection_status(user=Depends(admin_user), db=Depends(get_db)):
+    from .city_collection import coverage
+
+    return coverage(db, user.id)
+
+
 @router.post("/launch-leads")
 def import_launch_leads(user=Depends(admin_user), db=Depends(get_db)):
     import json
@@ -122,8 +138,13 @@ def coverage_report(db):
 @router.get("/quality")
 def quality(user=Depends(admin_user), db=Depends(get_db)):
     from .evaluation import report
+    from .performance import owner_report
 
-    return {**coverage_report(db), "evaluation": report(db, user.id)}
+    return {
+        **coverage_report(db),
+        "evaluation": report(db, user.id),
+        "performance": owner_report(db, user.id),
+    }
 
 
 class LaunchReview(BaseModel):

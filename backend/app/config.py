@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     research_daily_limit: int = 5
     research_streaming: bool = True
     inventory_collection_enabled: bool = False
+    city_directory_enabled: bool = False
+    local_bulk_collection: bool = False
+    public_request_interval_seconds: float = Field(default=2.0, ge=0.25, le=60)
+    bulk_active_case_limit: int = Field(default=3, ge=1, le=10)
+    city_directory_url: Literal["https://overpass-api.de/api/interpreter"] = (
+        "https://overpass-api.de/api/interpreter"
+    )
     source_watch_days: int = Field(default=7, ge=1, le=90)
     source_watch_daily_limit: int = Field(default=6, ge=0, le=30)
     media_max_seconds: int = 180
@@ -41,6 +48,12 @@ class Settings(BaseSettings):
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "qwen3-vl:2b-instruct"
     whisper_model: str = "base"
+    analysis_reuse_enabled: bool = False
+    research_pipeline_enabled: bool = False
+    browser_reuse_enabled: bool = False
+    known_spot_skip_enabled: bool = False
+    ollama_gpu_layers: int = Field(default=-1, ge=-1, le=999)
+    ollama_keep_alive: Literal["2m", "5m", "10m"] = "2m"
     local_search_enabled: bool = False
     instagram_browser_enabled: bool = False
     browser_daily_limit: int = Field(default=12, ge=1, le=100)

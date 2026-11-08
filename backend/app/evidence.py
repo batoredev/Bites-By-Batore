@@ -5,6 +5,28 @@ from .db import Claim, Venue, Audit, now
 
 
 def validate_value(field, value):
+    if field == "offerings":
+        from .schemas import MenuOffering
+        from .menu import item_key
+        from pydantic import ValidationError
+
+        if not isinstance(value, list) or len(value) > 200:
+            return False
+        try:
+            rows = [MenuOffering.model_validate(row) for row in value]
+            return len({item_key(r.name) for r in rows}) == len(rows)
+        except (ValidationError, TypeError):
+            return False
+    if field == "dining_format":
+        from .menu import DINING_FORMATS
+
+        return isinstance(value, str) and value in DINING_FORMATS
+    if field == "amenities":
+        return isinstance(value, dict) and all(
+            k in {"parking", "washroom", "indoor_seating", "outdoor_seating"}
+            and (v is None or type(v) is bool)
+            for k, v in value.items()
+        )
     if field in {"packages", "dated_sessions"}:
         from .schemas import ActivityPackage, DatedSession
         from pydantic import ValidationError
@@ -83,6 +105,8 @@ def ingest_claim(db, data, actor, trusted=False):
     if not venue:
         raise ValueError("Unknown venue")
     value = data.value["value"]
+    if data.field in {"offerings", "dining_format"} and venue.category not in {"food", "cafe"}:
+        raise ValueError("Menus and dining formats apply to food venues")
     if not validate_value(data.field, value):
         raise ValueError("Invalid value for this fact")
     if data.observed_at > datetime.now(timezone.utc):

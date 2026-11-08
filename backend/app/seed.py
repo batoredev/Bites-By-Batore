@@ -4,6 +4,7 @@ from .db import Venue, Claim
 
 def seed_demo(db):
     if db.get(Venue, "demo-sushi"):
+        seed_demo_menus(db)
         return
     # Invented places, prices, hours and coordinates for testing. Never a city guide.
     rows = [
@@ -284,4 +285,86 @@ def seed_demo(db):
             reason="Unusual price drop; independent confirmation required",
         )
     )
+    db.commit()
+    seed_demo_menus(db)
+
+
+def seed_demo_menus(db):
+    from sqlalchemy import select
+
+    dishes = {
+        "demo-sushi": [
+            {
+                "name": "Avocado maki",
+                "cuisine": "Japanese",
+                "tags": ["sushi", "japanese"],
+                "vegetarian": True,
+                "spice": "mild",
+                "price_inr": 280,
+            },
+            {
+                "name": "Miso soup",
+                "cuisine": "Japanese",
+                "tags": ["soup", "japanese"],
+                "vegetarian": True,
+                "spice": "mild",
+                "price_inr": 120,
+            },
+        ],
+        "demo-coffee": [
+            {
+                "name": "Filter coffee",
+                "cuisine": "South Indian",
+                "tags": ["coffee"],
+                "vegetarian": True,
+                "price_inr": 80,
+            },
+            {
+                "name": "Chocolate tart",
+                "cuisine": "Bakery",
+                "tags": ["dessert"],
+                "vegetarian": True,
+                "price_inr": 140,
+            },
+        ],
+    }
+    observed = datetime.now(timezone.utc)
+    for venue in db.scalars(
+        select(Venue).where(Venue.is_demo.is_(True), Venue.category.in_(["food", "cafe"]))
+    ):
+        if db.scalar(select(Claim.id).where(Claim.venue_id == venue.id, Claim.field == "offerings")):
+            continue
+        menu = [
+            {**dish, "unit": "item", "available": True}
+            for dish in dishes.get(
+                venue.id,
+                [
+                    {
+                        "name": venue.details["speciality"],
+                        "price_inr": venue.details["price_per_person"],
+                        "tags": venue.tags,
+                        "vegetarian": venue.details.get("vegetarian"),
+                    }
+                ],
+            )
+        ]
+        for field, value in {
+            "offerings": menu,
+            "dining_format": "cafe" if venue.category == "cafe" else "casual_dining",
+            "amenities": {"parking": None, "washroom": True},
+        }.items():
+            db.add(
+                Claim(
+                    venue_id=venue.id,
+                    field=field,
+                    value={"value": value},
+                    source_url="demo://fixture/menu",
+                    source_type="demo",
+                    source_group="fixture",
+                    observed_at=observed.isoformat(),
+                    expires_at=(observed + timedelta(days=365)).isoformat(),
+                    status="accepted",
+                    reason="Fictional menu fixture; not real-world evidence",
+                )
+            )
     db.commit()

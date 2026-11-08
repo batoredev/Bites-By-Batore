@@ -1,3 +1,7 @@
+> Latest checkpoint: [STAGES_1_2_3_6.md](STAGES_1_2_3_6.md). 49 active unapproved candidates; 59 page-check records; current gaps, source conflicts and final approval blockers are visible in Data readiness. First-party source association is not branch verification. The original records of 10 merges and 24 holds are retained.
+
+> 8 November: [KNOWN_LOCATION_EARLY_EXIT.md](KNOWN_LOCATION_EARLY_EXIT.md) records the user's new known-location stop policy, immediate caption-draft saving, actual backfill and duplicate holds. References remain retained; remaining processing of a matched known location may stop. Canonical local inventory now has 86 active pending locations and retained held/merged history. No location is approved automatically.
+
 # Coimbatore itinerary inventory and Instagram work queue
 
 Updated 5 November 2026. This is an itinerary-planning product: food and/or entertainment within the user's time and budget. Investigation supplies its database; investigation is not the customer-facing goal.

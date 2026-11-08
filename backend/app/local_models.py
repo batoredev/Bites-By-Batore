@@ -8,8 +8,21 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 import httpx
+import threading
+import atexit
+from .performance import span, model_metrics
+from .analysis_inputs import AnalysisLimit
 from .config import ROOT, settings
 from .providers import Unavailable
+
+GPU_LANE = threading.BoundedSemaphore(1)
+
+
+@lru_cache(maxsize=1)
+def inference_client():
+    client = httpx.Client(timeout=240, trust_env=False)
+    atexit.register(client.close)
+    return client
 
 
 def endpoint():
@@ -68,7 +81,7 @@ def local_chat(prompt, content, schema, frames=None):
             "venue_candidates": {
                 "type": "array",
                 "items": candidate,
-                "maxItems": 0 if "comments" in content else 2,
+                **({"maxItems": 0} if "comments" in content else {}),
             },
             "unknowns": {"type": "array", "items": {"type": "string", "maxLength": 200}, "maxItems": 3},
         },
@@ -114,35 +127,66 @@ def local_chat(prompt, content, schema, frames=None):
         compact["required"].append("comment_labels")
     prompt = (
         prompt.split(" Schema: ")[0]
-        + " Return a brief JSON object under 200 words. Summarize instead of copying hashtags or repeating source text. Use empty arrays when no evidence exists. Never infer prices. Timestamp means seconds within the supplied clip, never a calendar date. Text-only observations use null timestamps. Use this exact structure: "
+        + " Return concise JSON, retaining every explicitly supported venue. Do not drop names to meet a word count. Summarize descriptions instead of copying hashtags. Preserve uncertainty, negation and branch distinctions. Use empty arrays when no evidence exists. Never infer prices. Timestamp means seconds within the supplied clip, never a calendar date. Text-only observations use null timestamps. Use this exact structure: "
         + json.dumps(compact)
     )
     images = (frames or [])[:4]
-    message = {"role": "user", "content": json.dumps(content, ensure_ascii=False)[:18000]}
+    serialized = json.dumps(content, ensure_ascii=False)
+    if len(serialized) > 18000:
+        raise AnalysisLimit("Evidence needs segmented analysis; no input was truncated")
+    message = {"role": "user", "content": serialized}
     if images:
         message["images"] = [f["base64"] for f in images]
         message["content"] += "\nFrame times (seconds, in image order): " + str(
             [f["seconds"] for f in images]
         )
+    from .local_tokenizer import input_tokens
+
+    context = 8192 if images else 4096
+    # Reserve output, chat-template overhead and conservative visual token space.
+    with span("token_budget"):
+        required = input_tokens(prompt, message["content"]) + 256 + 1024 * len(images) + 1536
+    if required > context:
+        raise AnalysisLimit("Evidence exceeds the verified context budget; split rather than truncate")
     try:
-        with httpx.Client(timeout=240, trust_env=False) as client:
-            response = client.post(
-                endpoint() + "/api/chat",
-                json={
-                    "model": settings().ollama_model,
-                    "stream": False,
-                    "think": False,
-                    "format": compact,
-                    "keep_alive": "2m",
-                    "options": {"temperature": 0, "num_ctx": 8192 if images else 4096, "num_predict": 1536},
-                    "messages": [{"role": "system", "content": prompt}, message],
-                },
-            )
-            response.raise_for_status()
-            result = response.json()
-            if result.get("done_reason") == "length":
-                raise Unavailable("Local analysis exceeded its output limit; evidence needs a shorter pass")
-            return result["message"]["content"]
+        with span("gpu_queue_wait"):
+            GPU_LANE.acquire()
+        try:
+            from .providers import ACTIVE_JOB, renew_job
+
+            if ACTIVE_JOB.get():
+                from .db import Session
+
+                with Session() as guard:
+                    renew_job(guard)  # Cancellation may have arrived while waiting for the GPU.
+            with span("local_model"):
+                response = inference_client().post(
+                    endpoint() + "/api/chat",
+                    json={
+                        "model": settings().ollama_model,
+                        "stream": False,
+                        "think": False,
+                        "format": compact,
+                        "keep_alive": settings().ollama_keep_alive,
+                        "options": {
+                            "temperature": 0,
+                            "num_ctx": context,
+                            "num_predict": 1536,
+                            "num_gpu": settings().ollama_gpu_layers,
+                        },
+                        "messages": [{"role": "system", "content": prompt}, message],
+                    },
+                )
+                response.raise_for_status()
+                result = response.json()
+                model_metrics(result)
+                if result.get("done_reason") == "length":
+                    raise AnalysisLimit(
+                        "Local analysis exceeded output limit; split the evidence instead of discarding it"
+                    )
+                return result["message"]["content"]
+        finally:
+            GPU_LANE.release()
     except (httpx.HTTPError, ValueError, KeyError) as exc:
         raise Unavailable("Local model unavailable or timed out; check Ollama and installed model") from exc
 
@@ -214,7 +258,7 @@ def transcribe(media):
                 "language": info.language,
                 "language_probability": info.language_probability,
                 "segments": rows,
-                "text": "\n".join(s["text"] for s in rows)[:12000],
+                "text": "\n".join(s["text"] for s in rows),
                 "model": cfg.whisper_model,
                 "machine_transcript": True,
             }

@@ -396,7 +396,7 @@ def test_web_enrichment_does_not_promote_search_pages_to_official(client, auth, 
     import app.spot_search as module
 
     user = client.get("/api/me", headers=auth).json()["id"]
-    monkeypatch.setattr(module, "quota", lambda db: None)
+    monkeypatch.setattr(module, "quota", lambda db, **kwargs: None)
     monkeypatch.setattr(
         module.subprocess,
         "run",

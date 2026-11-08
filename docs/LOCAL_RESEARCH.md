@@ -1,4 +1,10 @@
+> Latest 6 November continuation: [STAGES_1_2_3_6.md](STAGES_1_2_3_6.md) records the 300-call local daily allowance, 168 discovery combinations, recurring page/reel monitoring and private review-packet export. Sources remain unverified until review; local model/storage requirements are unchanged.
+
 > Latest update: [INVENTORY_COLLECTION.md](INVENTORY_COLLECTION.md) supersedes the old total-source limit. Three is a batch size; all found sources are retained. Schema 5 adds identified spots and explicit per-location approval. Current local frame budget is eight and browser pacing is thirty visits/day.
+
+> 7 November performance continuation: [PERFORMANCE_IMPLEMENTATION.md](PERFORMANCE_IMPLEMENTATION.md) documents the current bounded collection/analysis lanes, versioned interpretation reuse, local token-budget guard, ten-minute residency, browser helper, timing screens and rollback. Source coverage and explicit location approval are preserved; live quality and sustained-operation validation remain open.
+
+> 8 November: [KNOWN_LOCATION_EARLY_EXIT.md](KNOWN_LOCATION_EARLY_EXIT.md) documents enabled known-location discovery exits, local SQL synchronization, review export, duplicate handling and verified full GPU placement. No model-weight fine-tuning or venue approval occurred.
 
 # Local Instagram research
 

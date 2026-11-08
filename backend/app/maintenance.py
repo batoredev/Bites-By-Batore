@@ -26,6 +26,7 @@ def after(hours):
 def page_urls(row):
     urls = [s.get("url", "") for s in row.data.get("sources", [])]
     urls += row.data.get("menu_links", [])
+    urls += row.data.get("website_candidates", [])
     return sorted(
         {
             u
@@ -33,7 +34,14 @@ def page_urls(row):
             if urlparse(u).scheme == "https"
             and not any(
                 (urlparse(u).hostname or "").endswith(h)
-                for h in ("instagram.com", "facebook.com", "youtube.com", "google.com", "goo.gl")
+                for h in (
+                    "instagram.com",
+                    "facebook.com",
+                    "youtube.com",
+                    "google.com",
+                    "goo.gl",
+                    "openstreetmap.org",
+                )
             )
         }
     )
@@ -41,7 +49,7 @@ def page_urls(row):
 
 def expected_fields(row, url, doc):
     """Extract only narrow configured first-party assertions, with literal evidence checks."""
-    values = {k: doc[k] for k in ("offerings", "menu_links", "maps_links") if doc.get(k)}
+    values = {k: doc[k] for k in ("offerings", "menu_links", "maps_links", "hours_candidates", "vibes") if doc.get(k)}
     seeds = json.loads((ROOT / "resources/coimbatore-spot-seeds.json").read_text(encoding="utf-8"))["spots"]
     text = " ".join(doc["text"].casefold().split())
     gaps = []
@@ -210,17 +218,19 @@ def expire_critical_facts(db):
             venue.status, venue.updated_at = "review", now()
             venue.revision += 1
             venue.details = {k: v for k, v in venue.details.items() if k != "location_approval"}
-            for row in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.venue_id == venue.id)):
+            related = list(db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.venue_id == venue.id)))
+            for row in related:
                 row.status = "awaiting_approval"
                 alert(row, "critical_facts_expired", "", {"fields": sorted(missing)})
-            db.add(
-                Audit(
-                    actor="worker",
-                    action="maintenance.expired",
-                    target=venue.id,
-                    detail={"fields": sorted(missing)},
+            for owner in {row.user_id for row in related} or {"worker"}:
+                db.add(
+                    Audit(
+                        actor=owner,
+                        action="maintenance.expired",
+                        target=venue.id,
+                        detail={"fields": sorted(missing), "performed_by": "worker"},
+                    )
                 )
-            )
             held.append(venue.id)
     db.commit()
     return held
@@ -238,7 +248,9 @@ def approval_packet(db, row):
         blockers.append("Independently confirm exact Maps name, address and branch")
     if not venue:
         blockers.append("Prepare a pending venue with checked address and coordinates")
-    elif not venue.details.get("branch_confirmed") or not venue.details.get("maps_identity", {}).get("confirmed_by"):
+    elif not venue.details.get("branch_confirmed") or not venue.details.get("maps_identity", {}).get(
+        "confirmed_by"
+    ):
         blockers.append("Confirm exact branch and Maps identity on the prepared venue")
     blockers += [
         "Accept current " + k + " evidence" for k in sorted({"hours", "closed", "price_per_person"} - current)
@@ -360,8 +372,10 @@ def schedule_maintenance(db, user_id):
         if row.status in INACTIVE:
             continue
         search_due = row.data.get("web_search_next_at", "")
-        if not search_due and "web_search_results" in row.data and not any(
-            r.get("status") == "pending" for r in row.data["web_search_results"]
+        if (
+            not search_due
+            and "web_search_results" in row.data
+            and not any(r.get("status") == "pending" for r in row.data["web_search_results"])
         ):
             # Adopt older completed searches into the recurring cycle without discarding evidence.
             search_due = after(24 * 7)
@@ -426,7 +440,7 @@ def schedule_maintenance(db, user_id):
                 "source_watch",
                 {"source_id": source.id, "user_id": user_id},
                 f"source-watch:{source.id}:{day}",
-                priority=24,
+                priority=98,
             ).id
         )
         remaining -= 1
@@ -472,9 +486,34 @@ def watch_source(db, source_id, user_id):
                         {"before": old_hash, "after": caption_hash},
                     )
                     hold_published(db, row, "Supporting reel caption changed; review associated claims")
+            from .db import Investigation
+            from .research import start_case
+
+            original = db.get(Investigation, source.case_id)
+            followup = db.scalar(
+                select(Investigation).where(
+                    Investigation.user_id == user_id,
+                    Investigation.context["maintenance_source_id"].as_string() == source.id,
+                    Investigation.context["maintenance_watch_hash"].as_string() == caption_hash,
+                )
+            )
+            if not followup:
+                followup = start_case(
+                    db,
+                    user_id,
+                    original.query,
+                    context={
+                        "url": source.canonical_url,
+                        "maintenance_source_id": source.id,
+                        "maintenance_watch_hash": caption_hash,
+                        "refresh_reason": "Supporting reel caption changed",
+                    },
+                    seed_sources=[{"platform": "instagram", "url": source.canonical_url}],
+                )
+            watch["reinvestigation_case_id"] = followup.id
         # Do not silently attach older predictions to a changed input. Recollection remains a review lead.
         watch["action"] = (
-            "Reinvestigate changed caption before accepting facts"
+            "Reinvestigation queued; changed caption remains unverified"
             if changed
             else "Caption monitored; no factual verification"
         )

@@ -1,8 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $pidFile = Join-Path $projectRoot 'data\processes.json'
-if (-not (Test-Path -LiteralPath $pidFile)) { Write-Host 'No script-managed processes recorded.'; exit 0 }
-$record = Get-Content -LiteralPath $pidFile | ConvertFrom-Json
+if (Test-Path -LiteralPath $pidFile) { $record = Get-Content -LiteralPath $pidFile | ConvertFrom-Json }
+else { $record = [pscustomobject]@{ processes=@(); api=0; worker=0; started=(Get-Date).ToString('o') } }
 $ownedProcesses = @($record.processes)
 if (-not $record.processes) {
     # Compatibility with the first launcher record, including Python's redirector child.
@@ -16,6 +16,19 @@ if (-not $record.processes) {
         }
     }
 }
+# Recover this workspace's Python redirector trees even when an older launcher
+# record was replaced. Never match unrelated Python workers by module name alone.
+$pythonExe = Join-Path $projectRoot 'backend\.venv\Scripts\python.exe'
+$allProcesses = @(Get-CimInstance Win32_Process)
+foreach ($rootProcess in $allProcesses) {
+    if ($rootProcess.ExecutablePath -ieq $pythonExe -and $rootProcess.CommandLine -match 'app\.main:app|app\.jobs') {
+        foreach ($owned in @($rootProcess) + @($allProcesses | Where-Object { $_.ParentProcessId -eq $rootProcess.ProcessId -and $_.CommandLine -match 'app\.main:app|app\.jobs' })) {
+            if ($owned.ProcessId -notin @($ownedProcesses | ForEach-Object { $_.id })) {
+                $ownedProcesses += [pscustomobject]@{ id=$owned.ProcessId; created=$owned.CreationDate.ToUniversalTime().ToString('o') }
+            }
+        }
+    }
+}
 [array]::Reverse($ownedProcesses)
 foreach ($owned in $ownedProcesses) {
     $process = Get-CimInstance Win32_Process -Filter "ProcessId=$($owned.id)" -ErrorAction SilentlyContinue
@@ -24,4 +37,4 @@ foreach ($owned in $ownedProcesses) {
         Write-Host "Stopped Batore process $($owned.id)"
     }
 }
-Remove-Item -LiteralPath $pidFile
+if (Test-Path -LiteralPath $pidFile) { Remove-Item -LiteralPath $pidFile }

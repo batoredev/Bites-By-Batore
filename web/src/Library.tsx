@@ -1,13 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import {
-  DownloadSimple,
-  Trash,
-  MagnifyingGlass,
-  ArrowRight,
-} from "@phosphor-icons/react";
+import { DownloadSimple, Trash, ArrowRight } from "@phosphor-icons/react";
 import { api } from "./api";
 import {
-  categories,
   PageTitle,
   Empty,
   ErrorBox,
@@ -16,85 +10,10 @@ import {
   Loading,
 } from "./components";
 import type { Venue, Plan, User, Visit, Profile } from "./types";
+import DishDiary from "./DishDiary";
+import VisitHistory from "./VisitHistory";
 
-export function Places({
-  venues,
-  onVenue,
-  onSave,
-}: {
-  venues: Venue[];
-  onVenue: (v: Venue) => void;
-  onSave: (v: Venue) => void;
-}) {
-  const [category, setCategory] = useState("all"),
-    [q, setQ] = useState("");
-  const rows = venues.filter(
-    (v) =>
-      (category === "all" || v.category === category) &&
-      `${v.name} ${v.area} ${v.tags.join(" ")}`
-        .toLowerCase()
-        .includes(q.toLowerCase()),
-  );
-  return (
-    <>
-      <PageTitle
-        eyebrow="YOUR CITY, A LITTLE CLOSER"
-        title="Good places. More possibilities."
-        description="Explore by flavour, activity or the kind of day you want."
-      />
-      <label className="search-box">
-        <MagnifyingGlass size={20} />
-        <input
-          aria-label="Search places"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search sushi, coffee, bowling, a neighbourhood…"
-        />
-      </label>
-      <div className="category-row browse-categories">
-        <button
-          className={`chip ${category === "all" ? "active" : ""}`}
-          onClick={() => setCategory("all")}
-        >
-          Everything
-        </button>
-        {categories.map((c) => (
-          <button
-            key={c.id}
-            className={`chip ${category === c.id ? "active" : ""}`}
-            onClick={() => setCategory(c.id)}
-          >
-            <c.icon />
-            {c.label}
-          </button>
-        ))}
-      </div>
-      <p className="muted small-text">
-        {rows.length} places ·{" "}
-        {venues[0]?.is_demo
-          ? "Fictional inventory for demonstration"
-          : "Published venue records"}
-      </p>
-      {rows.length ? (
-        <div className="venue-grid">
-          {rows.map((v) => (
-            <VenueCard
-              key={v.id}
-              venue={v}
-              onOpen={() => onVenue(v)}
-              onSave={() => onSave(v)}
-            />
-          ))}
-        </div>
-      ) : (
-        <Empty title="Nothing here yet">
-          Try another category or search. Live venues appear after their
-          essential facts have been verified.
-        </Empty>
-      )}
-    </>
-  );
-}
+export { default as Places } from "./ExplorePlaces";
 
 export function Saved({
   venues,
@@ -112,13 +31,20 @@ export function Saved({
   revision: number;
 }) {
   const [plans, setPlans] = useState<Plan[]>([]),
+    [savedPlaces, setSavedPlaces] = useState<Venue[]>(
+      venues.filter((v) => v.saved),
+    ),
     [busy, setBusy] = useState(true),
     [error, setError] = useState(""),
     [tab, setTab] = useState("plans");
   useEffect(() => {
     setBusy(true);
-    api<Plan[]>("/plans")
-      .then(setPlans)
+    setError("");
+    Promise.all([api<Plan[]>("/plans"), api<Venue[]>("/me/saved-venues")])
+      .then(([foundPlans, foundPlaces]) => {
+        setPlans(foundPlans);
+        setSavedPlaces(foundPlaces);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setBusy(false));
   }, [revision]);
@@ -129,18 +55,20 @@ export function Saved({
         title="Your little collection."
         description="Plans worth keeping and places you want to come back to."
       />
-      <div className="tabs">
+      <div className="tabs" role="group" aria-label="Collection views">
         <button
           className={tab === "plans" ? "active" : ""}
+          aria-pressed={tab === "plans"}
           onClick={() => setTab("plans")}
         >
           Saved plans <span>{plans.length}</span>
         </button>
         <button
           className={tab === "places" ? "active" : ""}
+          aria-pressed={tab === "places"}
           onClick={() => setTab("places")}
         >
-          Saved places <span>{venues.filter((v) => v.saved).length}</span>
+          Saved places <span>{savedPlaces.length}</span>
         </button>
       </div>
       <ErrorBox message={error} />
@@ -171,18 +99,16 @@ export function Saved({
             rechecked when you’re ready.
           </Empty>
         )
-      ) : venues.some((v) => v.saved) ? (
+      ) : savedPlaces.length ? (
         <div className="venue-grid">
-          {venues
-            .filter((v) => v.saved)
-            .map((v) => (
-              <VenueCard
-                key={v.id}
-                venue={v}
-                onOpen={() => onVenue(v)}
-                onSave={() => onSaveVenue(v)}
-              />
-            ))}
+          {savedPlaces.map((v) => (
+            <VenueCard
+              key={v.id}
+              venue={v}
+              onOpen={() => onVenue(v)}
+              onSave={() => onSaveVenue(v)}
+            />
+          ))}
         </div>
       ) : (
         <Empty title="Your next favourite is out there">
@@ -207,6 +133,9 @@ export function Taste({
     [avoided, setAvoided] = useState(
       (user.profile.avoided_tags || []).join(", "),
     ),
+    [cuisines, setCuisines] = useState(
+      (user.profile.preferred_cuisines || []).join(", "),
+    ),
     [profile, setProfile] = useState<Profile>(user.profile),
     [visits, setVisits] = useState<Visit[]>([]),
     [error, setError] = useState(""),
@@ -222,6 +151,7 @@ export function Taste({
     setProfile(user.profile);
     setLiked((user.profile.liked_tags || []).join(", "));
     setAvoided((user.profile.avoided_tags || []).join(", "));
+    setCuisines((user.profile.preferred_cuisines || []).join(", "));
   }, [user]);
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -243,6 +173,11 @@ export function Taste({
           vegetarian: !!profile.vegetarian,
           wheelchair: !!profile.wheelchair,
           learn_from_visits: profile.learn_from_visits !== false,
+          preferred_cuisines: cuisines
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+          spice_preference: profile.spice_preference || "any",
         }),
       });
       setMessage("Your preferences are saved.");
@@ -291,8 +226,18 @@ export function Taste({
         title="A taste of who you are."
         description="Tell us what you like. Keep, change or clear what the app learns."
       />
+      <nav className="section-shortcuts" aria-label="Taste sections">
+        <a href="#preferences">Preferences</a>
+        <a href="#dish-diary">Dish diary</a>
+        <a href="#visit-history">Visit history</a>
+        <a href="#privacy">Privacy & data</a>
+      </nav>
       <div className="profile-grid">
-        <form className="panel stack-form" onSubmit={save}>
+        <form
+          className="panel stack-form preference-form"
+          id="preferences"
+          onSubmit={save}
+        >
           <h2>Your preferences</h2>
           <label>
             What should we call you?
@@ -318,6 +263,32 @@ export function Taste({
               onChange={(e) => setAvoided(e.target.value)}
               placeholder="spicy, outdoor"
             />
+          </label>
+          <label>
+            Preferred cuisines <small>Separate with commas</small>
+            <input
+              value={cuisines}
+              onChange={(e) => setCuisines(e.target.value)}
+              placeholder="Japanese, South Indian"
+            />
+          </label>
+          <label>
+            Preferred spice level
+            <select
+              value={profile.spice_preference || "any"}
+              onChange={(e) =>
+                setProfile({
+                  ...profile,
+                  spice_preference: e.target
+                    .value as Profile["spice_preference"],
+                })
+              }
+            >
+              <option value="any">No preference</option>
+              <option value="mild">Mild</option>
+              <option value="medium">Medium</option>
+              <option value="hot">Hot</option>
+            </select>
           </label>
           <div className="checks vertical">
             <label>
@@ -351,7 +322,7 @@ export function Taste({
                   })
                 }
               />
-              Learn from my confirmed visit feedback
+              Learn from my visit and dish feedback
             </label>
           </div>
           <button className="primary" disabled={busy}>
@@ -364,8 +335,9 @@ export function Taste({
             <div className="eyebrow">LEARNED, NOT ASSUMED</div>
             <h2>Your emerging interests</h2>
             <p className="muted">
-              These modest signals come from food or activity scores on
-              confirmed visits. A bookmark or skip never means you went.
+              These signals come from your visit scores and dishes marked as
+              favourites or not for you. Saved places and dishes to try do not
+              count as visits or taste feedback.
             </p>
             {Object.entries(user.profile.inferred || {}).length ? (
               <div className="inference-list">
@@ -394,7 +366,7 @@ export function Taste({
               it.
             </p>
           </section>
-          <section className="panel privacy-panel">
+          <section className="panel privacy-panel" id="privacy">
             <h3>Your memory, your control</h3>
             <button className="text-button" onClick={download}>
               <DownloadSimple />
@@ -416,7 +388,7 @@ export function Taste({
                 <p>
                   {erase === "all"
                     ? "This erases your saved plans, saved places, submissions and taste history. Your sign-in remains."
-                    : "This clears preferences and confirmed visits. Saved places and plans stay."}
+                    : "This clears preferences, confirmed visits and your dish diary. Saved places and plans stay."}
                 </p>
                 <button
                   className="danger-button"
@@ -438,34 +410,33 @@ export function Taste({
           {message}
         </div>
       )}
-      <div className="section-heading">
-        <h2>The places you’ve been.</h2>
-        <span className="muted">Only visits you recorded</span>
-      </div>
-      {visits.length ? (
-        <div className="visit-list">
-          {visits.map((v) => (
-            <article key={v.id}>
-              <div>
-                <strong>
-                  {venues.find((p) => p.id === v.venue_id)?.name || "Venue"}
-                </strong>
-                <p>{v.note || "No note added"}</p>
-              </div>
-              <div>
-                <strong>{v.rating}/5</strong>
-                <small>
-                  {v.visited_on} · {v.occasion}
-                </small>
-              </div>
-            </article>
-          ))}
+      <DishDiary changed={onUpdate} />
+      <section id="visit-history" className="visit-history">
+        <div className="section-heading">
+          <h2>The places you’ve been.</h2>
+          <span className="muted">Only visits you recorded</span>
         </div>
-      ) : (
-        <Empty title="Your story starts with a visit">
-          Open a place and choose “I visited” to tell us how it went.
-        </Empty>
-      )}
+        {visits.length ? (
+          <div className="visit-list">
+            {visits.map((v) => (
+              <VisitHistory
+                key={v.id}
+                visit={v}
+                venueName={
+                  v.experience?.venue_name ||
+                  venues.find((p) => p.id === v.venue_id)?.name ||
+                  "Venue"
+                }
+                changed={onUpdate}
+              />
+            ))}
+          </div>
+        ) : (
+          <Empty title="Your story starts with a visit">
+            Open a place and choose “I visited” to tell us how it went.
+          </Empty>
+        )}
+      </section>
     </>
   );
 }

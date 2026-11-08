@@ -30,7 +30,7 @@ DESCRIPTORS = set(
     "the and at in cafe cafes coffee restaurant restaurants grills grill japanese coimbatore kovai cbe".split()
 )
 GENERIC = set(
-    "a an new best first hidden gem aesthetic inspired pinterest food foods foodie foodies spot spots place location venue facility track unknown unspecified unnamed for you page lounge go karting simulator motion racing launch tea shop stall park sushi ramen momo kalan british date night".split()
+    "a an new best first hidden gem aesthetic inspired pinterest food foods foodie foodies spot spots place location venue facility track unknown unspecified unnamed for you page lounge club car race go karting simulator motion racing launch tea shop stall park sushi ramen momo kalan british date night".split()
 )
 
 
@@ -150,14 +150,32 @@ def same_branch(row, name, area, data):
     if any(left_clues[k] and right_clues[k] and left_clues[k] != right_clues[k] for k in left_clues):
         return False
     shared_source = bool(source_urls(row.data) & source_urls(data))
+    close_coordinates = False
+    a, b = row.data.get("coordinates", {}), data.get("coordinates", {})
+    if all(k in a and k in b for k in ("lat", "lng")):
+        from .planner import km
+
+        try:
+            distance = km((float(a["lat"]), float(a["lng"])), (float(b["lat"]), float(b["lng"])))
+            if distance > 0.15:
+                return False
+            close_coordinates = distance <= 0.025 and name_key(row.name) == name_key(name)
+        except (ValueError, TypeError):
+            return False
+    exact_address = bool(old_address) and name_key(old_address) == name_key(new_address or "")
+    if (data.get("strict_identity") or row.data.get("strict_identity")) and not (
+        shared_source or close_coordinates or exact_address
+    ):
+        return False
     exact = any(
         name_key(alias).replace(" ", "") == name_key(name).replace(" ", "")
         for alias in [row.name, *row.data.get("aliases", [])]
     )
     return (
         shared_source
+        or close_coordinates
         or (exact and bool(area) and area_key(row.area) == area_key(area))
-        or (bool(old_address) and name_key(old_address) == name_key(new_address or ""))
+        or exact_address
     )
 
 

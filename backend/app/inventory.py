@@ -40,9 +40,12 @@ class Document(HTMLParser):
         self.url, self.links, self.items = url, [], []
         self.capture, self.parts, self.last_name = "", [], ""
         self.images = []
+        self.ld_active, self.ld_parts, self.ld_documents = False, [], []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "script" and attrs.get("type", "").lower() == "application/ld+json":
+            self.ld_active, self.ld_parts = True, []
         if tag == "meta" and attrs.get("property") in {"og:image", "og:image:url"} and attrs.get("content"):
             self.images.append(urljoin(self.url, attrs["content"]))
         if tag == "a" and attrs.get("href"):
@@ -54,10 +57,18 @@ class Document(HTMLParser):
             self.capture, self.parts = hook, []
 
     def handle_data(self, value):
+        if self.ld_active:
+            self.ld_parts.append(value)
         if self.capture:
             self.parts.append(value)
 
     def handle_endtag(self, tag):
+        if tag == "script" and self.ld_active:
+            try:
+                self.ld_documents.append(json.loads("".join(self.ld_parts)))
+            except (ValueError, RecursionError):
+                pass
+            self.ld_active, self.ld_parts = False, []
         if self.capture and tag == "span":
             text = "".join(self.parts).strip()
             if self.capture == "item.name":
@@ -75,10 +86,97 @@ class Document(HTMLParser):
             self.capture = ""
 
 
+def structured_observations(documents, url):
+    """Literal schema.org observations only; never infer prices/hours or approve facts."""
+    result = {"offerings": [], "hours_candidates": [], "vibes": [], "menu_links": [], "structured_venues": []}
+    pending = list(documents)
+    while pending:
+        value = pending.pop()
+        if isinstance(value, list):
+            pending.extend(value)
+            continue
+        if not isinstance(value, dict):
+            continue
+        pending.extend(v for v in value.values() if isinstance(v, (list, dict)))
+        kind = value.get("@type", [])
+        kinds = set(kind if isinstance(kind, list) else [kind])
+        if "MenuItem" in kinds and isinstance(value.get("name"), str):
+            offers = value.get("offers", [])
+            for offer in offers if isinstance(offers, list) else [offers]:
+                if not isinstance(offer, dict) or offer.get("priceCurrency") != "INR":
+                    continue
+                price = str(offer.get("price", "")).replace(",", "")
+                if re.fullmatch(r"\d+(?:\.\d{1,2})?", price):
+                    result["offerings"].append(
+                        {
+                            "name": value["name"],
+                            "price_inr": float(price),
+                            "unit": "item",
+                            "source_url": url,
+                            "basis": "Literal JSON-LD MenuItem/INR offer; branch, taxes and current availability unverified",
+                        }
+                    )
+        if kinds & {
+            "Restaurant",
+            "CafeOrCoffeeShop",
+            "FoodEstablishment",
+            "LocalBusiness",
+            "MovieTheater",
+            "BowlingAlley",
+            "AmusementPark",
+        }:
+            if value.get("name"):
+                result["structured_venues"].append({"name": value["name"], "address": value.get("address")})
+            raw_hours = value.get("openingHours", [])
+            for hours in raw_hours if isinstance(raw_hours, list) else [raw_hours]:
+                if isinstance(hours, str) and hours.strip():
+                    result["hours_candidates"].append(
+                        {
+                            "value": hours,
+                            "source_url": url,
+                            "basis": "Literal website JSON-LD; current opening hours unverified",
+                        }
+                    )
+            specifications = value.get("openingHoursSpecification", [])
+            for spec in specifications if isinstance(specifications, list) else [specifications]:
+                if isinstance(spec, dict) and spec.get("opens") and spec.get("closes"):
+                    result["hours_candidates"].append(
+                        {
+                            "value": json.dumps(spec, ensure_ascii=False, sort_keys=True),
+                            "source_url": url,
+                            "basis": "Literal website hours specification; dates/branch/current applicability unverified",
+                        }
+                    )
+            menu = value.get("hasMenu") or value.get("menu")
+            if isinstance(menu, str):
+                target = urljoin(url, menu)
+                if urlparse(target).scheme == "https" and urlparse(target).hostname == urlparse(url).hostname:
+                    result["menu_links"].append(target)
+            amenities = value.get("amenityFeature", [])
+            for feature in amenities if isinstance(amenities, list) else [amenities]:
+                if not isinstance(feature, dict) or feature.get("value") not in (True, "true"):
+                    continue
+                label = str(feature.get("name", "")).casefold()
+                tag = {"outdoor seating": "outdoor", "rooftop": "rooftop", "live music": "live_music"}.get(
+                    label
+                )
+                if tag:
+                    result["vibes"].append(
+                        {
+                            "tag": tag,
+                            "evidence": feature["name"],
+                            "source_url": url,
+                            "basis": "Explicit website amenity statement; current branch/vibe unverified",
+                        }
+                    )
+    return result
+
+
 def parse_document(html, url):
     document, visible = Document(url), VisibleText()
     document.feed(html)
     visible.feed(html)
+    structured = structured_observations(document.ld_documents, url)
     links = unique(document.links)
     maps = [
         u
@@ -105,9 +203,12 @@ def parse_document(html, url):
                 }
     return {
         "maps_links": maps,
-        "menu_links": menu,
+        "menu_links": unique(menu + structured["menu_links"]),
         "coordinates": coordinates,
-        "offerings": unique(document.items),
+        "offerings": unique(document.items + structured["offerings"]),
+        "hours_candidates": unique(structured["hours_candidates"]),
+        "vibes": unique(structured["vibes"]),
+        "structured_venues": unique(structured["structured_venues"]),
         "image_links": unique(document.images)[:2],
         "text": "\n".join(visible.parts),
     }

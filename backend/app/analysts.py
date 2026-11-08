@@ -7,6 +7,8 @@ from typing import Literal
 from pydantic import BaseModel, Field, ValidationError
 from .config import settings
 from .providers import call, require, Unavailable, renew_job
+from .performance import span
+from .analysis_inputs import split_evidence, AnalysisLimit
 
 
 class Observation(BaseModel):
@@ -42,7 +44,7 @@ class AnalystResult(BaseModel):
     summary: str = Field(default="", max_length=2000)
     languages: list[str] = Field(default_factory=list, max_length=10)
     observations: list[Observation] = Field(default_factory=list, max_length=50)
-    venue_candidates: list[Candidate] = Field(default_factory=list, max_length=5)
+    venue_candidates: list[Candidate] = Field(default_factory=list)
     unknowns: list[str] = Field(default_factory=list, max_length=20)
     corrections: list[str] = Field(default_factory=list, max_length=20)
     sponsorship: str = Field(default="unknown", max_length=300)
@@ -58,7 +60,7 @@ ROLE_PROMPTS = {
 }
 
 
-def analyze(db, role, content, media=None, video_url=None, frames=None):
+def analyze(db, role, content, media=None, video_url=None, frames=None, on_pass=None):
     renew_job(db)
     cfg = settings()
     local = cfg.app_mode == "local" or cfg.analysis_provider == "ollama"
@@ -74,7 +76,7 @@ def analyze(db, role, content, media=None, video_url=None, frames=None):
         "A title like 'new cafe in Coimbatore', a neighbourhood, dish name, creator handle, or a nearby landmark is not a venue name. "
         "Do not assign one venue's dishes, prices or atmosphere to another venue in the same reel. Keep out-of-city address clues unchanged; the query does not prove location. "
         "For visual observations containing readable text, put only the exact original-language lettering in verbatim_text. Use null for non-text scenes or unreadable lettering; do not translate or complete OCR guesses. "
-        "Be concise: at most 5 observations, 3 venue candidates and 5 unknowns. Omit unsupported facts. "
+        "Be concise but retain every explicitly supported venue and branch; do not top-N prune venues. Omit unsupported facts. "
         + ROLE_PROMPTS[role]
         + (" Schema: " + json.dumps(schema) if not local else "")
     )
@@ -103,32 +105,68 @@ def analyze(db, role, content, media=None, video_url=None, frames=None):
                 raise Unavailable(
                     "Local video analysis requires retrievable video bytes; a permalink is insufficient"
                 )
-            frames = extract_frames(media)
+            with span("frame_preparation"):
+                frames = extract_frames(media)
             if not frames:
                 raise Unavailable("No readable video frames were extracted")
             content = dict(content)
             try:
-                content["audio"] = transcribe(media)
+                with span("transcription"):
+                    content["audio"] = transcribe(media)
             except Unavailable as exc:
                 content["audio_unavailable"] = str(exc)
             prompt += " Only the supplied sampled frames and machine transcript were inspected. No speech observations without a nonempty audio transcript. State sampling and transcription limitations."
         groups = [frames[i : i + 4] for i in range(0, len(frames), 4)] if frames else [None]
         passes = []
-        for group in groups:
+        coverage = []
+        early_exit = False
+
+        def inspect(part, group, depth=0):
+            nonlocal early_exit
+            if early_exit:
+                return
             renew_job(db)
-            output = local_chat(prompt, content, schema, group)
+            try:
+                output = local_chat(prompt, part, schema, group)
+            except AnalysisLimit:
+                if depth >= 8:
+                    raise AnalysisLimit(
+                        "Evidence still exceeds context/output bounds after segmentation; coverage incomplete"
+                    )
+                if group and len(group) > 1:
+                    middle = len(group) // 2
+                    inspect(part, group[:middle], depth + 1)
+                    inspect(part, group[middle:], depth + 1)
+                    return
+                pieces = split_evidence(part, max(1000, len(json.dumps(part, ensure_ascii=False)) // 2))
+                if len(pieces) <= 1:
+                    raise AnalysisLimit(
+                        "This evidence segment exceeds the output bound; requires review, not truncation"
+                    )
+                for piece in pieces:
+                    inspect(piece, group, depth + 1)
+                return
             try:
                 passes.append(AnalystResult.model_validate_json(output).model_dump())
             except ValidationError as exc:
                 raise Unavailable("Local specialist returned an invalid evidence structure") from exc
+            coverage.append(
+                {"segment": part.get("evidence_segment"), "frames": [f["seconds"] for f in group or []]}
+            )
+            if on_pass and on_pass({"venue_candidates": [c for p in passes for c in p["venue_candidates"]]}):
+                early_exit = True
+
+        for group in groups:
+            for part in split_evidence(content):
+                inspect(part, group)
         result = passes[0]
         if len(passes) > 1:
             result = {
                 **result,
                 "summary": " ".join(p["summary"] for p in passes)[:2000],
-                "observations": [o for p in passes for o in p["observations"]][:50],
-                "venue_candidates": [c for p in passes for c in p["venue_candidates"]][:5],
-                "unknowns": list(dict.fromkeys(u for p in passes for u in p["unknowns"]))[:20],
+                "observations": [o for p in passes for o in p["observations"]],
+                "venue_candidates": [c for p in passes for c in p["venue_candidates"]],
+                "unknowns": list(dict.fromkeys(u for p in passes for u in p["unknowns"])),
                 "languages": list(dict.fromkeys(l for p in passes for l in p["languages"]))[:10],
                 "followup_seconds": list(dict.fromkeys(t for p in passes for t in p["followup_seconds"]))[:4],
             }
@@ -191,6 +229,8 @@ def analyze(db, role, content, media=None, video_url=None, frames=None):
         key = (
             candidate["name"].casefold().strip(),
             tuple(x.casefold().strip() for x in candidate["address_clues"]),
+            candidate["dish_or_activity"],
+            candidate["price_claim"],
         )
         unique_candidates.setdefault(key, candidate)
     result["venue_candidates"] = list(unique_candidates.values())
@@ -201,11 +241,14 @@ def analyze(db, role, content, media=None, video_url=None, frames=None):
         )
     result["observations"] = list(distinct.values())
     visual_signatures = []
+    inspected = {t for c in coverage for t in c["frames"]} if local else set()
     if local and role == "video" and frames:
         import base64
         from .visual_places import signature
 
         for frame in frames:
+            if frame["seconds"] not in inspected:
+                continue
             try:
                 visual_signatures.append(
                     {"seconds": frame["seconds"], "signature": signature(base64.b64decode(frame["base64"]))}
@@ -219,7 +262,9 @@ def analyze(db, role, content, media=None, video_url=None, frames=None):
         "model": cfg.ollama_model if local else cfg.gemini_model,
         "execution": "local" if local else "hosted",
         "learning_example_ids": [x["correction_id"] for x in content.get("reviewed_examples", [])],
-        "sampling": [f["seconds"] for f in (frames or [])] if local else [],
+        "sampling": sorted(inspected) if local else [],
+        "coverage": coverage if local else [],
+        "early_exit": bool(early_exit) if local else False,
         "audio_gap": content.get("audio_unavailable", "") if local else "",
         "_transcription": content.get("audio") if local and role == "video" else None,
         "video_analyzed": role == "video" and bool(media or video_url),

@@ -1,3 +1,7 @@
+> SQL operations update: [DATABASE_SQL.md](DATABASE_SQL.md) records schema 6, migration rehearsal/restore evidence and the read-only `db-check` command. Current local runtime remains SQLite; PostgreSQL deployment is not live verified.
+
+> 7 November runtime update: [PERFORMANCE_IMPLEMENTATION.md](PERFORMANCE_IMPLEMENTATION.md) records the optional pipeline/reuse/browser flags, local measurements, private performance report, benchmark prerequisites and rollback. Schema is now 7; see the master record for the latest SQL checkpoint. All release/approval gates remain required.
+
 # Operations and launch gates
 
 ## The continuing loop

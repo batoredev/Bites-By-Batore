@@ -7,11 +7,12 @@ from urllib.parse import urlparse
 from sqlalchemy.orm.attributes import flag_modified
 from .db import IdentifiedSpot, now
 from .providers import quota, Unavailable, DeferredCollection
-from .spots import unique, INACTIVE
+from .spots import unique, INACTIVE, merge_list
 from .inventory import parse_document
 from .web_evidence import read_official_html
 from .resolver import normalized
 from .recency import publication_date, recency_key
+from .collection_control import backoff, success
 
 
 def enrich_spot(db, spot_id):
@@ -31,7 +32,7 @@ def enrich_spot(db, spot_id):
         )
         data.pop("web_search_results", None)
     if "web_search_results" not in data:
-        quota(db)
+        quota(db, host="public-search")
         try:
             result = subprocess.run(
                 [
@@ -50,8 +51,9 @@ def enrich_spot(db, spot_id):
             results = json.loads(result.stdout)
             if not isinstance(results, list):
                 raise ValueError("Invalid search response")
-        except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
-            raise Unavailable("Venue web search unavailable; retry its saved job") from exc
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            backoff(db, "public-search")
+        success(db, "public-search")
         data["web_search_results"] = [
             {
                 "url": r.get("href", ""),
@@ -89,7 +91,8 @@ def enrich_spot(db, spot_id):
             ):
                 item["status"] = "identity_unconfirmed"
                 continue
-            data["sources"] = unique(
+            data["sources"] = merge_list(
+                "sources",
                 data.get("sources", [])
                 + [
                     {
@@ -99,8 +102,24 @@ def enrich_spot(db, spot_id):
                         "published_at": item.get("search_published_at"),
                         "basis": "Search-discovered page; authority, exact branch and freshness unverified",
                     }
-                ]
+                ],
             )
+            if len(doc.get("structured_venues", [])) > 1:
+                data["unassigned_menu_pages"] = merge_list(
+                    "unassigned_menu_pages",
+                    data.get("unassigned_menu_pages", [])
+                    + [
+                        {
+                            "source_url": url,
+                            "venues": doc["structured_venues"],
+                            "offerings": doc["offerings"],
+                            "hours_candidates": doc.get("hours_candidates", []),
+                            "basis": "Multiple listed businesses/branches; do not assign menu/hours automatically",
+                        }
+                    ],
+                )
+                item["status"] = "multiple_branches_unassigned"
+                continue
             doc["offerings"] = [
                 {
                     **x,
@@ -108,10 +127,9 @@ def enrich_spot(db, spot_id):
                 }
                 for x in doc["offerings"]
             ]
-            for field in ("maps_links", "menu_links", "offerings"):
-                data[field] = unique(data.get(field, []) + doc[field])
+            for field in ("maps_links", "menu_links", "offerings", "hours_candidates", "vibes"):
+                data[field] = merge_list(field, data.get(field, []) + doc.get(field, []))
             from .visual_places import fetch_reference
-            from .spots import merge_list
 
             for image_url in doc.get("image_links", [])[:1]:
                 if any(r.get("url") == image_url for r in data.get("visual_references", [])):

@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import httpx
 from .config import settings
 from .providers import Unavailable, quota
+from .collection_control import backoff, success
 
 
 class VisibleText(HTMLParser):
@@ -28,6 +29,10 @@ class VisibleText(HTMLParser):
             self.parts.append(data.strip())
 
 
+from .performance import measured
+
+
+@measured("first_party_http")
 def read_official_html(db, url, allow_unverified_host=False):
     p = urlparse(url)
     if (
@@ -42,9 +47,11 @@ def read_official_html(db, url, allow_unverified_host=False):
         addresses = socket.getaddrinfo(p.hostname, 443, type=socket.SOCK_STREAM)
         if not addresses or any(not ipaddress.ip_address(x[4][0]).is_global for x in addresses):
             raise Unavailable("Evidence host must resolve to public addresses")
-        quota(db)
+        quota(db, host=p.hostname)
         with httpx.Client(timeout=20, follow_redirects=False, trust_env=False) as client:
             with client.stream("GET", url, headers={"User-Agent": "BatoreEvidence/0.2"}) as response:
+                if response.status_code in {429, 503, 504}:
+                    backoff(db, p.hostname, headers=response.headers)
                 if response.status_code != 200 or "text/html" not in response.headers.get("content-type", ""):
                     raise Unavailable("Official page unavailable, redirected or not readable HTML")
                 raw = bytearray()
@@ -52,6 +59,7 @@ def read_official_html(db, url, allow_unverified_host=False):
                     raw.extend(chunk)
                     if len(raw) > 3 * 1024 * 1024:
                         raise Unavailable("Official page exceeds the text collection limit")
+                success(db, p.hostname)
                 return raw.decode("utf-8", errors="replace")
     except (OSError, httpx.HTTPError) as exc:
         raise Unavailable("Official page could not be retrieved") from exc

@@ -187,7 +187,9 @@ export function AgentControls({ refresh }: { refresh: () => void }) {
           : state.autonomous
             ? "Automatic discovery enabled while this computer and worker are running."
             : "Automatic discovery disabled."}{" "}
-        Up to {state.daily_case_limit} automatic investigations per day.
+        {state.daily_case_limit === 0
+          ? "No daily investigation cap during initial collection. Source pacing and retries remain active."
+          : `Up to ${state.daily_case_limit} automatic investigations per day.`}
       </p>
       <p className="small-text">
         Public search: {state.public_search ? "enabled" : "disabled"}. Direct

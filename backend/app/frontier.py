@@ -4,8 +4,9 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy import select
 from .config import settings
 from .db import Investigation, ResearchCorrection, Counter
-from .providers import increment_bounded, Unavailable
+from .providers import Unavailable
 from .research import start_case
+from .collection_control import bulk_enabled, count_request, daily_limits
 
 CATEGORIES = [
     "sushi restaurants",
@@ -62,13 +63,15 @@ def start_next(db, user_id, scheduled=False):
     paused = db.get(Counter, "research_paused")
     if paused and paused.value:
         raise Unavailable("Discovery is paused by the operator")
-    active = db.scalar(
-        select(Investigation)
-        .where(Investigation.user_id == user_id, Investigation.state.in_(["queued", "running"]))
-        .order_by(Investigation.created_at)
+    active = list(
+        db.scalars(
+            select(Investigation)
+            .where(Investigation.user_id == user_id, Investigation.state.in_(["queued", "running"]))
+            .order_by(Investigation.created_at)
+        )
     )
-    if active:
-        return active
+    if active and (not bulk_enabled() or len(active) >= settings().bulk_active_case_limit):
+        return active[0]
     last = db.scalar(
         select(Investigation)
         .where(Investigation.user_id == user_id)
@@ -76,12 +79,13 @@ def start_next(db, user_id, scheduled=False):
     )
     if (
         scheduled
+        and not (bulk_enabled() or (settings().app_mode == "local" and settings().city_directory_enabled))
         and last
         and datetime.fromisoformat(last.created_at) > datetime.now(timezone.utc) - timedelta(hours=4)
     ):
         return None
     day = datetime.now(timezone.utc).date().isoformat()
-    if not increment_bounded(db, f"autonomous:{user_id}:{day}", settings().research_daily_limit):
+    if not count_request(db, f"autonomous:{user_id}:{day}", daily_limits()["investigations"]):
         raise Unavailable("Daily autonomous investigation limit reached; next cycle resumes tomorrow")
     return start_case(
         db, user_id, next_query(db, user_id), {"autonomous": True, "learning": "reviewed scoped examples"}

@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
 from typing import Literal
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
 Category = Literal["food", "cafe", "park", "cinema", "gaming", "bowling", "adventure"]
 
@@ -20,6 +20,7 @@ class OutingRequest(BaseModel):
     categories: list[Category] = Field(default_factory=lambda: ["food", "cafe", "gaming", "bowling"])
     outing_type: Literal["any", "food", "entertainment", "combined"] = "any"
     mood: Literal["different", "comfort", "quiet", "social", "active"] = "different"
+    novelty: Literal["new_place", "new_taste", "familiar"] | None = None
     vegetarian: bool = False
     wheelchair: bool = False
     children: bool = False
@@ -60,6 +61,85 @@ class ProfileUpdate(BaseModel):
     vegetarian: bool = False
     wheelchair: bool = False
     learn_from_visits: bool = True
+    preferred_cuisines: list[str] = Field(default_factory=list, max_length=20)
+    spice_preference: Literal["any", "mild", "medium", "hot"] = "any"
+
+    @field_validator("liked_tags", "avoided_tags", "preferred_cuisines")
+    @classmethod
+    def clean_preferences(cls, values):
+        from .spot_identity import name_key
+
+        cleaned = list(dict.fromkeys(name_key(v) for v in values if name_key(v)))
+        if any(len(v) > 60 for v in cleaned):
+            raise ValueError("Each preference must be at most 60 characters")
+        return cleaned
+
+    @model_validator(mode="after")
+    def no_conflicting_preferences(self):
+        if set(self.liked_tags) & set(self.avoided_tags):
+            raise ValueError("The same preference cannot be both liked and avoided")
+        return self
+
+
+class SavedPlaceInput(BaseModel):
+    saved: StrictBool
+
+
+class DishReviewEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    source_url: str = Field(pattern=r"^https://", max_length=2000)
+    evidence_group: str = Field(min_length=2, max_length=100)
+    sentiment: Literal["praise", "complaint", "mixed", "mention"]
+    observed_at: datetime
+    expires_at: datetime
+
+    @model_validator(mode="after")
+    def valid_dates(self):
+        from urllib.parse import urlparse
+
+        parsed = urlparse(self.source_url)
+        if not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("Use a public HTTPS evidence link without credentials")
+        if (
+            self.observed_at.tzinfo is None
+            or self.expires_at.tzinfo is None
+            or self.expires_at <= self.observed_at
+        ):
+            raise ValueError("Evidence needs timezone-aware observation/expiry dates")
+        from datetime import timezone
+
+        if self.observed_at > datetime.now(timezone.utc):
+            raise ValueError("Evidence observation cannot be in the future")
+        return self
+
+
+class MenuOffering(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=2, max_length=150)
+    category: str = Field(default="", max_length=60)
+    cuisine: str = Field(default="", max_length=60)
+    tags: list[str] = Field(default_factory=list, max_length=20)
+    price_inr: float | None = Field(default=None, ge=0, le=100000, allow_inf_nan=False)
+    unit: Literal["item", "person", "group"] = "item"
+    vegetarian: StrictBool | None = None
+    spice: Literal["mild", "medium", "hot"] | None = None
+    available: StrictBool | None = None
+    review_evidence: list[DishReviewEvidence] = Field(default_factory=list, max_length=100)
+
+    @field_validator("price_inr", mode="before")
+    @classmethod
+    def numeric_price(cls, value):
+        if value is not None and type(value) not in (int, float):
+            raise ValueError("Use a numeric menu price")
+        return value
+
+    @field_validator("name")
+    @classmethod
+    def clean_name(cls, value):
+        value = " ".join(value.split())
+        if len(value) < 2 or not any(c.isalnum() for c in value):
+            raise ValueError("A dish needs a name")
+        return value
 
 
 class Feedback(BaseModel):
@@ -114,6 +194,9 @@ class ClaimInput(BaseModel):
         "address",
         "packages",
         "dated_sessions",
+        "offerings",
+        "dining_format",
+        "amenities",
     ]
     value: dict
     source_url: str = Field(min_length=5, max_length=2000)

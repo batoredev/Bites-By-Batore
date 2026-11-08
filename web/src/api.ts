@@ -18,7 +18,35 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (token) headers.set("Authorization", `Bearer ${token}`);
   if (init.body && !(init.body instanceof FormData))
     headers.set("Content-Type", "application/json");
-  const response = await fetch(`/api${path}`, { ...init, headers });
+  let response = await fetch(`/api${path}`, { ...init, headers });
+  // Only repeat reads. A mutation may have committed before its response failed.
+  for (
+    let retry = 0;
+    retry < 2 &&
+    response.status === 503 &&
+    (init.method || "GET").toUpperCase() === "GET";
+    retry++
+  ) {
+    const seconds = Number(response.headers.get("Retry-After"));
+    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 5) break;
+    await response.body?.cancel();
+    await new Promise<void>((resolve, reject) => {
+      if (init.signal?.aborted) {
+        reject(init.signal.reason);
+        return;
+      }
+      const abort = () => {
+        clearTimeout(timer);
+        reject(init.signal?.reason);
+      };
+      const timer = setTimeout(() => {
+        init.signal?.removeEventListener("abort", abort);
+        resolve();
+      }, seconds * 1000);
+      init.signal?.addEventListener("abort", abort, { once: true });
+    });
+    response = await fetch(`/api${path}`, { ...init, headers });
+  }
   let data;
   try {
     data = await response.json();
@@ -59,6 +87,7 @@ export const dateText = (date: string) =>
   new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
+    year: "numeric",
     hour: "numeric",
     minute: "2-digit",
     timeZone: "Asia/Kolkata",

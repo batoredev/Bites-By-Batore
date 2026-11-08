@@ -207,6 +207,10 @@ def allowed_media_url(url):
     return url
 
 
+from .performance import measured
+
+
+@measured("video_download")
 def download_media(db, url):
     quota(db)
     maximum = min(settings().max_media_mb, 20) * 1024 * 1024

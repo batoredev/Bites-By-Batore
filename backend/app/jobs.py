@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, update, or_
 from sqlalchemy.exc import IntegrityError
 from .config import settings
-from .db import Session, Job, Submission, Venue, Audit, Plan, Counter, now, migrate
+from .db import Session, Job, Submission, Venue, Audit, Plan, Counter, now, migrate, is_database_busy
 from .providers import (
     Unavailable,
     gemini_analysis,
@@ -14,6 +14,7 @@ from .providers import (
     web_search,
     youtube_discover,
     ACTIVE_JOB,
+    DeferredCollection,
 )
 from .resolver import resolve_candidates, source_track_record
 from .research import execute_case, PendingSource, purge_expired_sources
@@ -39,14 +40,27 @@ def enqueue(db, kind, payload, key, priority=20, state="queued"):
         return db.scalar(select(Job).where(Job.key == key))
 
 
-def claim_job(db):
+def claim_job(db, include_kinds=None, exclude_kinds=None):
+    from .collection_control import bulk_enabled, fair_kind
+
     eligible = or_(Job.state == "queued", (Job.state == "running") & (Job.lease_until < now()))
+    selection = select(Job.id)
+    if include_kinds:
+        selection = selection.where(Job.kind.in_(include_kinds))
+    if exclude_kinds:
+        selection = selection.where(Job.kind.not_in(exclude_kinds))
+    if bulk_enabled():
+        kinds = select(Job.kind).where(eligible, Job.due_at <= now())
+        if include_kinds:
+            kinds = kinds.where(Job.kind.in_(include_kinds))
+        if exclude_kinds:
+            kinds = kinds.where(Job.kind.not_in(exclude_kinds))
+        chosen = fair_kind(db, db.scalars(kinds.distinct()))
+        if chosen:
+            selection = selection.where(Job.kind == chosen)
     ids = list(
         db.scalars(
-            select(Job.id)
-            .where(eligible, Job.due_at <= now())
-            .order_by(Job.priority.desc(), Job.due_at)
-            .limit(10)
+            selection.where(eligible, Job.due_at <= now()).order_by(Job.priority.desc(), Job.due_at).limit(10)
         )
     )
     for job_id in ids:
@@ -111,6 +125,31 @@ def analyze_submission(db, submission):
 
 
 def execute_job(db, job):
+    if job.kind == "city_directory":
+        from .city_collection import collect_directory
+        from .providers import DeferredCollection
+
+        if settings().app_mode != "local" or not settings().city_directory_enabled:
+            raise Unavailable("City directory collection is enabled only for internal local operation")
+        try:
+            return collect_directory(db, job.payload["user_id"])
+        except DeferredCollection as exc:
+            raise PendingSource(exc.retry_seconds) from exc
+    if job.kind == "source_analysis":
+        from .research import stream_source
+        from .db import ResearchSource
+
+        case = db.get(Investigation, job.payload["case_id"])
+        source = db.get(ResearchSource, job.payload["source_id"])
+        if not case or not source or source.case_id != case.id or case.state == "cancelled":
+            return {"message": "Source analysis cancelled or removed"}
+        if source.content.get("streamed"):
+            return {"message": "Source analysis already committed"}
+        stream_source(db, case, source)
+        return {
+            "source_id": source.id,
+            "state": source.content.get("processing_outcome", "draft_evidence_only"),
+        }
     if job.kind in {"spot_refresh", "source_watch"}:
         from .maintenance import refresh_spot, watch_source
         from .providers import DeferredCollection
@@ -131,21 +170,30 @@ def execute_job(db, job):
     if job.kind == "source_quality_upgrade":
         from .db import ResearchSource
         from .research import analysis_stage, location_stage
+        from .spots import identify_from_source
         from types import SimpleNamespace
 
         source = db.get(ResearchSource, job.payload["source_id"])
         case = db.get(Investigation, source.case_id) if source else None
-        if not case or case.user_id != job.payload["user_id"]:
+        if not case or case.user_id != job.payload["user_id"] or case.state == "cancelled":
             return {"removed": True}
+        if (
+            source.content.get("caption")
+            and source.analysis.get("caption", {}).get("status") != "observations_only"
+        ):
+            analysis_stage(db, case, SimpleNamespace(role="caption"), only_source=source)
+            identify_from_source(db, case, source)
+            db.commit()
         if source.content.get("comments") and not source.analysis.get("comments", {}).get("comment_labels"):
             old = source.analysis.get("comments", {})
             source.analysis = {**source.analysis, "previous_comment_analysis": old, "comments": {}}
             analysis_stage(db, case, SimpleNamespace(role="comments"), only_source=source)
         return location_stage(db, case, None)
     if job.kind == "evaluation_compare":
-        from .evaluation import run_comparison
+        from .evaluation import run_comparison, run_benchmark
 
-        return run_comparison(db, job.payload["user_id"], job.payload["source_id"], job.payload["role"])
+        compare = run_benchmark if job.payload.get("mode") == "performance" else run_comparison
+        return compare(db, job.payload["user_id"], job.payload["source_id"], job.payload["role"])
     if job.kind == "spot_enrich":
         from .spot_search import enrich_spot
         from .providers import DeferredCollection
@@ -284,34 +332,65 @@ def execute_job(db, job):
     raise ValueError("Unsupported job kind")
 
 
-def run_once():
+def run_once(include_kinds=None, exclude_kinds=None):
+    from .performance import Trace, ACTIVE_TRACE, delivery_metrics, wait_reason, span
+
     with Session() as db:
-        job = claim_job(db)
+        try:
+            job = claim_job(db, include_kinds, exclude_kinds)
+        except Exception as exc:
+            if not is_database_busy(exc):
+                raise
+            db.rollback()
+            return False  # No job was claimed and no remote work should be repeated.
         if not job:
             return False
+        job_id, claimed_attempts = job.id, job.attempts
         active_token = ACTIVE_JOB.set(job.id)
+        trace = Trace()
+        trace_token = ACTIVE_TRACE.set(trace)
+        previous = job.result.get("_performance", {})
+        # Preserve the eligible due time before a retry changes it.
+        from types import SimpleNamespace
+
+        timing_job = SimpleNamespace(created_at=job.created_at, due_at=job.due_at)
+        reason = ""
         try:
-            job.result = execute_job(db, job)
+            with span("job." + job.kind):
+                job.result = execute_job(db, job)
             job.state, job.completed_at, job.error = "done", now(), ""
         except PendingSource as exc:
+            reason = wait_reason(exc)
+            job.state, job.due_at, job.attempts = "queued", later(exc.retry_seconds), max(0, job.attempts - 1)
+        except DeferredCollection as exc:
+            reason = wait_reason(exc)
             job.state, job.due_at, job.attempts = "queued", later(exc.retry_seconds), max(0, job.attempts - 1)
         except Exception as exc:
+            reason = wait_reason(exc)
             db.rollback()
-            job = db.get(Job, job.id)
+            job = db.get(Job, job_id)
             if not job:
                 return True
+            busy = is_database_busy(exc)
             message = (
-                str(exc)
-                if isinstance(exc, (Unavailable, ValueError))
-                else "Unexpected worker error; inspect server logs"
+                "Local database busy; saved work retained for retry"
+                if busy
+                else (
+                    str(exc)
+                    if isinstance(exc, (Unavailable, ValueError))
+                    else "Unexpected worker error; inspect server logs"
+                )
             )
-            if not isinstance(exc, (Unavailable, ValueError)):
+            if not busy and not isinstance(exc, (Unavailable, ValueError)):
                 import logging
 
                 logging.getLogger(__name__).exception("Job %s failed", job.id)
             job.error = message[:500]
-            job.state = "failed" if job.attempts >= settings().max_attempts else "queued"
-            job.due_at = later(min(3600, 30 * 2**job.attempts))
+            if busy:
+                job.state, job.due_at, job.attempts = "queued", later(5), max(0, job.attempts - 1)
+            else:
+                job.state = "failed" if job.attempts >= settings().max_attempts else "queued"
+                job.due_at = later(min(3600, 30 * 2**job.attempts))
             if job.kind == "investigation":
                 case = db.get(Investigation, job.payload.get("case_id"))
                 if case and case.state != "cancelled":
@@ -332,8 +411,36 @@ def run_once():
                         sub.content = {k: v for k, v in sub.content.items() if k != "media"}
         finally:
             ACTIVE_JOB.reset(active_token)
+            ACTIVE_TRACE.reset(trace_token)
+        timing_job.state = job.state
+        measured = delivery_metrics(timing_job, trace, previous, reason)
+        measured["deferred_until"] = job.due_at if reason else None
+        job.result = {**job.result, "_performance": measured}
         job.lease_until = None
-        db.commit()
+        try:
+            db.commit()
+        except Exception as exc:
+            if not is_database_busy(exc):
+                raise
+            # Committed source checkpoints stay saved. A failed completion write
+            # must not turn a transient writer conflict into a terminal job failure.
+            db.rollback()
+            current = db.get(Job, job_id)
+            if not current or current.state != "running" or current.attempts != claimed_attempts:
+                return True
+            current.state, current.due_at, current.lease_until = "queued", later(5), None
+            current.attempts = max(0, claimed_attempts - 1)
+            current.error = "Local database busy while saving job status; saved work retained"
+            timing_job.state = "queued"
+            measured = delivery_metrics(timing_job, trace, previous, "database_busy")
+            measured["deferred_until"] = current.due_at
+            current.result = {**current.result, "_performance": measured}
+            try:
+                db.commit()
+            except Exception as retry_error:
+                if not is_database_busy(retry_error):
+                    raise
+                db.rollback()  # Existing lease remains recoverable if the writer is still busy.
         return True
 
 
@@ -345,6 +452,25 @@ def schedule():
         from .maintenance import expire_critical_facts
 
         expire_critical_facts(db)
+        # Recover a crash between committing collected media and enqueueing analysis.
+        if cfg.app_mode == "local" and cfg.research_pipeline_enabled:
+            from .db import ResearchSource
+
+            for source in db.scalars(select(ResearchSource)):
+                case = db.get(Investigation, source.case_id)
+                if (
+                    case
+                    and case.state in {"queued", "running"}
+                    and source.content.get("analysis_pending")
+                    and not source.content.get("streamed")
+                ):
+                    enqueue(
+                        db,
+                        "source_analysis",
+                        {"case_id": case.id, "source_id": source.id},
+                        f"source-analysis:{source.id}",
+                        priority=90,
+                    )
         # Recover a crash between a committed stage result and enqueueing its successor.
         for case in db.scalars(select(Investigation).where(Investigation.state.in_(["queued", "running"]))):
             task = db.scalar(
@@ -386,6 +512,15 @@ def schedule():
                     from .maintenance import schedule_maintenance
 
                     schedule_maintenance(db, "local-operator")
+                    if cfg.city_directory_enabled:
+                        week = datetime.now(timezone.utc).strftime("%G-%V")
+                        enqueue(
+                            db,
+                            "city_directory",
+                            {"user_id": "local-operator"},
+                            f"city-directory-v2:local-operator:{week}",
+                            priority=96,
+                        )
                     enqueue(
                         db,
                         "spot_inventory",
@@ -452,7 +587,28 @@ def main():
     if settings().app_mode in {"demo", "local"}:
         migrate()
     scheduled = 0
-    while True:
+    # Separate sessions and one model lane: network/control work can overlap GPU work.
+    import threading
+
+    stop = threading.Event()
+    model_kinds = ["source_analysis", "source_quality_upgrade", "evaluation_compare", "analysis"]
+    pipeline = settings().app_mode == "local" and settings().research_pipeline_enabled
+
+    def model_loop():
+        import logging
+
+        while not stop.is_set():
+            try:
+                worked = run_once(include_kinds=model_kinds)
+            except Exception:
+                logging.getLogger(__name__).exception("Analysis lane failed; retrying")
+                worked = False
+            if not worked:
+                stop.wait(max(1, settings().worker_poll_seconds))
+
+    if pipeline and not args.once:
+        threading.Thread(target=model_loop, name="batore-analysis", daemon=True).start()
+    while not stop.is_set():
         try:
             with Session() as db:
                 heartbeat = db.get(Counter, "worker_heartbeat")
@@ -464,7 +620,10 @@ def main():
             if time.monotonic() - scheduled > 60:
                 schedule()
                 scheduled = time.monotonic()
-            worked = run_once()
+            worked = run_once(exclude_kinds=model_kinds if pipeline and not args.once else None)
+        except KeyboardInterrupt:
+            stop.set()
+            break
         except Exception:
             import logging
 

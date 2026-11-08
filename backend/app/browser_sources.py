@@ -14,11 +14,12 @@ import socket
 import subprocess
 import sys
 from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 from xml.etree import ElementTree
 from .config import settings
 from .db import Counter, now
-from .providers import Unavailable, DeferredCollection, increment_bounded, quota
+from .providers import Unavailable, DeferredCollection, reserve_browser_call
 from .social import canonical_url
 
 HOSTS = ("instagram.com", "cdninstagram.com", "fbcdn.net", "facebook.com", "facebook.net")
@@ -259,12 +260,49 @@ async def expand_visible_comments(page, code, maximum):
     }
 
 
-async def collect_in_browser(url, seconds=35):
-    from playwright.async_api import async_playwright, Error as BrowserError
+@asynccontextmanager
+async def browser_scope(reused=None):
+    from playwright.async_api import async_playwright
 
-    code = shortcode(url)
+    if reused is not None:
+        yield reused
+        return
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=True)
+        try:
+            yield browser
+        finally:
+            await browser.close()
+
+
+async def wait_public_ready(page, code, maximum):
+    """Exit early only after the configured bounded sample and video are present."""
+    started = asyncio.get_running_loop().time()
+    while asyncio.get_running_loop().time() - started < 4.5:
+        snapshot = await read_public_snapshot(page)
+        payloads = []
+        for raw in snapshot["scripts"]:
+            try:
+                payloads.append(json.loads(raw))
+            except (ValueError, RecursionError):
+                pass
+        result = extract_public_data(payloads, code, snapshot["text"], maximum)
+        if (
+            result.get("caption")
+            and result.get("media_url")
+            and len(result.get("comment_texts", [])) >= maximum
+        ):
+            return "configured_sample_ready"
+        await page.wait_for_timeout(400)
+    return "settle_window_elapsed"
+
+
+async def collect_in_browser(url, seconds=35, reused_browser=None):
+    from playwright.async_api import Error as BrowserError
+
+    code = shortcode(url)
+    async with browser_scope(reused_browser) as browser:
+        context = None
         try:
             context = await browser.new_context(service_workers="block", accept_downloads=False)
             page = await context.new_page()
@@ -310,7 +348,7 @@ async def collect_in_browser(url, seconds=35):
                             "authenticated": False,
                         }
                     }
-                await page.wait_for_timeout(4500)
+                readiness = await wait_public_ready(page, code, settings().browser_max_comments)
                 path = urlparse(page.url).path
                 if any(part in path for part in ("/accounts/login", "/challenge", "/checkpoint")):
                     return {
@@ -353,6 +391,7 @@ async def collect_in_browser(url, seconds=35):
                     request_count=requests,
                     blocked_requests=rejected,
                     comment_expansion=expansion,
+                    readiness=readiness,
                 )
                 return result
 
@@ -361,7 +400,8 @@ async def collect_in_browser(url, seconds=35):
             except (TimeoutError, BrowserError):
                 return {"browser": {"status": "timeout_or_navigation_failed", "authenticated": False}}
         finally:
-            await browser.close()
+            if context is not None:
+                await context.close()
 
 
 def browser_instagram(db, url):
@@ -374,23 +414,30 @@ def browser_instagram(db, url):
         raise DeferredCollection(
             "Instagram browser collection is cooling down after a challenge or rate limit"
         )
-    day = datetime.now(timezone.utc).date().isoformat()
-    if not increment_bounded(db, f"instagram-browser:{day}", cfg.browser_daily_limit):
-        raise DeferredCollection("Daily direct-browser visit limit reached; remaining sources stay queued")
-    quota(db)
+    reserve_browser_call(db)
     try:
-        result = subprocess.run(
-            [sys.executable, "-m", "app.browser_sources", canonical_url(url)],
-            capture_output=True,
-            encoding="utf-8",
-            timeout=cfg.browser_timeout_seconds + 20,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-        if result.returncode or len(result.stdout) > 150000:
-            raise Unavailable("Browser collector failed; run scripts/setup-local.ps1 to install Chromium")
-        output = json.loads(result.stdout)
-        if not isinstance(output, dict) or not isinstance(output.get("browser"), dict):
-            raise ValueError("Invalid browser contract")
+        from .performance import span
+
+        with span("browser_collection"):
+            if cfg.browser_reuse_enabled:
+                from .browser_host import HOST
+
+                output = HOST.request(canonical_url(url), cfg.browser_timeout_seconds)
+            else:
+                result = subprocess.run(
+                    [sys.executable, "-m", "app.browser_sources", canonical_url(url)],
+                    capture_output=True,
+                    encoding="utf-8",
+                    timeout=cfg.browser_timeout_seconds + 20,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+                if result.returncode or len(result.stdout) > 150000:
+                    raise Unavailable(
+                        "Browser collector failed; run scripts/setup-local.ps1 to install Chromium"
+                    )
+                output = json.loads(result.stdout)
+            if not isinstance(output, dict) or not isinstance(output.get("browser"), dict):
+                raise ValueError("Invalid browser contract")
     except (OSError, subprocess.TimeoutExpired, ValueError) as exc:
         raise Unavailable("Browser collector unavailable or exceeded its time limit") from exc
     if output["browser"].get("status") in {"rate_limited", "challenge"}:
@@ -401,15 +448,34 @@ def browser_instagram(db, url):
     return output
 
 
+async def serve():
+    async with browser_scope() as browser:
+        while True:
+            line = await asyncio.to_thread(sys.stdin.readline)
+            if not line:
+                return
+            try:
+                command = json.loads(line)
+                result = await collect_in_browser(
+                    command["url"], min(60, max(10, int(command["seconds"]))), reused_browser=browser
+                )
+            except Exception:
+                result = {"browser": {"status": "runtime_unavailable", "authenticated": False}}
+            print(json.dumps(result, ensure_ascii=False), flush=True)
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     try:
-        print(
-            json.dumps(
-                asyncio.run(collect_in_browser(sys.argv[1], settings().browser_timeout_seconds)),
-                ensure_ascii=False,
+        if sys.argv[1] == "--serve":
+            asyncio.run(serve())
+        else:
+            print(
+                json.dumps(
+                    asyncio.run(collect_in_browser(sys.argv[1], settings().browser_timeout_seconds)),
+                    ensure_ascii=False,
+                )
             )
-        )
     except Exception:
         # Never write page data, signed URLs or browser traces to application logs.
         print(json.dumps({"browser": {"status": "runtime_unavailable", "authenticated": False}}))

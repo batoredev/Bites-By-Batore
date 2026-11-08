@@ -19,6 +19,17 @@ type Case = {
   state: string;
   created_at: string;
   result: Record<string, unknown>;
+  performance?: {
+    measured_jobs: number;
+    pending_jobs: number;
+    execution_seconds: number;
+    wait_reasons: string[];
+    next_due_at: string | null;
+    phases?: Record<
+      string,
+      { calls: number; seconds: number; failures: number }
+    >;
+  };
   tasks: {
     role: string;
     state: string;
@@ -30,6 +41,8 @@ type Case = {
 
 function taskLabel(task: Case["tasks"][number]) {
   if (task.state !== "done") return task.state;
+  if (task.result.skipped_known_sources && task.result.analyzed_sources === 0)
+    return "Skipped known locations";
   const gaps = Array.isArray(task.result.gaps) && task.result.gaps.length > 0;
   if (task.result.unavailable || (gaps && task.result.analyzed_sources === 0))
     return "Evidence unavailable";
@@ -396,6 +409,7 @@ export default function Research({
   const [cases, setCases] = useState<Case[]>([]),
     [query, setQuery] = useState(""),
     [url, setUrl] = useState("");
+  const [forceFull, setForceFull] = useState(false);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [open, setOpen] = useState("");
@@ -413,7 +427,11 @@ export default function Research({
     setError("");
     setBusy(true);
     try {
-      const c = await post<Case>("/investigations", { query, url });
+      const c = await post<Case>("/investigations", {
+        query,
+        url,
+        force_full_analysis: forceFull,
+      });
       setOpen(c.id);
       await load();
     } catch (err) {
@@ -472,6 +490,14 @@ export default function Research({
               />
             </label>
           </div>
+          <label className="check-row">
+            <input
+              type="checkbox"
+              checked={forceFull}
+              onChange={(e) => setForceFull(e.target.checked)}
+            />
+            Inspect known locations again, including the remaining reel evidence
+          </label>
           <button className="primary" disabled={busy}>
             {busy ? "Starting…" : "Start investigation"}
           </button>
@@ -496,6 +522,60 @@ export default function Research({
             </div>
             {open === c.id && (
               <div className="analysis-result">
+                {c.performance && (
+                  <section
+                    className="notice"
+                    aria-label="Investigation processing time"
+                  >
+                    <strong>
+                      {c.performance.execution_seconds.toFixed(1)} seconds
+                      measured processing
+                    </strong>
+                    <p className="small-text">
+                      {c.performance.measured_jobs} measured jobs ·{" "}
+                      {c.performance.pending_jobs} queued. Processing time
+                      excludes future collection waits.
+                    </p>
+                    {c.performance.wait_reasons.includes(
+                      "quota_or_collection_cooldown",
+                    ) && (
+                      <p>
+                        Collection is waiting for its allowance or cooldown.
+                        Pending sources are retained.
+                      </p>
+                    )}
+                    {c.performance.next_due_at && (
+                      <p className="small-text">
+                        Next scheduled attempt:{" "}
+                        {dateText(c.performance.next_due_at)}
+                      </p>
+                    )}
+                    {c.performance.phases &&
+                      Object.keys(c.performance.phases).length > 0 && (
+                        <details>
+                          <summary>Measured processing stages</summary>
+                          <p className="small-text">
+                            Stages can overlap. These are execution
+                            measurements, not accuracy scores.
+                          </p>
+                          <ul>
+                            {Object.entries(c.performance.phases).map(
+                              ([name, phase]) => (
+                                <li key={name}>
+                                  {name.replaceAll("_", " ")}:{" "}
+                                  {phase.seconds.toFixed(2)}s · {phase.calls}{" "}
+                                  calls
+                                  {phase.failures > 0
+                                    ? ` · ${phase.failures} failed`
+                                    : ""}
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        </details>
+                      )}
+                  </section>
+                )}
                 <ol className="research-tasks">
                   {c.tasks.map((t) => (
                     <li key={t.role}>
@@ -519,10 +599,17 @@ export default function Research({
                         .map((role) => {
                           const result = s.analysis[role] as
                             { status?: string } | undefined;
-                          return `${role}: ${result?.status === "observations_only" ? "analysed, needs review" : result?.status === "unavailable" ? "unavailable" : "pending"}`;
+                          return `${role}: ${result?.status === "observations_only" ? "analysed, needs review" : result?.status === "skipped_known_location" ? "skipped, location already recorded" : result?.status === "unavailable" ? "unavailable" : "pending"}`;
                         })
                         .join(" · ")}
                     </p>
+                    {!!s.analysis.discovery_skip && (
+                      <p className="notice">
+                        This location is already saved in your private
+                        inventory. Remaining reel processing was skipped; new
+                        facts and full clip coverage were not verified.
+                      </p>
+                    )}
                     {safeLink(s.url) && (
                       <a
                         href={safeLink(s.url)}

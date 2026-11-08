@@ -13,6 +13,14 @@ os.environ["INSTAGRAM_BROWSER_ENABLED"] = "false"
 os.environ["AUTONOMOUS_DISCOVERY"] = "false"
 os.environ["RESEARCH_STREAMING"] = "false"
 os.environ["INVENTORY_COLLECTION_ENABLED"] = "false"
+os.environ["CITY_DIRECTORY_ENABLED"] = "false"
+os.environ["LOCAL_BULK_COLLECTION"] = "false"
+os.environ["ANALYSIS_REUSE_ENABLED"] = "false"
+os.environ["RESEARCH_PIPELINE_ENABLED"] = "false"
+os.environ["BROWSER_REUSE_ENABLED"] = "false"
+os.environ["KNOWN_SPOT_SKIP_ENABLED"] = "false"
+os.environ["OLLAMA_GPU_LAYERS"] = "-1"
+os.environ["OLLAMA_KEEP_ALIVE"] = "2m"
 
 from app.db import Base, engine
 from app.main import app

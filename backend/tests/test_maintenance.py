@@ -223,6 +223,13 @@ def test_source_watch_detects_caption_change_without_relabelling_old_analysis(cl
         )
         result = m.watch_source(db, source.id, "owner")
         assert result["caption_changed"] and v.status == "review"
+        from app.db import Investigation
+
+        followup = db.get(Investigation, result["reinvestigation_case_id"])
+        assert followup.user_id == "owner" and followup.context["url"] == source.canonical_url
+        count = len(list(db.scalars(select(Investigation))))
+        m.watch_source(db, source.id, "owner")
+        assert len(list(db.scalars(select(Investigation)))) == count
         assert source.content["caption"] == "Old caption"
         assert "signed.example" not in json.dumps(source.analysis)
 
@@ -301,46 +308,113 @@ def test_provisional_metrics_require_labels_even_after_fetch(client):
         fixture(db)
         assert report(db, "owner")["name_precision"] is None
 
+
 def test_crossreferenced_first_party_sources_merge_without_losing_conflicts(client):
     from app.inventory import save_target
+
     with Session() as db:
         row = fixture(db)
-        row.data = {**row.data, 'hours': '09:00-23:00'}
-        seed = {'name': row.name, 'area': row.area, 'category': row.category,
-                'target_source_url': 'https://fixture.example/0'}
-        incoming = {'hours': '11:00-22:00', 'sources': [{'url': 'https://second.example/branch', 'type': 'official'}]}
+        row.data = {**row.data, "hours": "09:00-23:00"}
+        seed = {
+            "name": row.name,
+            "area": row.area,
+            "category": row.category,
+            "target_source_url": "https://fixture.example/0",
+        }
+        incoming = {
+            "hours": "11:00-22:00",
+            "sources": [{"url": "https://second.example/branch", "type": "official"}],
+        }
         for _ in range(2):
             result = save_target(db, row.user_id, seed, incoming)
             db.commit()
             assert result.id == row.id
         assert len(list(db.scalars(select(IdentifiedSpot)))) == 1
-        assert len(row.data['sources']) == 2
-        assert row.data['hours'] == '09:00-23:00'
-        assert len(row.data['conflicts']) == 1
-        assert not row.data.get('maps_identity') and not row.venue_id
+        assert len(row.data["sources"]) == 2
+        assert row.data["hours"] == "09:00-23:00"
+        assert len(row.data["conflicts"]) == 1
+        assert not row.data.get("maps_identity") and not row.venue_id
 
 
 def test_prepared_branch_must_match_publication_gate(client):
     with Session() as db:
         row = fixture(db)
         v = venue(db, row)
-        row.data = {**row.data, 'maps_identity': {'confirmed_by': row.user_id}}
-        v.details = {'branch_confirmed': True}
+        row.data = {**row.data, "maps_identity": {"confirmed_by": row.user_id}}
+        v.details = {"branch_confirmed": True}
         db.commit()
         packet = m.approval_packet(db, row)
-        assert any('prepared venue' in b for b in packet['blockers'])
-        assert not packet['ready_for_final_approval']
+        assert any("prepared venue" in b for b in packet["blockers"])
+        assert not packet["ready_for_final_approval"]
 
 
 def test_older_completed_search_enters_recurring_schedule(client):
     with Session() as db:
         row = fixture(db)
-        row.data = {**row.data, 'web_search_results': [{'url': 'https://fixture.example/0', 'status': 'collected_unverified'}]}
+        row.data = {
+            **row.data,
+            "web_search_results": [{"url": "https://fixture.example/0", "status": "collected_unverified"}],
+        }
         db.commit()
         m.schedule_maintenance(db, row.user_id)
-        assert row.data['web_search_next_at'] > now()
-        row.data = {**row.data, 'web_search_next_at': '2000-01-01'}
+        assert row.data["web_search_next_at"] > now()
+        row.data = {**row.data, "web_search_next_at": "2000-01-01"}
         db.commit()
         m.schedule_maintenance(db, row.user_id)
         m.schedule_maintenance(db, row.user_id)
-        assert len(list(db.scalars(select(Job).where(Job.kind == 'spot_enrich')))) == 1
+        assert len(list(db.scalars(select(Job).where(Job.kind == "spot_enrich")))) == 1
+
+
+def test_anonymous_activity_descriptions_are_held_but_named_clubs_remain_candidates():
+    from app.spot_identity import quality_issues
+
+    assert quality_issues("a club in Coimbatore")
+    assert quality_issues("Car Race Coimbatore")
+    assert not quality_issues("Zircon Club")
+
+
+def test_expiry_audit_follows_owner_export_and_erasure(client, auth):
+    from app.db import Audit
+
+    owner = client.get("/api/me", headers=auth).json()["id"]
+    with Session() as db:
+        row = fixture(db, owner)
+        venue(db, row)
+        m.expire_critical_facts(db)
+        aid = db.scalar(select(Audit.id).where(Audit.action == "maintenance.expired"))
+        assert db.get(Audit, aid).actor == owner
+    exported = client.get("/api/me/export", headers=auth).json()
+    assert any(a["id"] == aid for a in exported["spot_reviews"])
+    client.delete("/api/me/data", headers=auth)
+    with Session() as db:
+        assert db.get(Audit, aid) is None
+
+
+def test_watched_caption_uses_its_own_retention_clock(client):
+    with Session() as db:
+        case = research.start_case(
+            db,
+            "owner",
+            "cafes",
+            seed_sources=[{"platform": "instagram", "url": "https://www.instagram.com/p/retentionwatch/"}],
+        )
+        source = research.case_sources(db, case)[0]
+        source.content = {"caption": "fresh original", "fetched_at": now()}
+        source.analysis = {
+            "source_watch": {
+                "observed_caption": "old watch",
+                "checked_at": "2000-01-01T00:00:00+00:00",
+                "caption_hash": "preserve",
+            }
+        }
+        db.commit()
+        research.purge_expired_sources(db)
+        assert "observed_caption" not in source.analysis["source_watch"]
+        assert source.analysis["source_watch"]["caption_hash"] == "preserve"
+        assert source.content["caption"] == "fresh original"
+        source.analysis = {"source_watch": {"observed_caption": "fresh watch", "checked_at": now()}}
+        source.content = {"caption": "old original", "fetched_at": "2000-01-01T00:00:00+00:00"}
+        db.commit()
+        research.purge_expired_sources(db)
+        assert source.analysis["source_watch"]["observed_caption"] == "fresh watch"
+        assert "caption" not in source.content

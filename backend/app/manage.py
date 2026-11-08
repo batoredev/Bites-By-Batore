@@ -5,18 +5,73 @@ import json
 from datetime import datetime, timezone
 from sqlalchemy import select
 from .config import ROOT, settings
-from .db import migrate, Session, Venue, Claim, Job, Counter
+from .db import migrate, Session, Venue, Claim, Job, Counter, SCHEMA_VERSION, engine
 from .seed import seed_demo
 
 
 def main():
     parser = argparse.ArgumentParser(description="Batore database and launch operations")
     parser.add_argument(
-        "command", choices=["migrate", "seed-demo", "status", "backup-demo", "check-spots", "clean-spots", "review-pack"]
+        "command",
+        choices=[
+            "migrate",
+            "seed-demo",
+            "status",
+            "backup-demo",
+            "check-spots",
+            "clean-spots",
+            "review-pack",
+            "db-check",
+            "schema-sql",
+            "performance-report",
+            "sync-inventory",
+            "city-collection-start",
+            "city-collection-report",
+            "bulk-collection-resume",
+        ],
     )
     parser.add_argument("--user-id", default="local-operator")
+    parser.add_argument("--dialect", choices=["sqlite", "postgresql"], default="sqlite")
     args = parser.parse_args()
-    if args.command == "review-pack":
+    if args.command == "bulk-collection-resume":
+        from .collection_control import resume_bulk
+
+        with Session() as db:
+            print(json.dumps(resume_bulk(db, args.user_id), indent=2))
+    elif args.command == "city-collection-start":
+        from .city_collection import start_collection
+
+        if settings().app_mode != "local" or not settings().city_directory_enabled:
+            raise SystemExit("Enable the local city collection profile first")
+        with Session() as db:
+            print(json.dumps(start_collection(db, args.user_id), indent=2))
+    elif args.command == "city-collection-report":
+        from .city_collection import coverage
+
+        with Session() as db:
+            print(json.dumps(coverage(db, args.user_id), indent=2))
+    elif args.command == "sync-inventory":
+        from .spots import sync_inventory
+
+        with Session() as db:
+            print(json.dumps(sync_inventory(db, args.user_id), indent=2))
+    elif args.command == "performance-report":
+        from .performance import owner_report
+
+        with Session() as db:
+            print(json.dumps(owner_report(db, args.user_id), indent=2))
+    elif args.command == "db-check":
+        from .database_audit import audit_database
+
+        result = audit_database(engine)
+        print(json.dumps(result, indent=2))
+        if not result["healthy"]:
+            raise SystemExit(1)
+    elif args.command == "schema-sql":
+        from .database_audit import schema_sql
+
+        print(schema_sql(args.dialect))
+    elif args.command == "review-pack":
         from .maintenance import maintenance_report
 
         if settings().app_mode != "local":
@@ -26,26 +81,76 @@ def main():
         folder = ROOT / "data" / "review-packs"
         folder.mkdir(parents=True, exist_ok=True)
         prefix = folder / datetime.now(timezone.utc).strftime("review-%Y%m%dT%H%M%SZ")
-        prefix.with_suffix(".json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        prefix.with_suffix(".json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
         def safe(value):
             return str(value).replace("\n", " ").replace("<", "&lt;").replace(">", "&gt;")
-        lines = ["# Private Coimbatore location review pack", "", report["at"], "",
-                 f"{report['draft_count']} active candidates; {report['approved_count']} approved; {report['open_alerts']} open alerts.", "",
-                 "Collection is not verification. Review each exact branch, source evidence and current critical facts in the app, then explicitly approve that location.", "",
-                 "Open the app at http://127.0.0.1:8000. Data readiness contains source monitoring and evaluation; Identified spots contains Maps review/preparation; Venue desk contains fact acceptance and final approval.", "",
-                 report["coverage"], ""]
+
+        lines = [
+            "# Private Coimbatore location review pack",
+            "",
+            report["at"],
+            "",
+            f"{report['draft_count']} active candidates; {report['approved_count']} approved; {report['open_alerts']} open alerts.",
+            "",
+            "Collection is not verification. Review each exact branch, source evidence and current critical facts in the app, then explicitly approve that location.",
+            "",
+            "Open the app at http://127.0.0.1:8000. Data readiness contains source monitoring and evaluation; Identified spots contains Maps review/preparation; Venue desk contains fact acceptance and final approval.",
+            "",
+            report["coverage"],
+            "",
+        ]
         for p in report["packets"]:
-            lines += ["## " + safe(p["name"]), "", f"ID: {p['id']}", "",
-                      f"Area: {safe(p['area'])}; category: {safe(p['category'])}; status: {p['status']}", "",
-                      "Maps lead: " + p["maps_url"], "", "Approval blockers:", ""]
-            lines += ["- " + safe(b) for b in p["blockers"]] or ["- Ready for your final decision; not automatically approved."]
+            lines += [
+                "## " + safe(p["name"]),
+                "",
+                f"ID: {p['id']}",
+                "",
+                f"Area: {safe(p['area'])}; category: {safe(p['category'])}; status: {p['status']}",
+                "",
+                "Maps lead: " + p["maps_url"],
+                "",
+                "Approval blockers:",
+                "",
+            ]
+            lines += ["- " + safe(b) for b in p["blockers"]] or [
+                "- Ready for your final decision; not automatically approved."
+            ]
             lines += ["", "Sources:", ""]
-            lines += ["- " + safe(s.get("url", "")) + " (" + safe(s.get("collected_at", "date unknown")) + ")" for s in p["sources"]]
-            for label, value in [("Missing draft fields", p["missing"]), ("Conflicts", p["conflicts"]), ("Open alerts", p["alerts"]), ("Page observations (unverified)", p["page_checks"]), ("Fact evidence", p["fact_evidence"])]:
-                lines += ["", label + ":", "", "```json", json.dumps(value, indent=2, ensure_ascii=False), "```"]
+            lines += [
+                "- " + safe(s.get("url", "")) + " (" + safe(s.get("collected_at", "date unknown")) + ")"
+                for s in p["sources"]
+            ]
+            for label, value in [
+                ("Missing draft fields", p["missing"]),
+                ("Conflicts", p["conflicts"]),
+                ("Open alerts", p["alerts"]),
+                ("Page observations (unverified)", p["page_checks"]),
+                ("Fact evidence", p["fact_evidence"]),
+            ]:
+                lines += [
+                    "",
+                    label + ":",
+                    "",
+                    "```json",
+                    json.dumps(value, indent=2, ensure_ascii=False),
+                    "```",
+                ]
             lines += [""]
         prefix.with_suffix(".md").write_text("\n".join(lines), encoding="utf-8")
-        print(json.dumps({"json": str(prefix.with_suffix('.json')), "markdown": str(prefix.with_suffix('.md')), "drafts": report["draft_count"], "approved": report["approved_count"]}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "json": str(prefix.with_suffix(".json")),
+                    "markdown": str(prefix.with_suffix(".md")),
+                    "drafts": report["draft_count"],
+                    "approved": report["approved_count"],
+                },
+                indent=2,
+            )
+        )
     elif args.command in {"check-spots", "clean-spots"}:
         from .spots import reconcile_spots
 
@@ -60,7 +165,9 @@ def main():
             print(json.dumps({"applied": args.command == "clean-spots", **result}, indent=2))
     elif args.command == "migrate":
         migrate()
-        print("Schema version 5 ready. PostgreSQL tables have RLS enabled; access is through the API.")
+        print(
+            f"Schema version {SCHEMA_VERSION} ready; PostgreSQL backend tables use RLS. Run db-check for structural validation."
+        )
     elif args.command == "seed-demo":
         if settings().app_mode != "demo":
             raise SystemExit("Demo seed is disabled in live mode")
@@ -82,7 +189,6 @@ def main():
         if settings().app_mode not in {"demo", "local"} or not settings().database_url.startswith("sqlite"):
             raise SystemExit("Use PostgreSQL backups for live databases; see docs/OPERATIONS.md")
         import sqlite3
-        from .db import engine
 
         folder = ROOT / "data" / "backups"
         folder.mkdir(exist_ok=True, parents=True)

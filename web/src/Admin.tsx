@@ -359,11 +359,20 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
     try {
       if (fact.field === "price_per_person") value = Number(value);
       else if (
-        ["closed", "vegetarian", "wheelchair", "hours"].includes(fact.field)
+        [
+          "closed",
+          "vegetarian",
+          "wheelchair",
+          "hours",
+          "offerings",
+          "amenities",
+        ].includes(fact.field)
       )
         value = JSON.parse(fact.value);
     } catch {
-      setError("Use valid JSON for hours or true/false for a yes/no fact.");
+      setError(
+        "Use valid JSON for structured facts, and true/false for a yes/no fact.",
+      );
       return;
     }
     await action("/corrections", {
@@ -425,7 +434,11 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
           demo admin. Live mode requires server-authorized administrator IDs.
         </div>
       )}
-      <div className="tabs admin-tabs">
+      <div
+        className="tabs admin-tabs"
+        role="group"
+        aria-label="Operations sections"
+      >
         {[
           "review",
           "research",
@@ -439,6 +452,7 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
           <button
             key={t}
             className={tab === t ? "active" : ""}
+            aria-pressed={tab === t}
             onClick={() => setTab(t)}
           >
             {t === "review"
@@ -684,6 +698,9 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
                     "wheelchair",
                     "vegetarian",
                     "address",
+                    "offerings",
+                    "dining_format",
+                    "amenities",
                   ].map((f) => (
                     <option key={f}>{f}</option>
                   ))}
@@ -698,9 +715,15 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
                   placeholder={
                     fact.field === "hours"
                       ? 'Weekly windows: {"0":[[600,1320]],"1":[[600,1320]]}. Monday=0. Minutes after midnight.'
-                      : fact.field === "price_per_person"
-                        ? "350"
-                        : "Text, or true / false for a yes/no fact"
+                      : fact.field === "offerings"
+                        ? '[{"name":"Miso soup","cuisine":"Japanese","price_inr":120,"unit":"item","vegetarian":true}]'
+                        : fact.field === "amenities"
+                          ? '{"parking":null,"washroom":true}'
+                          : fact.field === "dining_format"
+                            ? "cafe, casual_dining, fine_dining, quick_service, street_food, food_court, bakery or dessert_shop"
+                            : fact.field === "price_per_person"
+                              ? "350"
+                              : "Text, or true / false for a yes/no fact"
                   }
                 />
               </label>
@@ -902,12 +925,15 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
             <h3>Provider usage today</h3>
             <p>
               <strong>{data.provider_calls_today}</strong> /{" "}
-              {data.provider_limit} allowed calls
+              {data.provider_limit === 0
+                ? "Unlimited daily requests during initial collection"
+                : `${data.provider_limit} allowed calls`}
             </p>
             <p className="small-text muted">
-              This bounds call count, not currency. Configure provider-side
-              billing limits as well. Keys are read only from the server
-              environment.
+              {data.provider_limit === 0
+                ? "Initial collection has no daily request cap. Paid spending controls and source retry times remain active."
+                : "This bounds call count, not currency. Configure provider-side billing limits as well."}{" "}
+              Keys are read only from the server environment.
             </p>
           </div>
           <div className="integration-grid">

@@ -5,6 +5,18 @@ import Evaluation from "./Evaluation";
 import Maintenance from "./Maintenance";
 
 type QualityReport = {
+  performance?: {
+    measured_jobs: number;
+    unmeasured_jobs: number;
+    queued: number;
+    deferred: number;
+    delivery_execution: {
+      samples: number;
+      p50_seconds: number | null;
+      p95_seconds: number | null;
+    };
+    scope: string;
+  };
   categories: Record<string, { records: number; eligible: number }>;
   uncovered_categories: string[];
   launch_blockers: string[];
@@ -59,6 +71,30 @@ export default function Quality() {
   return (
     <section>
       <h2>Coimbatore readiness</h2>
+      {data?.performance && (
+        <section className="notice" aria-label="Agent processing measurements">
+          <h3>Agent processing</h3>
+          <p>
+            {data.performance.measured_jobs} measured jobs ·{" "}
+            {data.performance.unmeasured_jobs} earlier jobs without timings ·{" "}
+            {data.performance.queued} queued ({data.performance.deferred}{" "}
+            scheduled for later).
+          </p>
+          <p>
+            Delivery execution: median{" "}
+            {data.performance.delivery_execution.p50_seconds == null
+              ? "not measured"
+              : `${data.performance.delivery_execution.p50_seconds.toFixed(2)}s`}
+            ; p95{" "}
+            {data.performance.delivery_execution.p95_seconds == null
+              ? "not measured"
+              : `${data.performance.delivery_execution.p95_seconds.toFixed(2)}s`}
+            , from {data.performance.delivery_execution.samples} retained
+            deliveries.
+          </p>
+          <p className="small-text">{data.performance.scope}</p>
+        </section>
+      )}
       <Maintenance />
       <Evaluation />
       <button

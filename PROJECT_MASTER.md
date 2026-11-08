@@ -1,6 +1,372 @@
 # Bites by Batore — master project record and completion tracker
 
-Last consolidated: **6 November 2026 (Asia/Calcutta)**.
+Last consolidated: **8 November 2026 (Asia/Calcutta)**.
+
+## Instagram workflow walkthrough — 8 November 2026
+
+- [x] Trace current source code and non-secret local model/provider settings;
+  document flowchart, specialist roles, illustrative example and actual skip/
+  identity/retry/learning/publication gates in
+  [INSTAGRAM_AGENT_FLOW.md](docs/INSTAGRAM_AGENT_FLOW.md).
+- [x] Distinguish sampled frames/loaded comments and public-web discovery from
+  exhaustive coverage; optional unconfigured Places from operator Maps review;
+  source claims/retrieved corrections from accepted facts/trained weights.
+  Fictional example is explanation only; no example venue or approval inserted.
+- [ ] Accuracy, complete-city coverage and human approvals remain unfinished.
+  Documentation-only step; no new application test run or runtime change.
+
+---
+
+## Contention repair and collection resumed — 8 November 2026, 15:13 IST
+
+Read [SQLITE_RELIABILITY.md](docs/SQLITE_RELIABILITY.md). The user authorized
+continuing collection and finishing the remaining work; no new user input/API
+keys were requested for the existing public-source path.
+
+- [x] Reduce the all-inventory duplicate-cleanup comparisons performed under the
+  SQLite write lock, preserving canonical branch predicates, fuzzy eligibility,
+  row order, ownership, held originals and approvals. Full separate-copy passes
+  on 811 originals completed in 3.7926s/3.6023s with zero data changes; concurrent
+  write probe completed without error, integrity healthy.
+- [x] Recognize SQLite busy conflicts; preserve source checkpoints and failure
+  allowance through claim/execution/completion retries. Return sanitized API 503
+  and retry reads only; never automatically repeat mutations.
+- [x] Harden launcher port/ownership/exit/race checks. Actual repeated launch reused
+  the same API/worker PIDs; no duplicate process was introduced.
+- [x] **292 backend tests**, Ruff, production build and **12 isolated desktop/mobile
+  checks** passed. Actual live cleanup plus 24 concurrent reads returned HTTP 200;
+  no new lock errors in the restarted logs at the short check. Limited scope only.
+- [x] Pre-change backup `data/backups/batore-20261108T093634Z.db`; recover four
+  owned interrupted/stale jobs with worker stopped and launcher mutex held.
+  Checkpoints/counters retained. Local unlimited collection restored and running.
+- [x] 09:43 UTC checkpoint: **692 active drafts, 111 held, 12 merged originals**;
+  **168 research sources**, zero real venues/accepted claims. No approvals invented.
+- [ ] Observe sustained operation and growing-inventory contention; complete the
+  remaining data/accuracy/branch work and explicit approvals. This repair does not
+  establish full-city completeness, absolute correctness or production capacity.
+
+---
+
+## Live status audit — 8 November 2026, 14:51 IST
+
+- [x] Read live DB/runtime and refresh `data/city-collection/` progress/CSV snapshots.
+  **679 active unapproved drafts** (+105 since 07:17 UTC), **156 source records**
+  (+68), 110 held and 12 merged originals; 801 originals total. Zero real venues
+  and accepted claims. Fifteen of 168 area/topic queries scheduled, not complete.
+- [x] API healthy; worker heartbeat 5.29s old at 09:21 UTC. Unlimited initial mode
+  remains enabled. Aggregate counter 1,396; browser visits 80. DB structural and
+  integrity audit healthy, no duplicate SQL identity-key groups or audited orphans.
+- [ ] Runtime reliability issue observed: intermittent SQLite `database is locked`
+  exceptions in API request counting and worker claiming; an expired running-job
+  lease was also observed. Root cause/repair are not established by this status
+  audit. No terminal failed jobs, but do not describe operation as error-free or
+  equate all `running` rows with actively executing tasks. Most queued jobs are
+  waiting on source cooldowns. No application code/config was changed here.
+- [ ] Data gaps: 424 menu/price, 586 hours observations, 643 vibes; all 679 Maps
+  unreviewed. Extraction/fact accuracy and final approval remain unfinished.
+
+---
+
+## Unlimited initial collection and queue progress — 8 November 2026
+
+Latest user direction explicitly removes the app's 300/day request ceiling until
+the initial DB is collected and authorizes the proposed collection improvements.
+Read [BULK_COLLECTION.md](docs/BULK_COLLECTION.md). This supersedes the older daily
+allowance decision below; it does not declare full-city completion or remove
+spending/source/approval controls.
+
+- [x] Enable local-only `LOCAL_BULK_COLLECTION=true`: no daily app count ceiling
+  for external reads, browser visits or investigations. Effective zero means
+  unlimited counts; monetary zero still blocks spending. Counters are retained.
+- [x] Separate new free-read/paid-attempt counters, preserve INR 3,000 monthly paid
+  reservations and all inactive provider credentials. No paid/cloud activation.
+- [x] Remove local bulk inter-case delay/daily case cap; allow three active cases
+  with existing model serialization and backpressure. Fairly rotate eligible
+  investigation/enrichment/refresh/inventory/watch/directory work.
+- [x] Add persistent source pacing and applicable Retry-After/exponential cooldowns;
+  distinguish source waits from app quotas and preserve pending work without
+  exhausting failure attempts. Preserve browser challenge handling/cache reuse.
+- [x] Resume 541 owned legacy/app-cap queued waits without clearing counters,
+  source cooldowns, cancelled jobs, attempt histories or other owners' work.
+- [x] Add literal JSON-LD INR menu/hour/amenity observations and retain multi-branch
+  menu pages unassigned. No factual acceptance, branch approval or guessed prices.
+- [x] **283 backend tests**, Ruff, strict production build and **eight desktop/mobile
+  browser checks** passed. Separate test data, mocked mutation endpoints and current
+  runtime receipt retained. Backup `data/backups/batore-20261108T070103Z.db`.
+- [x] Live worker advanced aggregate counter **300 → 333**, browser visits **14 →
+  20**, source inventory **83 → 86**, scheduled grid queries five → seven by 07:12
+  UTC. Initial mode is running beyond the previous cap; saved sources still need
+  analysis/verification. No new place count was invented when sources increased.
+- [x] Later 07:17 UTC checkpoint: counter **410**, browser visits **24**, sources
+  **88**, active drafts **574**; 684 retained originals, zero real venues/accepted
+  claims. API healthy and worker heartbeat 2.75s old. Post-change consistent backup
+  `data/backups/batore-20261108T071743Z.db`; focused suite **12 passed**, including
+  HTTP-429 adapter retry persistence. Current gaps/CSVs saved in the progress folder.
+- [ ] Continue systematic discovery, menu/hours/vibe corroboration, held-record
+  resolution and independent multilingual/branch accuracy work. All locations
+  still require explicit user approval before recommendations. The initial mode
+  remains on until the reviewed first-fill scope is accepted; queue exhaustion
+  or scheduled-query counts cannot establish city-wide completeness.
+
+---
+
+## Coimbatore collection started and expanded — 8 November 2026
+
+User authorized starting the city data collection now, aiming for full accurate
+food/entertainment coverage. Read [COIMBATORE_COLLECTION.md](docs/COIMBATORE_COLLECTION.md).
+**Collection has started; city-wide completeness and factual accuracy remain
+unverified. No location approval or public release is implied.**
+
+- [x] Add a bounded local Overpass directory collector, seven-day cache, owner/week
+  durable job, two-request weekly allowance, attribution/licence preservation and
+  owner-private API/CLI coverage reporting. No Nominatim POI collector added.
+- [x] Actual broad request returned 635 entries. Scope audit caught neighbouring
+  Kerala places inside the 40 km radius. A second real area-scoped request returned
+  477 entries: three Coimbatore administrative boundary records + 474 supported
+  place objects. Recurring collection now requires the district boundary metadata
+  and clips to 40 km; no broad-radius fallback. This is **Coimbatore district in
+  the operating radius**, not an independently verified municipal census.
+- [x] Rehearse duplicate-safe imports on separate SQLite copies, replay without new
+  rows, apply tracked jobs to the actual local DB, hold 51 earlier active references
+  absent from the scoped pass, retain originals. Scope/branch ambiguity is review
+  work; missing directory entries do not prove closure. Rejected/merged originals
+  remain retained; exact source IDs, conflicting addresses and distant branches
+  are respected. Provisional near-point merging is not physical identity proof.
+- [x] Complete six actual local caption jobs from already collected sources without
+  new external requests: active drafts 86 → 115 before the directory pass. Commit
+  caption drafts before subsequent location lookup work, including quota waits.
+- [x] Actual checkpoint: **678 originals = 568 active unapproved drafts + 98 held +
+  12 merged**; 453 active drafts have scoped directory evidence. 83 research sources;
+  **zero real venues/accepted claims/operator Maps reviews**. Active categories:
+  food 382, cafés 82, parks 62, cinema 25, adventure 11, bowling 4, gaming 2.
+- [x] Store observations rather than accepted facts; show OSM attribution, raw hours
+  candidates and coverage gaps in Identified spots. Skip OSM listing pages during
+  daily HTML maintenance; retain venue website hints as unverified fetch targets.
+- [x] Save progress, raw receipts, scoped/broad copies and review CSVs under
+  `data/city-collection/`; user-readable `PROGRESS.md`, `coverage.json`,
+  `pending-locations.csv`, `held-and-merged.csv`, `all-originals.csv` and runtime/UI
+  receipts. These exports/backups are offline snapshots requiring separate erasure.
+- [x] **271 full-suite backend tests**, required Ruff and strict production build
+  passed; **21 targeted directory tests** passed after the extra export/erasure
+  regression. Six controlled desktop/mobile browser tests passed. Actual local UI
+  loaded all 568 cards on desktop/mobile without page errors or horizontal overflow.
+  Live schema-7 structural/integrity/index/duplicate/orphan audit healthy. Consistent
+  backup `data/backups/batore-20261108T061709Z.db`; see VERIFICATION.md.
+- [x] API and autonomous worker restored and healthy in local/internal mode; GPU
+  request 999 retained. Six caption jobs and both tracked directory jobs completed.
+  Existing allowances unchanged: shared external 300/300 today, browser 14/30,
+  autonomous cases 3/day. Two actual directory requests accounted separately. No
+  paid/cloud connector activated or quota reset. Further external work stays queued
+  until allowances permit; keep the computer awake and connected.
+- [ ] Remaining data gaps: 455 active drafts lack menu/price evidence, 512 lack an
+  hours observation, 533 lack vibe evidence; all 568 require operator Maps review.
+  Raw hours tags do not establish current verified hours. Only five of the 168
+  area/topic queries have been scheduled; scheduling does not establish completion.
+- [ ] Expand/reconcile coverage, corroborate current facts/exact branches, measure
+  real multilingual accuracy/correction improvement and obtain explicit approval
+  for every location before suggestions. No complete-city count, deadline, 100%
+  accuracy, customer validation or owned-model training is claimed.
+
+---
+
+## Known-location early exit, SQL backfill and GPU — 8 November 2026
+
+User explicitly authorized skipping remaining reel work for already identified
+locations, filling the local private location inventory now and checking locations
+personally later, preventing duplicates and using the GPU fully. Read
+[KNOWN_LOCATION_EARLY_EXIT.md](docs/KNOWN_LOCATION_EARLY_EXIT.md).
+
+- [x] Discovery-only early exits before recency/browser/download work for recorded
+  permalinks; after caption recognition for exact existing branches; and after a
+  video pass. All recorded candidates must be accounted for. Names/areas alone,
+  ambiguous branches, new candidates and incomplete compilations keep processing.
+- [x] Retain skipped source references/IDs, explicit partial coverage and skipped
+  modality statuses. No freshness renewal, creator judgement or fact/location
+  approval. Maintenance, labelled origins and explicit full inspection bypass it.
+- [x] Save newly extracted caption locations before remaining specialist work;
+  replay existing saved extraction through the same canonical SQL inventory path.
+  Serialize identity writes, recover insert conflicts and retain held/merged history.
+- [x] Hold indistinguishable same-name proposals for branch review rather than
+  adding another active location or merging potentially different branches.
+- [x] Rehearse on separate SQLite, backfill real DB twice: **83 source records;
+  86 active pending locations, 12 merged originals, 28 held originals; 126 total**.
+  One additional supported merge and four ambiguous holds. No new location row
+  was needed; existing valid extractions were already saved. Repeat made zero
+  insertions or cleanup changes. Zero repeated SQL identity keys/explicit Maps
+  identities; physical branch correctness still requires the user's review.
+- [x] Main review CSV `data/known-spots/pending-locations.csv`; separate held queue
+  and complete original-record audit CSV retained; read-only SQL file
+  `resources/sql/private_inventory_checks.sqlite.sql`; CLI `sync-inventory`.
+- [x] `OLLAMA_GPU_LAYERS=999`: retained-caption and four-frame vision smokes show
+  100% model GPU placement with unchanged weights/precision/context. Vision peak
+  3,345 MiB of 4,096 MiB and sampled utilization 100%. Warm caption 4.396s;
+  these limited tests establish placement, not universal speed/accuracy.
+- [x] Final **251 backend tests**, Ruff, strict build and **20 desktop/mobile
+  checks** passed; consistent separate-file SQL restore healthy. Local API/worker
+  restored, skip flag true and full GPU requests active. No venue, fact or human
+  label/approval invented; schema remains 7. Details in VERIFICATION.md.
+- [ ] Normal live discovery has not yet encountered an eligible pending known
+  reel at the audit (zero manufactured live skip examples). Representative
+  physical branch accuracy, sustained speed, independent labels and final user
+  approvals remain unverified. CPU-preparation overlap/output experiments from
+  the earlier proposal are separate work, not claimed complete here.
+
+Backup: `data/backups/before-known-spot-skip-20261108T051054Z.db`. Receipts in
+`data/known-spots/`. The earlier retain-all-reels decision now means retaining
+references and evidence; known-location discovery clips may intentionally stop.
+All relevant unseen/ambiguous locations remain queued. Public suggestions still
+require explicit approval and current facts. Cloud inference, quotas and model
+training remain unchanged.
+
+---
+
+## Speed profiling follow-up — 8 November 2026
+
+Read-only actual worker measurements now supplement the earlier caption-only smoke.
+Receipt `data/performance/speed-audit-20261108.json`; details in
+[PERFORMANCE_IMPLEMENTATION.md](docs/PERFORMANCE_IMPLEMENTATION.md).
+
+- [x] Inspect recorded execution: eight completed source-analysis jobs, median 144.15s
+  (range 34.29–595.16s), excluding preceding collection/queue/quota/approval waits.
+  Missing modalities and factual accuracy remain separate limitations.
+- [x] Identify the observed cost: 46 measured model calls/responses, 1,162.32s model
+  phase, 926.78s generation (79.7%); six speech passes average 33.47s. Shared external
+  UTC-day counter 300/300, browser 14/30; quotas are separate from inference speed.
+- [ ] Benchmark concise complete output and transcript/visual interpretation reuse,
+  bounded CPU/GPU preparation overlap, active-load GPU/backend settings and earlier
+  staged draft visibility. These are next proposals, not newly implemented changes.
+
+No code/runtime/model/quota changes or new test run in this read-only follow-up.
+Existing worker remains autonomous; latest feature implementation/test checkpoints
+below remain valid. No speed multiplier or real accuracy guarantee is established.
+
+## Investigation improvements implemented — 7 November 2026
+
+Read [PERFORMANCE_IMPLEMENTATION.md](docs/PERFORMANCE_IMPLEMENTATION.md) for P01–P10, measurements, commands, rollback and validation. This supersedes the proposal-only status in the historical audit below.
+
+- [x] P01 — Persist delivery/start/eligible-queue/execution/retry measurements, stage/model load/prompt/generation/token timings and owner-private API/CLI/UI reporting. Historical jobs remain explicitly unmeasured; delivery percentiles are not reel latency.
+- [x] P02 — Retain clip endpoints and temporal coverage; segment multilingual text with original offsets; check installed-model token budgets; split overflowing text/frame/comment batches; remove small venue-candidate and downstream matching limits while retaining separate branches/menu claims.
+- [x] P03/P07 — Versioned owner/source/model/input/correction-safe interpretation and changed-comment-batch reuse; expiry/future-date rejection, evaluation-origin exclusion and deleted-origin handling. Reuse never renews venue facts or grants approval.
+- [x] P04 — Durable source jobs, bounded collection/control and analysis lanes with separate SQL sessions, one model semaphore, backlog backpressure, missing-enqueue recovery and cancellation checks after GPU waits. Additional CPU concurrency remains a profiling experiment.
+- [x] P05 — Bounded 10-minute residency and pooled loopback HTTP client; existing Qwen/Whisper, context/output limits, frame budget and external allowances retained. Real local caption/model placement measured; whole-reel throughput unmeasured.
+- [x] P06 — Reusable hidden browser helper with per-source fresh contexts, readiness gates, idle expiry and error recovery. **Controlled Chromium tested; new helper path not live verified on public Instagram yet.**
+- [x] P08/P09 — Retain baseline coverage and reinspection of uncertain timestamped clues; preserve follow-up evidence; keep approved-inventory/expiry/revision/current-route checks and add plan timing. No unapproved-inventory shortcut.
+- [x] P10 tooling — Independent-label-only uncached caption/comment benchmark, current execution versus saved labelled prediction, explicit absence of historical timing, export/erasure and reversible flags. **A paired speed/accuracy and video/branch benchmark remains incomplete.**
+- [x] Local checks — **232 backend tests**, required Ruff, strict web build and **46 desktop/mobile browser checks** passed (16 local, 30 demo; two intentional demo skips). Consistent restored SQLite snapshot is healthy. Actual source/spot counts and zero labels/publications preserved. Details in the newest [VERIFICATION.md](docs/VERIFICATION.md) section.
+- [ ] P10 validation — Representative independent labels, matched video/branch/correction quality measurements, live new-browser reuse, real ASR/vision contention and sustained operation remain open. Actual venue approval and invited-user validation remain required.
+
+Local configuration enables reuse/pipeline/browser switches and `OLLAMA_KEEP_ALIVE=10m`; fresh-checkout switches default off. Schema remains 7, using existing JSON fields. No cloud inference, quota reset, model-weight training, fictional real inventory or operator approval was introduced. Local API/worker restored and healthy; temporary demo API/worker stopped. Runtime receipt: `data/performance/runtime-final.json`; 70 sources, 111 spot originals, zero human labels/published venues; external/browser allowances remain exhausted and pending work retained.
+
+Receipts in `data/performance/`: actual caption with initially absent model 18.026s including 11.174s load, immediate warm repetition 5.912s. Final pooled-client/guarded warm calls: 7.401s (tokenizer initialization) and 5.251s (reused tokenizer), including guard overhead. These are unlabelled caption calls, not a per-reel speed guarantee. Partial GPU placement observed; no hardware purchase made.
+
+---
+
+## Investigation speed/quality audit and plan — 7 November 2026, 19:43 IST
+
+Read [INVESTIGATION_SPEED_AND_QUALITY.md](docs/INVESTIGATION_SPEED_AND_QUALITY.md). **Research/proposal only; no runtime optimization, quota/model change or speed benchmark performed.** Actual receipt `data/investigation-speed-audit.json`: local Qwen3-VL 2B instruct/Whisper base; eight frames; thirty collected-comment sample limit; three-source processing batches; 300/300 shared calls and 30/30 browser visits used; 55 queued jobs; zero human labels/corrections. Quota wait is distinct from inference speed. Job timestamps lack execution-start/stage timings, so no credible per-reel median/p95 is claimed.
+
+- [x] P00 — Inspect sequential collection/analysis, model settings, hardware and active allowances; document P01–P10 and independent quality testing.
+- [ ] P01–P02 — Add stage/queue/quota measurements; fix frame-endpoint retention, blind input truncation and multi-venue candidate coverage risks identified by code inspection.
+- [ ] P03–P07 — Versioned owner-safe analysis reuse, bounded resource queues, warm-model experiments, browser lifecycle/readiness and changed-component refresh. Preserve retention, cancellations, source attribution and all relevant source queues.
+- [ ] P08–P10 — Targeted difficult-segment escalation, approved-DB request path performance and paired independently labelled baseline/optimized benchmarks with rollback and sustained operation.
+
+Existing streaming, completed-source/comment checkpoints, structured JSON and CPU int8/VAD are implemented; do not label these proposed improvements as already delivered. Parallel agent roles do not imply multiple models should run simultaneously on the current 4 GB GPU. Human location approval and the local-only/INR 3,000 target remain unchanged.
+
+---
+
+## Latest UI refresh — 7 November 2026, 19:21 IST
+
+Read [UI_REFRESH.md](docs/UI_REFRESH.md). The shared features from FH01–FH13 are implemented/local tested; real-world accuracy and approved inventory remain pending. The redesign reorganizes their presentation without changing scope, models, data approval or source behavior.
+
+- [x] UI01 — Forest-green navigation, destination descriptions/current-page header, compact planner introduction, grouped fields, larger text/control scale and consistent panels/cards across six primary screens. **Implemented and visually inspected desktop/mobile.**
+- [x] UI02 — Dedicated food/cafe Menu & dishes tab with compact secondary views; proper keyboard tabs; My taste shortcuts and grouped preferences; readable saved/operations selected states. **Implemented/browser verified.**
+- [x] UI03 — Inert closed mobile navigation, open-menu focus trap/Escape/body scroll control, restored dialog focus, search loading/error/retry/reset and corrected mobile card clipping. **Implemented/browser verified.**
+- [x] UI04 — Strict build; **30 demo browser checks passed**, two intentional viewport-specific skips; **12 local operator checks passed**; six-width geometry matrix (360–1440px); automated accessibility and PWA checks; screenshot review. **Locally verified in Chromium emulation.**
+- [x] UI05 — Local mode retained throughout; real API/worker left running, temporary demo API/worker stopped; current UI observed at port 8000. Reports/screenshots in `data/ui-redesign/`; no fictional venue facts, evaluation labels or user approvals inserted into real data.
+- [ ] UI06 — Physical-device/other-engine and full assistive-technology validation, invited-user usability and actual outing accuracy remain unvalidated.
+
+No backend implementation changed in this task. The earlier 202 backend tests are prior evidence; final verification for this task is the strict web build, 42 passing browser checks and the runtime inspection. Existing real inventory approval gates remain mandatory.
+
+---
+
+## Latest: FavHiker deep review and shared features — 7 November 2026, 18:45 IST
+
+Read [FAVHIKER_DEEP_REVIEW.md](docs/FAVHIKER_DEEP_REVIEW.md) for the official-source inventory, FH01–FH13 matrix, implementation, operator procedure and accuracy boundaries. This supersedes older schema/count/competitor-coverage statements below; historical checkpoints remain retained.
+
+**Competitive finding:** FavHiker has public Coimbatore restaurant/cuisine/dish pages, menu evidence, private/public diary distinctions, taste matching, amenities and an advertised planner with where/when/who/budget inputs. AI plus human review is also described. These are not exclusive to us. Anonymous browser requests were blocked (403); web/indexed content was readable, sometimes in different cached versions. Neither generated competitor plans nor head-to-head quality was verified. The older PDF remains a historical export.
+
+- [x] FH01/FH05/FH08 — Server dish/cuisine/place search, reviewed practical/diet/price filters, same-item matching, pagination and complete owner saved-place retrieval; repeat-safe desired-state bookmarking. **Implemented/local tested.**
+- [x] FH02/FH07 — Typed reviewed menus, preference-aware dish picks, explicit unknowns, balanced current review samples, transitive origin/source deduplication and source/date/expiry. **Implemented/local tested; no real accepted menu/verified review corpus yet.**
+- [x] FH03/FH04/FH09 — Private dish diary, cuisine/spice settings, visit editing/deletion, experience snapshots, reversible taste rebuilding and opt-out. **Implemented; isolated lifecycle and desktop/mobile tests.** No owned weight training or validated taste prediction claim.
+- [x] FH06/FH10 — Independent mood/novelty choices, boundary/negation-aware guide, current menu vocabulary in planning and query/locked-stop priority before live candidate checks. **Implemented/local tested.** Real plan quality remains unmeasured.
+- [x] FH11/FH12/FH13 — Exact reviewed Maps links, approval gates, diary export/erasure/memory clearing, responsive forms and accessible evidence links. **Implemented/local tested.** No location approved on behalf of the user.
+- [x] SQL7 — Actual DB upgraded after separate-backup rehearsal; migrate twice with all existing counts preserved; unique dish/visit indexes and visit snapshots; SQLite/PostgreSQL SQL generated; final separate-file restore audited. **Executed locally; PostgreSQL unverified.**
+- [x] Verification — **202 backend tests**, required Ruff, strict build, **10 new desktop/mobile checks**, **12 local regression checks** and earlier **8 core/accessibility checks** passed. Menu/diary screenshots inspected. Local API/worker restored; authenticated new routes return 200.
+- [ ] FH14 — Independently check actual branch/menu/amenity/freshness facts, obtain user approvals, compare matched real requests and validate with invited users. **Required before claiming accurate customer-ready parity.**
+
+Actual 18:39 IST snapshot: schema 7; **56 active candidates + 10 merged + 24 held originals; 61 sources; zero real venue claims/venues/approvals and zero gold labels/corrections**. Twelve successful public-content reel-watch receipts now exist, superseding the older quota-deferred checkpoint; sustained refresh accuracy remains unproven. Receipt `data/parity-final-status.json`; review pack `data/review-packs/review-20261107T130632Z.md`/`.json`. Tests used separate databases or intercepted mutations. No extra paid provider, cloud inference, category or public release was enabled. APP_MODE remains local.
+
+---
+
+## FavHiker competitor review — 7 November 2026
+
+Read [FAVHIKER_COMPARISON.md](docs/FAVHIKER_COMPARISON.md). Public product/store evidence establishes direct overlap in personalized food/dish discovery, taste history, AI review analysis and advertised mood-based day planning. These cannot be claimed as exclusive to us. Their reel pipeline, Coimbatore depth, constraint enforcement and per-field freshness were not established; missing documentation is not proof of absence. Public planner routes returned HTTP 403, so end-to-end behavior remains untested.
+
+Potential differentiation remains practical verified Coimbatore food-plus-activity outings under starting-point/time/group/budget constraints, with traceable evidence and measured corrections. This is a hypothesis, not proven superiority. No product scope/runtime changed. A05 remains open for the broader matrix, comparative outcomes and customer validation.
+
+PDF export of the user-facing comparison: [FavHiker vs Bites by Batore](docs/exports/FavHiker-vs-Bites-by-Batore.pdf). Two pages; table, rupee symbol and four clickable source links checked, with both pages visually inspected.
+
+---
+
+## SQL and requested-stage continuation ? 7 November 2026, 00:39 IST
+
+The active local SQL DB has been upgraded to **schema 6** with preserved data. Read [DATABASE_SQL.md](docs/DATABASE_SQL.md) and [MODEL_OPTIONS_COMPARISON.md](docs/MODEL_OPTIONS_COMPARISON.md). SQLite storage was already implemented; this step completes additional local migration/integrity tooling, not a cloud database deployment or verified venue inventory.
+
+- [x] Serialized transactional migration ledger, future-version rejection and corrected live startup schema check (previously incorrectly fixed at version 4).
+- [x] SQL duplicate protection for sources within a case and task ordinals; queue/owner/current-claim/audit indexes; read-only structural audit; executable empty SQLite SQL and generated PostgreSQL/RLS SQL.
+- [x] Rehearse the migration twice on a restored snapshot, preserve every existing table count, upgrade the live DB and restore-check a final schema-6 snapshot. No detected duplicate groups, missing structures or orphaned audited relationships. Relationships remain application-managed rather than universally enforced through SQL foreign keys.
+- [x] Atomic provider/browser allowance reservation; quota deferral consumes neither allowance. Prior counters were preserved.
+- [x] Give bounded reel-monitoring jobs priority before bulk collection. Changed captions queue an owner-scoped, repeat-safe fresh investigation; old predictions are not attached to changed input. Watched caption text follows its own 24-hour retention clock.
+- [x] Full backend run: 168 passed; final affected suites: 56 passed after retention/startup checks; required Ruff and 12 desktop/mobile checks passed. Local API/worker restarted and authenticated maintenance endpoint checked.
+- [x] Audit the actual model dataset and compare Qwen tuning, current cheap APIs and owned specialists/foundation training. No cloud inference, model training or provider switch performed.
+- [ ] Stage 1: independent multilingual/branch labels, measured correction benefit and creator reliability evidence remain absent.
+- [ ] Stage 2: 49 active unapproved drafts still need current facts and exact Maps reviews; SQL correctness does not fill those facts.
+- [ ] Stage 3: explicit user approval of every location remains required; zero approved/published.
+- [ ] Stage 6: new reel-watch live execution remains quota-deferred; sustained operation remains unproven. Actual deferred attempt is recorded, not counted as live verification.
+
+Checkpoint: 178 jobs done, two cancelled, 48 queued; 59 page-check records, eight overdue; one source conflict; current heartbeat and healthy local API. Daily quotas still use UTC dates, so they had not reset at 00:39 IST; normal retries can resume after 05:30 IST. No quota reset or paid connector activation occurred.
+
+Dataset: 51 source records / 47 URLs / 26 video analysis outputs, **zero saved operator labels or corrections**, seven currently retained captions, four transcripts and no cached media payloads. It is not a training-ready dataset. Existing source-cache retention was preserved. Current local models remain Qwen/Whisper; paid comparison is a proposal conditional on later permission for cloud inference. Owned weights remain a long-term requirement.
+
+---
+
+## Latest requested stages 1, 2, 3 and 6 — 6 November, 22:58 IST
+
+Read [STAGES_1_2_3_6.md](docs/STAGES_1_2_3_6.md) for implementation, operating cadence, exact evidence boundaries, review procedure and private artifacts. This checkpoint supersedes older inventory counts below. Local API/worker are running; source collection is waiting on exhausted daily allowances, with work preserved. Current inventory: **49 active unapproved drafts, 10 merged originals, 24 held originals; zero Maps-reviewed identities and zero published venues**. Source data: 51 records across 47 distinct URLs, 26 video analyses, 196 classified comments and six indexed images. No gold labels, user approvals or measured accuracy were invented.
+
+| ID | Step completed | Evidence level | Still open |
+|---|---|---|---|
+| L21 / stage 1 | Agent-found evaluation queue and holdout correction exclusion | Implemented; isolated tests; actual source queue exported | Representative independent labels, exact branch/visual accuracy, correction benefit and creator calibration |
+| L22 / stage 2 | 168 discovery topic/area combinations; expanded first-party targets; conservative cross-reference merge and conflict retention | Implemented; 11 live pages read for 14 target entries; 49 active candidates after cleanup | Verified city coverage; missing menu/price (38), hours (43), vibes (44); exact Maps identity for every candidate |
+| L23 / stage 3 | Private approval packets, blocker parity, alert review and repeatable Markdown/JSON export | Implemented; desktop/mobile tested; 49 actual location packets exported | Your final per-location review/approval; none approved on your behalf |
+| L24 / stage 6 | Daily page monitoring, weekly web/reel scheduling, resumable retries, critical-fact expiry holds and plan revision invalidation | Implemented; isolated failure/recovery tests; 59 live page-check records, one real conflicting-hours alert; separate-file restore passed | New reel-watch live execution is quota-deferred; sustained multi-day timing and correction propagation remain unproven |
+
+Execution checklist:
+
+- [x] Implement and test the monitoring/review mechanisms described above.
+- [x] Expand local collection, preserve conflicting evidence and hold two generic descriptions; immediate repeated cleanup made zero changes.
+- [x] Export the real location review packets; expose all unresolved blockers.
+- [x] Full backend run: 157 passed; final affected suites: 59 passed after the final generic-description and expiry-audit privacy fixes. Required Ruff check, strict web build and 12 desktop/mobile checks passed.
+- [x] Restore a consistent snapshot into a separate file and verify integrity/counts without replacing the live DB.
+- [x] Restart local API/worker with collection progress and quota counters preserved.
+- [ ] Complete independent multilingual/branch accuracy evaluation and measure correction improvement.
+- [ ] Fill and independently verify sufficient Coimbatore coverage; no exhaustive city total or completion date is established.
+- [ ] Obtain explicit user approval for each location before itinerary suggestions.
+- [ ] Verify the new reel-watch path live and collect sustained maintenance/customer evidence.
+
+The local provider allowance is now 300 calls/day (previously 200); Instagram pacing remains 30 visits/day, and the INR 3,000/month target remains. Both daily allowances were exhausted at this checkpoint; counters reset by UTC date (05:30 IST), and queued retries can resume afterwards. No paid provider was enabled. The four requested stages are **not fully validated or customer-ready** merely because their mechanisms and tests exist.
+
+---
 
 This is the canonical working record for the product we discussed: what the user wants, what was decided, what exists, what still needs building, how it should work, and how completion must be demonstrated. Start here when resuming development. Supporting documents contain deeper implementation/runbook detail; they do not reduce the original product scope.
 
@@ -435,7 +801,7 @@ All completed implementation entries below reflect recorded work through **4 Nov
 - [x] A02 — Selectively inspect user reference project, PROJ documents and Claude OS archive. **Documented.** [Reference review](docs/REFERENCE_REVIEW.md); no executable reference code copied.
 - [x] A03 — Create this canonical full-scope knowledge record, evidence-level checklist and remaining execution procedure. **Documented.** This file.
 - [ ] A04 — Keep the register synchronized after each subsequent completed implementation/validation step. **Ongoing obligation**, not permanently completable.
-- [ ] A05 — Complete a dated, sourced competitor capability matrix and validate differentiation with customers. Prior research leads are not a finished current market assessment.
+- [ ] A05 — Dated FavHiker matrix completed in FAVHIKER_DEEP_REVIEW.md; broader market and customer differentiation validation remain open.
 
 ### B. App and planning baseline
 
@@ -445,8 +811,8 @@ All completed implementation entries below reflect recorded work through **4 Nov
 - [x] B04 — Saved plans/places, revision rechecks, private profile/visit history and bounded taste updates. **Locally verified.** Core journeys.
 - [x] B05 — Data export/erase, preference editing and history clearing. **Locally verified baseline.** Production retention/backup deletion policy still needed.
 - [x] B06 — Public-shell PWA caching, install icons, offline reconnect behavior and desktop/mobile automated accessibility checks. **Locally verified.** Not a full manual accessibility audit.
-- [ ] B07 — Adaptive conversational “I don't know what I want” flow with useful contrasting choices.
-- [ ] B08 — Deeper reason/occasion-aware preference learning and group suitability evaluation.
+- [ ] B07 — Guided undecided choices and independent mood/novelty controls implemented/local tested (FH06); fully adaptive conversation and real-user usefulness remain unvalidated.
+- [ ] B08 — Reversible visit/dish taste and occasion rebuilding, cuisine/spice controls implemented/local tested (FH04/FH09); deeper reason-aware interpretation and real group suitability remain open.
 - [ ] B09 — Broader multi-stop planning, variable activity packages, mixed pricing and uncertainty-aware costs.
 - [ ] B10 — Live cinema/activity sessions, prices and availability integrations where access exists.
 
@@ -473,7 +839,7 @@ All completed implementation entries below reflect recorded work through **4 Nov
 - [x] DTA05 — Scheduled refresh, upcoming-plan priority and request-time Google status/opening/route adapter paths. **Implemented/local contract verified.** Real freshness not verified.
 - [x] DTA06 — HMAC merchant ingestion with timestamp/replay checks and unusual-update review. **Locally verified.** No real partners onboarded.
 - [ ] DTA07 — Build and independently verify the real Coimbatore launch inventory across required categories and needs.
-- [ ] DTA08 — Expand offering/source/creator/investigation/evidence relationships and applicable price/session records as needed for the full pipeline.
+- [ ] DTA08 — Typed menu/review evidence and private dish/visit relationships expanded in schema 7 (FH02/FH07); the full pipeline's verified real price/session/creator dataset remains incomplete.
 - [ ] DTA09 — Operate actual source updates, per-field adaptive freshness, coverage checks, correction handling and failure alerts.
 - [ ] DTA10 — Demonstrate that accepted corrections recheck affected live recommendations promptly under expected load.
 

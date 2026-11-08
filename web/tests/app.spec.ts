@@ -109,7 +109,7 @@ test("source submission is queued and processed without fabricated video claims"
     .click();
   await expect(
     page.getByText("No sentiment or reliability claim has been inferred"),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 20000 });
 });
 
 test("mobile and desktop layout has no overflow or inaccessible unlabeled main inputs", async ({

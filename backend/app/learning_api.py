@@ -105,6 +105,8 @@ def runtime(user=Depends(admin_user), db=Depends(get_db)):
     from .local_models import endpoint
 
     cfg = settings()
+    from .collection_control import daily_limits, bulk_enabled
+
     available, error = [], ""
     if cfg.app_mode == "local" or cfg.analysis_provider == "ollama":
         try:
@@ -124,11 +126,12 @@ def runtime(user=Depends(admin_user), db=Depends(get_db)):
         "autonomous": cfg.autonomous_discovery,
         "public_search": cfg.local_search_enabled,
         "direct_browser": cfg.instagram_browser_enabled,
-        "browser_daily_limit": cfg.browser_daily_limit,
+        "browser_daily_limit": daily_limits()["browser"],
+        "bulk_collection": bulk_enabled(),
         "instagram_connector": cfg.instagram_provider,
         "learning": "Scoped human corrections retrieved into future investigations; no weight training",
         "source_limit": cfg.research_max_sources,
         "source_batch_size": cfg.research_max_sources,
         "selection_order": "Newest dated sources first; all discovered relevant sources retained",
-        "daily_case_limit": cfg.research_daily_limit,
+        "daily_case_limit": daily_limits()["investigations"],
     }

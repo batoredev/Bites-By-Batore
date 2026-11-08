@@ -1,3 +1,356 @@
+# Instagram workflow documentation — 8 November 2026
+
+Current code and non-secret settings traced into
+[INSTAGRAM_AGENT_FLOW.md](INSTAGRAM_AGENT_FLOW.md): discovery/direct collection,
+caption → video → comments order, immediate draft persistence, repeated known-place
+checks, sampling, identity/trust/approval gates and correction retrieval. The example
+is explicitly fictional and was not inserted into the DB. Documentation-only;
+no new test run, connector/accuracy verification or runtime change is claimed.
+
+---
+
+# SQLite contention repair — 8 November 2026, 15:13 IST
+
+Read [SQLITE_RELIABILITY.md](SQLITE_RELIABILITY.md) for the measured scope and
+remaining limitations. This supersedes the earlier repair-unverified status.
+
+- **292 backend tests passed in 37.24s**; required Ruff and strict production web
+  build passed; **12 isolated desktop/mobile checks passed in 17.9s**. New checks
+  cover reconciliation parity/complexity and SQLite retry/checkpoint behavior,
+  sanitized API 503, read retries and no automatic mutation replay.
+- Separate-copy full-inventory cleanup/commit on 811 originals: **3.7926s / 3.6023s**,
+  no merge/hold/evidence changes, integrity `ok`. Concurrent writer probe: one
+  completed write, 7.425s across both passes, zero errors. The earlier ~60s old
+  fuzzy-pass comparison is an extrapolation from a 50×679 sample, not a measured
+  full before/after cleanup benchmark or an accuracy claim.
+- Pre-change consistent backup `data/backups/batore-20261108T093634Z.db`; controlled
+  stopped-worker recovery requeues four owned interrupted/stale jobs, refunds only
+  their interrupted claim, preserves source checkpoints/request/spending counters.
+- Actual restart local/unlimited; repeated launch preserves API23848/worker18256
+  redirector PIDs and ownership records. Live cleanup HTTP200/7.063s; **24/24**
+  concurrent API reads HTTP200, max7.435s. No new lock errors at the short check.
+- 09:43 UTC: 692 identified/111 held/12 merged, 168 sources, zero real venues or
+  accepted claims. No user approval, training, paid activation or city completion.
+- Long-running/growing-inventory validation remains open. Evidence is under
+  `data/reliability/`; current inventory/progress snapshots remain separate files.
+
+09:45 UTC follow-up: live structural/integrity audit healthy; current progress/CSV
+snapshots refreshed; no new restarted-log error/traceback/lock matches at final
+check. Consistent post-change backup created at
+`data/backups/batore-20261108T094543Z.db`. This remains short-run evidence only.
+
+---
+
+# Live status audit — 8 November 2026, 14:51 IST
+
+Read-only runtime/SQL audit; application tests were not rerun and no code/config
+was changed. Refreshed local progress and CSV snapshots.
+
+- 09:21 UTC: 679 identified, 110 quarantined, 12 merged originals; 801 total.
+  156 source records, zero real venues/accepted claims. 15/168 queries scheduled.
+  Gaps: 424 menu/price, 586 hours observations, 643 vibes, 679 Maps reviews.
+- API healthy; worker heartbeat 5.29s old. Initial unlimited mode enabled, preserved
+  aggregate counter 1,396/browser 80. Snapshot records 776 done, 594 queued and four
+  `running` rows. At the preceding read one running lease was expired: these rows
+  are not proof of four concurrent active tasks. No terminal failed jobs recorded.
+- Most queued work has source cooldown waits. Logs also show intermittent SQLite
+  write-lock exceptions in worker claim/API counter operations. The collector
+  continued progressing; lock root cause and remediation remain unverified/open.
+- Live schema-7 structural/integrity audit healthy: no missing tables/indexes,
+  duplicate identity-key groups, audited orphans or integrity violations. This
+  does not disprove intermittent contention or establish physical branch accuracy.
+
+---
+
+# Initial collection without daily count caps — 8 November 2026
+
+User explicitly authorized removing app daily caps until the initial database is
+collected. Read [BULK_COLLECTION.md](BULK_COLLECTION.md). Older 300/300-wait checkpoints
+below are historical, not the current effective cap.
+
+- **Implemented/local tests:** **283 passed in 51.92s**, Ruff passed. Coverage
+  includes preserving/incrementing an exhausted counter beyond 300; browser counts
+  above the old daily cap while host spacing remains; local-only activation and
+  normal-mode restoration; zero paid budget blocks HTTP; persistent Retry-After
+  waits; fair queue selection; transient deferrals retain retry allowance; private
+  queue resumption; unlimited daily cases/bounded simultaneous work; explicit INR
+  menu/hour/amenity observations and unassigned multi-business menu data.
+- **Web:** strict production build and **eight desktop/mobile checks in 14.7s**
+  passed, including unlimited usage copy plus existing coverage/skip/full-inspection
+  controls. Source-mutating fixture requests intercepted; no real approvals/labels
+  or invented venues inserted. Browser API reads use the actual local operator.
+- **Actual operation:** pre-change consistent backup
+  `data/backups/batore-20261108T070103Z.db`; enable local bulk flag and resume CLI
+  wakes **541** owned queued legacy/app-limit waits. Counters/cooldowns preserved.
+  API/worker restored. At 07:12 UTC aggregate counter **333** (was exhausted at 300),
+  new classified free attempts **33**, browser visits **20** (was 14), sources
+  **86** (was 83), and seven grid queries scheduled (was five). This establishes
+  real progress after removing the cap; counts are attempts/reservations and do
+  not audit every HTTP request inside browser/search subprocesses.
+- **Unchanged gates:** monthly paid spending reservations, actual source-side
+  retry/access handling, GPU model precision, canonical deduplication/held originals,
+  ownership, current-fact/location approval and internal-only release. No cloud
+  inference/paid connector activated, trained weights produced, human label/approval
+  manufactured or finished-city guarantee made. Real 429-path behavior is covered
+  by controlled tests, not a newly induced live 429.
+- **Remaining:** inventory 568 active/98 held/12 merged at that snapshot. Additional
+  sources need analysis and place/fact corroboration; source growth alone does not
+  establish a new venue or improved factual accuracy. Current facts, broader
+  coverage, representative human evaluation and explicit final location approvals
+  remain unfinished. See current `data/city-collection/runtime.json` / `PROGRESS.md`.
+
+Follow-up 07:17 UTC: counter **410**, new free adapter reservations/attempts **110**,
+browser **24**, sources **88**, inventory **574 identified / 98 held / 12 merged**
+(684 originals); zero real venues/accepted claims. API healthy, heartbeat 2.75s old.
+Snapshot `data/backups/batore-20261108T071743Z.db`. Final focused suite **12 passed
+in 1.92s**, including mocked HTTP-429 → saved Retry-After → no second HTTP request
+during cooldown. Current coverage gaps 455 menu/price, 515 hours observations,
+539 vibes, all 574 Maps-unreviewed. No live 429 was manufactured.
+
+---
+
+# Coimbatore collection — 8 November 2026, 11:47 IST
+
+Read [COIMBATORE_COLLECTION.md](COIMBATORE_COLLECTION.md). This supersedes the earlier
+86-active-draft runtime checkpoint below; it does not supersede its accuracy limits.
+
+- **Isolated tests:** full backend suite **271 passed in 57.16s**, required Ruff
+  passed; final targeted directory suite **21 passed in 1.98s** after adding an
+  additional privacy/export/erasure regression. Coverage includes repeat-safe
+  source IDs, owner separation, address/distance branch conflicts, weak area-only
+  holds, merged/rejected originals, category/radius/NaN/invalid-ID rejection,
+  partial/missing-boundary failure, cache reuse without HTTP, scope reconciliation,
+  private API/export/erasure, unsafe website hints and caption persistence before
+  a location-lookup failure. No fixtures/labels were inserted in the real DB.
+- **Web:** strict production build passed; **six controlled desktop/mobile tests
+  passed in 12.5s** (attribution/raw-hours/coverage display plus existing known-spot
+  skip/full-inspection controls). Separate actual local inventory browser reads
+  loaded all **568 cards** on both devices in approximately 2.6/2.3s including
+  navigation; no page errors or horizontal overflow. This is a limited local UI
+  smoke, not a service latency SLA or a collection throughput measurement.
+- **Actual collection:** two HTTP-200 public Overpass responses. Broad: 635 entries,
+  526 in radius/categories, 523 new originals and three updates. A scope audit
+  found Kerala entries in the radius; a Coimbatore administrative-area query
+  returned 477 entries (three boundaries + 474 POI objects). The latter corresponds
+  to 471 retained candidate identities: 453 active/18 held. District relation
+  1819317 plus North/South subdivision metadata is retained. This is not a precise
+  municipal census or independent branch verification. The original broad cache
+  is archived; 51 previously active absent references were quarantined for review.
+- **Rehearsals:** separate-file broad import/replay 523/0 new originals;
+  `quick_check=ok`. Separate scope rehearsal and repeat: zero new rows, 51/0 new
+  scope holds, integrity healthy. Actual tracked broad job completed in 107.8s;
+  scoped job completed in 4.04s using the already fetched cache. These timings
+  exclude the network fetch and do not measure whole-city investigation speed.
+- **Local inference:** six queued caption jobs completed on actual retained source
+  text; drafts increased from 86 to 115 before directory insertion. Existing Ollama
+  and full-GPU request retained; no newly trained weights or human labels. This
+  demonstrates execution/persistence, not correct extraction of every candidate.
+- **Final DB:** **678 retained originals = 568 identified + 98 quarantined + 12
+  merged**. **83 research sources, zero venues, zero accepted claims, zero human
+  location approvals/corrections/creator assessments**. Live schema-7 audit healthy,
+  no missing tables/indexes, duplicate identity-key groups, or audited orphans;
+  SQLite integrity `ok`. Physical duplicates where identity evidence is weak remain
+  unmeasured. Consistent post-import backup:
+  `data/backups/batore-20261108T061709Z.db`.
+  That snapshot was independently opened read-only: `quick_check=ok`, 678 original
+  rows. Final SQL audit confirms 474 scoped objects map to 471 rows and there are
+  zero repeated active directory references (`final-sql-check.json`). This does
+  not establish the physical identity of unresolved similar-name locations.
+- **Runtime:** API healthy in local mode; autonomous worker separately running,
+  heartbeat 2.06 seconds old at receipt. Directory mode enabled, existing
+  pipeline/reuse/known-skip/full-GPU settings retained. Shared external allowance
+  **300/300**, browser **14/30**, directory **2/2** this ISO week. No allowance reset,
+  paid provider activation, Google Maps identity confirmation or public release.
+  534 queued jobs at the recorded snapshot; pending external requests wait for
+  ordinary allowance availability. This does not mean they are downloading now.
+- **Evidence:** `data/city-collection/` raw/archived/scoped fetch JSON/receipts,
+  `rehearsal-result.json`, `scope-rehearsal-result.json`, `runtime.json`,
+  `coverage.json`, active/held/all CSVs, `PROGRESS.md`, `live-ui.json` and screenshots.
+  OSM attribution/licence retained per record and in the UI/exports.
+- **Unfinished:** 455 drafts without menu/price evidence, 512 without hours
+  observations, 533 without vibes, 568 without operator Maps review; current facts,
+  representative accuracy/correction/creator evaluations and final user approvals
+  remain open. Five of 168 search-grid queries scheduled is not city completion.
+
+---
+
+# Known-location policy, canonical inventory and GPU — 8 November 2026
+
+Read [KNOWN_LOCATION_EARLY_EXIT.md](KNOWN_LOCATION_EARLY_EXIT.md). This is the latest
+implementation/runtime checkpoint; historical measurements below remain retained.
+
+- **Backend:** final **251 passed in 51.22s** with isolated databases; required Ruff
+  passed. Nineteen new policy/identity regressions cover exact known-post exit
+  before network/inference, caption branch matching, multi-venue/compilation and
+  unknown-address rejection, different houses, manual/maintenance bypass, held
+  and labelled sources, owner boundaries, immediate draft persistence, actual
+  inspected-frame coverage on early exit, cache rejection of partial results,
+  repeat-safe backfill/unassigned evidence, ambiguous duplicate holds, concurrent
+  alias insertion and export/erasure of retained skip references.
+- **Web:** strict TypeScript/production build passed; final **20 passed in 58.7s**
+  on desktop/mobile Chromium. Includes skipped-coverage notice, retained original
+  links, explicit full-inspection request, existing location/approval/correction,
+  timing and evaluation gates. Covered accessibility checks passed. Source/label
+  mutations intercepted; no test fixtures inserted into real inventory.
+- **Real DB:** consistent pre-change backup, separate-copy rehearsal and actual
+  backfill, then repeat. **83 sources, 126 spot originals retained: 86 identified,
+  12 merged, 28 quarantined.** Cleanup adds one supported merge/four ambiguous
+  holds; no new location insertion was necessary. Second replay yields zero
+  insertions/cleanup changes. Source/spot evidence is retained. No accepted claims,
+  real venues, creator assessments, correction examples or human labels exist.
+- **SQL:** read-only duplicate checks report zero repeated identity keys and zero
+  duplicate explicit Maps references. These do not prove physical identity where
+  addresses are unknown. SQLite write serialization/unique-conflict handling is
+  implemented and concurrency tested. Live DB and consistent restored snapshot
+  pass schema-7 structural/integrity/index/duplicate/orphan checks. No migration
+  or PostgreSQL deployment occurred.
+- **GPU:** `gpu-all-layers-smoke.json` records two real retained-caption calls with
+  999 requested GPU layers, 100% model GPU placement, 12.332s initial/4.396s warm,
+  peak 2,783 MiB and 91% utilization. `gpu-vision-smoke.json` records a controlled
+  four-frame 768×768 synthetic memory test at unchanged 8,192 context, full GPU
+  placement, peak 3,345 MiB and utilization 100%. No weights, model precision,
+  sampling budget or KV precision changed. These are limited placement/memory
+  smokes, not an extraction-accuracy, sustained-load or complete-reel speed proof.
+- **Runtime:** healthy local API, worker heartbeat six seconds old at receipt;
+  existing pipeline/reuse/browser settings retained, known-spot skipping true,
+  GPU layers requested 999. No quotas reset, paid connector/cloud model activated,
+  approval fabricated or public release enabled. No existing pending record
+  qualified for a real skip at this audit; live cases were not manufactured to
+  create a success claim. Skip behaviour has isolated/backend/browser evidence.
+- **Artifacts:** backup `data/backups/before-known-spot-skip-20261108T051054Z.db`;
+  rehearsal/live backfill, GPU, SQL and runtime JSON plus restored snapshot under
+  `data/known-spots/`; `locations-for-review.csv` contains source/address/menu and
+  held-record references for later operator review; `browser-final/` holds traces
+  on failures. Read-only SQL in `resources/sql/private_inventory_checks.sqlite.sql`.
+
+Remaining: actual branch/menu/freshness accuracy and user approvals, normal live
+skip executions and sustained throughput; other proposed CPU-preparation/output
+experiments were not implemented by this step. A discovery skip explicitly leaves
+remaining evidence uninspected and cannot be called a complete fresh investigation.
+
+---
+
+# Read-only worker speed profiling — 8 November 2026
+
+Receipt `data/performance/speed-audit-20261108.json` records retained actual worker
+deliveries: 46 model responses/calls, 1,162.32s model phase, 926.78s generation
+(79.7%); six speech passes average 33.47s. Eight completed source-analysis jobs
+have median execution 144.15s and range 34.29–595.16s. These exclude preceding
+collection, queue/quota and approval waits, can include missing modalities, and
+do not establish accuracy or representative capacity. Nested phases overlap.
+Current UTC-day shared counter 300/300, browser 14/30. No code/runtime settings,
+models, quotas or approvals changed; tests were not rerun for this documentation
+and read-only inspection. Prior local tests below remain historical evidence.
+Next proposals are recorded in PERFORMANCE_IMPLEMENTATION and the master checklist.
+
+---
+
+# Investigation improvements — 7 November 2026, 23:40 IST
+
+Implementation: [PERFORMANCE_IMPLEMENTATION.md](PERFORMANCE_IMPLEMENTATION.md); P01–P10 derive from [INVESTIGATION_SPEED_AND_QUALITY.md](INVESTIGATION_SPEED_AND_QUALITY.md). This section supersedes the proposal-only status of the historical audit below. No model training, hosted inference, quota reset or operator approval occurred.
+
+- **Backend:** final full run **232 passed in 35.22s**, isolated temporary SQLite; required Ruff passed. Thirty added performance regressions cover late/clustered frame sampling, Unicode/recursive offsets, explicit metadata/context/output overflow, all-venue/branch retention, failed/retried delivery timing, queue versus quota delay, owner/model/correction/holdout/expiry/erasure cache boundaries, changed-comment batches/indexes, durable pipeline and restart recovery, cancellation during GPU waits, browser EOF/context recovery, independent-label benchmark guards and new metrics export/submission/account erasure. Existing planner/menu/taste/approval/expiry/privacy tests remain passing.
+- **Web:** strict TypeScript and production build passed. Final local operator/performance run **16 passed in 48.6s**, desktop/mobile; separate demo run **30 passed in 1.9 minutes**, two intentional viewport-specific skips. These are **46 distinct passing browser checks**. Local mutations/labels/benchmark requests were intercepted; demo records used `data/performance/demo-ui.db`, not the real DB. An over-exact test selector caused the initial new benchmark-UI test to time out; the locator was corrected and the complete final local suite passed.
+- **Visual/accessibility:** actual Data readiness screen inspected at 1440×1050 and 390×844; no browser errors or horizontal overflow in those checks. Covered-state automated WCAG A/AA assertions passed. Receipts/screenshots: `data/performance/visual-check.json`, `readiness-desktop.png`, `readiness-mobile.png`; final browser artifacts in `browser-local-passed/` and `browser-demo-final/`. These are emulated Chromium checks, not physical-device/customer validation.
+- **Actual local model:** `data/performance/smoke.json` records one retained agent-collected real caption, initially absent model, 18.026s first call including 11.174s load, then 5.912s immediate warm repetition including 0.015s load. Later guarded/persistent-client receipt `pooled-client-smoke.json`: 7.401s initial tokenizer construction, 5.251s warm reuse; token-guard time falls from 1.687s to 0.088s. Output counts are unlabelled and do not prove correct names/branches or equal factual accuracy. These few caption calls are not per-reel, ASR/vision, paired old/new or sustained-throughput results.
+- **Model placement:** Qwen3-VL 2B instruct unchanged. Ollama reported model bytes 2,338,198,648 and VRAM bytes 1,863,361,494, context 4,096 in caption calls. Partial GPU placement was observed. Subsequent idle `nvidia-smi`: 2,649/4,096 MiB, 0% utilization. No peak vision memory or purchase justification established. Whisper base, eight baseline frames, thirty collected-comment target and ordinary allowances retained.
+- **Browser runtime:** two controlled offline pages ran in one actual Chromium process. Each fresh context started with zero cookies and ended with its own fixture cookie; matching caption and two exposed fixture comments retained; configured readiness reached. Per-request context closure, helper reuse/EOF restart and partial-sample waits tested. **This is not live verification of the new reused-helper path against public Instagram**; old direct-browser live receipts remain historical evidence for the older path.
+- **Runtime/storage:** local API/worker restarted with reuse/pipeline/browser flags true and `OLLAMA_KEEP_ALIVE=10m`; fresh-checkout defaults remain off. `data/performance/runtime-final.json` confirms local healthy API and heartbeat age five seconds. Schema stays **7**, no migration required. A consistent SQLite backup restored to `restore-audit.db` passes integrity/structural/duplicate/orphan audits. The original pre-change backup is `data/backups/batore-20261107T142616Z.db`.
+- **Actual data preserved:** before-enable comparison confirms **70 source records; 111 identified-spot originals** (76 active, 11 merged, 24 held); **zero real venue claims/venues, corrections, source assessments, labels or publications**. Jobs at the receipt: 279 done, two cancelled, 59 queued. Source/spot counts and empty publication/label state stayed unchanged; normal worker scheduling/timing and operator session counters changed. No fixture approval or gold label was inserted.
+- **Allowances/reporting:** shared external counter **300/300** and browser **30/30** on the UTC day remain exhausted. Report includes 61 measured job deliveries and 279 earlier unmeasured jobs; its short delivery percentile consists largely of quick deferrals, **not fast reel inference**. Scheduled waits and failures remain visible. Worker suspension during implementation also contributes to eligible queue age. No counters were reset or caps raised. Temporary demo API/worker were stopped; real local port 8000 remains healthy.
+- **Privacy/rollback:** detailed owner job timings join account export and erasure. Submission removal also removes related source/comparison/watch jobs and correction rows; standalone timed submission analysis is erased with the account. Cache copies retain original computation time and origin identity. The three switches and bounded residency setting provide independent rollback; pending jobs/evidence are retained and no SQL downgrade is required.
+
+**Still unverified:** independently labelled English/Tamil/code-switched extraction, real exact branches/visual clues and unsupported-fact rates, correction benefit, creator calibration, new-browser live coverage, whole-reel speed/memory under load, matched baseline wall times, several days of operation and invited-user outcomes. The uncached benchmark implementation supports labelled retained captions/comments; it cannot supply missing human labels, historical timing or representative video/branch coverage. No claim that all P01–P10 validation is complete or that customer-ready accuracy is established.
+
+---
+
+# Read-only speed/quality audit — 7 November 2026, 19:43 IST
+
+Report: [INVESTIGATION_SPEED_AND_QUALITY.md](INVESTIGATION_SPEED_AND_QUALITY.md); receipt `data/investigation-speed-audit.json`. Inspected current code/config/SQLite and local hardware, plus official Ollama/faster-whisper documentation. External shared allowance 300/300 and browser allowance 30/30 exhausted, 55 jobs queued. GPU RTX 3050 Laptop 4,096 MiB; six-core/twelve-thread Ryzen 5600H. No inference was active during `ollama ps`; the idle zero-VRAM observation is not evidence that actual inference uses CPU.
+
+No execution-start or stage-duration fields exist in job/task records; queue age is not measured inference duration. Zero independent labels/corrections prevent a no-accuracy-loss claim. Code inspection identified frame endpoint loss under candidate-budget truncation, blind local input slicing and multi-venue candidate limits; proposed regressions/fixes are recorded, not implemented in this step. P01–P10 remain planned. No code/config changes, counter resets, source collection, model training/cloud inference or benchmark execution; application tests were not rerun for this documentation-only task. Local API/worker left unchanged.
+
+---
+
+# UI refresh — 7 November 2026, 19:21 IST
+
+See [UI_REFRESH.md](UI_REFRESH.md) for the Before/After review, arrangement and limits.
+
+- **Implementation:** refreshed forest-green navigation, current-page header/title, compact Discover introduction and grouped planner fields, readable shared typography/controls, complete mobile cards, wrapped operator controls, preference grid and taste shortcuts, dedicated food/cafe menu tab, compact secondary venue views and explicit saved/operation selection states.
+- **Interactions:** closed mobile sidebar inert/hidden; open drawer labelled, focus trapped, Escape dismisses and body scrolling locks; route/viewport changes close it. Native dialogs explicitly restore focus. Venue tabs expose labelled panel, roving focus and Arrow/Home/End handling. Search distinguishes loading, empty and error states and offers retry/reset.
+- **Build:** strict TypeScript and production build passed. No new dependencies or hosted font/image services; backend code unchanged. The earlier 202 backend tests remain prior evidence, not a new run for this task.
+- **Final demo run:** **30 passed in 1.7 minutes**, two intentional viewport-specific skips. Covers core plan/save/visit/profile, submission/processing, guided discovery/investigation outcomes, dish search/filter/diary/correction learning, new UI interactions, six-screen automated WCAG A/AA, and PWA/offline private-data exclusion. Output `web/test-results/ui-release/`.
+- **Final local operator run:** **12 passed in 37.3s**, desktop/mobile, covering maintenance, independent label form, autonomous research controls, corrections/revocation, identified evidence and Maps/held review. Fixture mutations intercepted; no synthetic facts/labels/approvals entered real inventory. Output `web/test-results/ui-local/`.
+- **Responsive/visual evidence:** geometry checks at 360, 600, 768, 900, 1024 and 1440 CSS pixels over Discover/Places/Taste/Sources/Operations. Six-screen before/after screenshots at 390/1440px plus menu/plan/card views under `data/ui-redesign/`. Captured reports showed no document overflow or page errors; main screens and detailed card/menu/plan views inspected. This is Chromium emulation, not physical-device/other-engine validation or a full assistive-technology audit.
+- **Corrected failures:** strict build caught route-location shadowing; mobile review caught legacy 100%-image height clipping the card body; keyboard assertions caught missing dialog focus restoration. Initial expanded run lacked the separate demo worker; it was started with source discovery/browser collection disabled. The source test now allows the documented 15-second UI polling interval. Final runs passed; failures are not counted as passes.
+- **Runtime/data:** actual local API/worker remained running; mode `local`, UI `en`, updated screen/browser title and 1440px fitting document observed at `http://127.0.0.1:8000`. Receipt `data/ui-redesign/local-mode.json` and screenshot. Only temporary demo API/worker stopped after checking their exact PIDs/commands. No DB schema change, provider activation, model training, real fact acceptance or location approval performed.
+
+UI01–UI05 are implemented/local verified. FH14/real accuracy, reviewed inventory, explicit per-location user approval and invited-user testing remain pending.
+
+---
+
+# FavHiker shared features and schema 7 — 7 November 2026
+
+This supersedes older competitor-coverage/schema/runtime counts below. Full research and operator procedure: [FAVHIKER_DEEP_REVIEW.md](FAVHIKER_DEEP_REVIEW.md).
+
+- **Research:** official product/planner/format/category/mall/restaurant/connector pages, indexed Coimbatore pages and app stores reviewed. Four anonymous browser requests returned CloudFront 403 (`data/favhiker-deep-review/anonymous-browser.json`). Different cached versions appeared. Coimbatore presence and shared mood/budget/diary/AI-review capabilities are established as public feature evidence; authenticated behavior, menu truth and generated plan quality remain unverified.
+- **Engineering:** typed reviewed menus, dish/cuisine search, same-item diet/price filters, reviewed formats/amenities, stable pagination, complete owner saved places, desired-state bookmarks, private dish diary, cuisine/spice choices, reversible learning, visit edit/delete/context snapshots, independent novelty, dish-aware planner prechecks, exact Maps links, balanced deduplicated review support and new-record privacy coverage. Fact acceptance never grants location approval.
+- **Backend:** required Ruff passed; final full run **202 passed in 31.74s**, temporary isolated SQLite databases. Regressions cover invalid/unknown menu fields, NaN/bool/string prices, normalized duplicates, unknown diet, expired evidence, same-dish combined filters, records beyond first 300, repeat-safe saves/learning, ownership, opt-out/rebuild, future dates/collisions, edited/deleted history, privacy, approval gates and requested-dish priority within bounded live checks.
+- **Review evidence:** typed praise/complaint/mixed/mention with links and dates. Shared URL/origin groups collapse transitively; conflicts become mixed. Expired/unaccepted signals cannot count. These are bounded reviewed groups, not independently verified people or all platform reviews. No live sentiment accuracy or latest-100 Google access is claimed.
+- **Web:** strict TypeScript/production build passed. Final new-feature run **10 passed in 36.9s**; local research **12 passed in 52.3s**; earlier core/accessibility **8 passed**, desktop/mobile. Checks cover filters, unknown amenities, dish/outing price distinction, persistent diary/edit/delete, novelty constraints, reversible visits and balanced sources. Automated WCAG A/AA assertions passed in covered states. Local mutations intercepted; no fixture facts/labels/approvals written to real inventory. The review-support example is an intercepted UI fixture.
+- **Visual:** menu/diary desktop/mobile screenshots inspected in `data/parity-visual/`; checked viewports had no horizontal overflow. Evidence dates now show years; source links underlined after accessibility caught insufficient distinction. This is not a full manual assistive-technology audit.
+- **Corrected failures:** initial selectors/fixture endpoint, missing `km` import, duplicate normalized taste tags and source-link accessibility were fixed. Concurrent browser runs collided on the shared trace directory (ENOENT on teardown); final runs were sequential with separate outputs. Failed attempts are not counted as passes.
+- **SQL:** actual local DB now **schema 7**: private diary, visit snapshot and unique owner/venue/dish and owner/venue/date indexes. Backup rehearsal and actual migration each executed twice, preserving every existing row count. Audit: integrity `ok`; no missing tables/indexes or detected duplicate/orphan groups. Receipts `data/parity-migration-rehearsal.json`, `data/parity-live-schema7.json`; SQL exports `resources/sql/schema-v7-sqlite.sql`/`schema-v7-postgresql.sql`. Relationships remain application managed; PostgreSQL execution/RLS-role testing remains unverified.
+- **Restore:** final online snapshot `data/backups/parity-final-20261107T130916Z.db`, separate restored copy `parity-final-restore-20261107T130916Z.db`, schema-7 audit healthy; live DB not replaced. Receipt `data/parity-final-status.json`.
+- **Actual inventory, 18:39 IST:** 56 active candidates, 10 merged and 24 held originals; 61 sources; **zero venue claims/approvals/venues, evaluation labels or corrections**. Twelve successful stored source watches have `access=public_content`, superseding the earlier deferred checkpoint. These do not prove universal comments, menu accuracy or sustained monitoring. Private packets exported to `data/review-packs/review-20261107T130632Z.md`/`.json` without approval.
+- **Runtime:** local API/worker restarted, schema 7, `http://127.0.0.1:8000`; authenticated diary/saved-place/filtered-browse and maintenance returned successfully. Snapshot: 204 jobs done, two cancelled, 70 queued, one running; heartbeat age 143 seconds during synchronous work, not claimed as continuous liveness proof. Collection can change counts. No extra paid connector, cloud inference, training or public release.
+
+FH01–FH13 engineering is implemented/local tested. Actual branch/menu/amenity review, explicit user approval, independent multilingual/sentiment labels, matched competitor outcomes and invited-user validation remain pending. Perfect accuracy, complete coverage and competitive superiority are not established.
+
+---
+
+> PDF export checked: `docs/exports/FavHiker-vs-Bites-by-Batore.pdf` reproduces the last user-facing competitor comparison across two pages. Extracted key text, rupee symbol and four source hyperlinks verified; both rendered pages visually inspected. Document-only work; no app tests or runtime changes required.
+
+> 7 November competitor research: [FAVHIKER_COMPARISON.md](FAVHIKER_COMPARISON.md) records public product/store evidence and inspection limits. Food personalization and advertised mood-based planning overlap substantially. Planner routes returned HTTP 403; no authenticated plan or competitive quality benchmark was tested. Documentation only; application tests were not rerun and no runtime changes made.
+
+# SQL schema 6 and stage continuation ? 7 November 2026, 00:39 IST
+
+- **SQL implementation:** serialized/transactional additive migration and version ledger; rejects future schemas; unique source-per-case and task-ordinal indexes; six query/recovery indexes; corrected live startup schema constant; read-only integrity/orphan/duplicate audit; generated SQLite/PostgreSQL schema files. Application-managed relationships are audited; no universal SQL foreign-key enforcement claim is made.
+- **Migration evidence:** pre-upgrade online snapshot `data/backups/batore-20261106T185613Z.db`; separate rehearsal upgraded twice with every existing table count preserved. Live schema 6 audit: integrity `ok`, no missing tables/indexes, no duplicate groups or orphaned audited relationships. Reports: `data/sql-migration-rehearsal-20261107.json`, `data/sql-live-audit-20261107.json`.
+- **Final restore:** `data/backups/batore-20261106T190720Z.db` restored separately to `schema6-final-restore-20261107.db`; schema-6 structural audit healthy. Receipt `data/sql-final-restore-20261107.json`. Live DB was not replaced by the restore drill.
+- **Stage 6 fixes:** browser/provider allowances reserve atomically, avoiding false visit consumption on a deferred call. Reel watches now have priority 98, ahead of bulk inventory; existing queued watches reprioritized without resetting counters. Changed captions queue a private repeat-safe fresh investigation; operator approval remains mandatory. Watched caption text expires using its own 24-hour timestamp.
+- **Backend tests:** full suite **168 passed in 22.76s** before final retention/startup regressions; final affected suites **56 passed in 6.26s**. Covers concurrent migration startup, duplicate rollback preserving originals, future-schema refusal, generated SQLite execution, real-version startup gate, atomic quota failure/success, repeated changed-caption handling, and independent source-watch retention. Required Ruff check passed.
+- **Browser tests:** **12 desktop/mobile checks passed in 36.0s** against the local instance. Fixture mutation requests intercepted; no fictional data, evaluation labels or approvals written to the real inventory. No web implementation changed in this continuation.
+- **Live monitoring boundary:** direct attempt saved `data/reel-watch-check-20261107.json`: quota-deferred, allowance counters unchanged, no successful new watch receipt. UTC-based daily limits had not reset at 00:39 IST. Do not count this as a successful Instagram recollection or sustained monitoring validation.
+- **Runtime:** one fresh local API tree and one worker tree; health `ok`, authenticated maintenance endpoint 200, heartbeat about four seconds old. Schema 6; 178 jobs done/two cancelled/48 queued. 49 active drafts, zero ready/approved/published, 59 page checks/eight overdue/one open conflict. `data/sql-stages-final-20261107.json` contains the snapshot.
+- **Dataset/model comparison:** 51 source records, 47 distinct URLs, 26 video analyses; zero operator labels or corrections; seven retained raw captions, four transcripts, zero cached media payloads. Current GPU confirmed RTX 3050 Laptop 4,096 MiB, RAM about 15.4 GiB. Provider prices and capabilities checked against primary docs; calculations saved with explicit hypothetical token/FX/throughput assumptions. No paid requests, uploads, training or provider switch. See `MODEL_OPTIONS_COMPARISON.md`, `data/model-dataset-audit-20261107.json`, `data/model-cost-comparison-20261107.json`.
+- **PostgreSQL boundary:** schema compilation/RLS statements exist; Docker engine unavailable. Actual PostgreSQL migration, role-based RLS and production restoration are not verified. Local-only SQLite operation remains the requested configuration.
+
+The four stages remain open for real accuracy, verified inventory, user approvals and sustained live evidence. SQL engineering and automated tests do not satisfy those completion criteria. New private review packet: `data/review-packs/review-20261106T190719Z.md` and `.json`.
+
+---
+
+# Stages 1, 2, 3 and 6 execution ? 6 November 2026, 22:58 IST
+
+Read [STAGES_1_2_3_6.md](STAGES_1_2_3_6.md). This is the latest execution record; older results below remain historical.
+
+- **Implemented:** 168 topic/area discovery combinations; expanded first-party targets; explicit first-party cross-reference deduplication with conflicting evidence retained; owner-scoped maintenance reports/approval packets; daily page observations and retry checkpoints; weekly web/reel scheduling; critical-fact expiry holds and revision invalidation; alert-review audit; local Markdown/JSON export; held-out source correction exclusion.
+- **Backend:** full suite **157 passed in 34.08s** before the final generic-description and expiry-audit privacy fixes. Final maintenance/identity/inventory suites **59 passed in 6.87s**, including generic-description and expiry-audit export/erasure regressions. A mistyped test filename initially caused a collection error/no tests; rerun used the actual `test_spot_quality.py` path. Required Ruff `--select F` passed. Tests use isolated DBs and do not label/approve real data.
+- **Frontend:** strict TypeScript and production build passed. **12 desktop/mobile browser checks passed in 36.3s**, including maintenance alert review, private evaluation, scoped corrections and Maps/held-record review. Synthetic responses/mutations were intercepted; no invented fixtures or decisions entered the real inventory. Accessibility assertions passed in the covered screens.
+- **Live collection:** first-party run fetched 11 distinct pages for 14 target entries. Kites Cafe remained unavailable. A duplicate Prozone Fun Unlimited target was joined using explicit first-party cross-reference, with both addresses/hours retained; a separate similarly named Instagram candidate was not automatically merged. One real alert records operator hours 11:00?22:00 versus mall hours 09:00?23:00. These observations are unverified.
+- **Cleanup:** two generic descriptions (`a club in Coimbatore`, `Car Race Coimbatore`) were held with original evidence retained. Immediate repeat made zero changes. Current counts: **49 active drafts, 10 merged, 24 held; zero Maps-reviewed identities; zero prepared/published venues**. No approval was entered on behalf of the user.
+- **Maintenance:** 59 persisted page-check records on active candidates, eight unavailable/overdue, one open conflicting-hours alert. These are page observations, not verified facts or 59 distinct sites. New reel-watch jobs have no successful live receipt yet: daily quotas deferred execution. Failure, change, retry, expiry and privacy paths have isolated regression coverage; sustained multi-day operation has not been proved.
+- **Source evidence:** 51 records across 47 distinct URLs; 37 dated records; 26 with video analysis; 196 classified comments; six indexed reference images. Zero human evaluation labels; precision/recall and correction benefit remain unmeasured. Missing active-draft fields: 38 menu/price, 43 hours, 44 vibes. No exhaustive Coimbatore denominator exists.
+- **Runtime:** API healthy in `local` mode at 22:58:33 IST; current worker heartbeat. 175 jobs done, two cancelled, 51 queued. Local provider allowance increased from 200 to 300; INR 3,000 target and 30/day browser pacing unchanged. Both daily allowances exhausted; queue waits for the next UTC date/05:30 IST allowance reset and scheduled retry. Counters were not reset; paid providers remain disabled.
+- **Recovery:** consistent `data/backups/batore-20261106T172729Z.db` restored into a separate `restore-drill-20261106T172729Z.db`. Both passed SQLite `quick_check`; selected source/restored counts matched (83 spot originals, 51 sources, 228 jobs, zero venues). The live database was not replaced. This is a local restore drill, not cross-machine disaster recovery.
+- **Artifacts:** `data/stages-1236-final-status.json`, `data/stages-1236-inventory.json`, `data/stages-1236-restore-drill.json` and `data/review-packs/review-20261106T172728Z.md`/`.json`. The manual `stages-1236-refresh.json` records quota deferral, not full refresh completion. Refresh private exports with `uv run python -m app.manage review-pack` from `backend/`.
+
+Final restart verification at 23:04 IST found and resolved stale workspace-owned API/worker trees omitted by an older PID record. `scripts/stop.ps1` now discovers only redirector trees whose executable is this workspace's exact virtual-environment Python, retains PID creation-time checks, and leaves unrelated Python processes alone. Actual stop/start exercised the recovery; one fresh API tree and one fresh worker tree were confirmed, API health and authenticated maintenance report returned successfully, and the worker heartbeat was current. This does not install an automatic Windows startup service. The final expiry audit also follows owner-scoped export/erasure, with a passing regression test.
+
+Full stage completion still needs representative independent labels, exact branch/fact review, sufficient city coverage, the user's location approvals, successful live reel monitoring and sustained maintenance/customer evidence. Mechanism tests do not satisfy these real-world dependencies.
+
+---
+
 # Owned-model feasibility research ? 6 November 2026
 
 Documentation-only continuation. Read [OWNED_AI_FEASIBILITY.md](OWNED_AI_FEASIBILITY.md). Inspected hardware/configuration with CIM and nvidia-smi, read the existing local inference implementation, checked primary provider/framework/research sources and calculated costs with Python. Current data has 51 sources and zero saved independent evaluation tasks. No new model was trained, benchmarked or deployed; no weights or source files were uploaded; no spending occurred. GPU speeds, salaries, exchange conversion and electricity tariffs in the scenarios are assumptions, not verified measurements/quotes. Existing application tests below remain their historical results; this research did not require rerunning them. Product operation/configuration is unchanged.

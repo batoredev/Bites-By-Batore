@@ -166,3 +166,36 @@ def test_operations_validation_and_publication_gates(client, auth):
         ).status_code
         == 422
     )
+
+
+@pytest.mark.parametrize("exhausted", ["provider", "instagram-browser"])
+def test_blocked_browser_reserves_neither_allowance(client, monkeypatch, exhausted):
+    from app.providers import reserve_browser_call, DeferredCollection
+    from app.db import Counter
+
+    monkeypatch.setattr(settings(), "max_provider_calls_per_day", 10)
+    monkeypatch.setattr(settings(), "browser_daily_limit", 10)
+    day = datetime.now(timezone.utc).date().isoformat()
+    with Session() as db:
+        for name in ["provider", "instagram-browser"]:
+            db.add(Counter(key=f"{name}:{day}", value=10 if name == exhausted else 2))
+        db.commit()
+        with pytest.raises(DeferredCollection):
+            reserve_browser_call(db)
+        db.expire_all()
+        assert db.get(Counter, f"{exhausted}:{day}").value == 10
+        other = "provider" if exhausted == "instagram-browser" else "instagram-browser"
+        assert db.get(Counter, f"{other}:{day}").value == 2
+
+
+def test_successful_browser_reserves_both_allowances_once(client, monkeypatch):
+    from app.providers import reserve_browser_call
+    from app.db import Counter
+
+    monkeypatch.setattr(settings(), "max_provider_calls_per_day", 10)
+    monkeypatch.setattr(settings(), "browser_daily_limit", 10)
+    day = datetime.now(timezone.utc).date().isoformat()
+    with Session() as db:
+        reserve_browser_call(db)
+        assert db.get(Counter, f"provider:{day}").value == 1
+        assert db.get(Counter, f"instagram-browser:{day}").value == 1

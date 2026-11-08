@@ -1,5 +1,18 @@
-import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
-import { NavLink, Routes, Route, useNavigate } from "react-router-dom";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
+import {
+  NavLink,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import {
   Compass,
   MapTrifold,
@@ -170,6 +183,69 @@ export default function App() {
     [online, setOnline] = useState(navigator.onLine),
     [toast, setToast] = useState("");
   const navigate = useNavigate();
+  const routeLocation = useLocation();
+  const sidebar = useRef<HTMLElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
+  const [smallScreen, setSmallScreen] = useState(
+    () => matchMedia("(max-width: 900px)").matches,
+  );
+  useEffect(() => {
+    const query = matchMedia("(max-width: 900px)");
+    const changed = () => {
+      setSmallScreen(query.matches);
+      setMobile(false);
+    };
+    query.addEventListener("change", changed);
+    return () => query.removeEventListener("change", changed);
+  }, []);
+  useEffect(() => {
+    setMobile(false);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    const titles: Record<string, string> = {
+      "/": "Discover",
+      "/places": "Explore places",
+      "/saved": "Saved for later",
+      "/taste": "My taste",
+      "/sources": "From my feed",
+      "/admin": "Operations",
+    };
+    document.title = `${titles[routeLocation.pathname] || "Page"} · Bites by Batore`;
+  }, [routeLocation.pathname]);
+  useEffect(() => {
+    if (!mobile || !smallScreen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () =>
+      [
+        ...(sidebar.current?.querySelectorAll<HTMLElement>(
+          "a[href],button:not([disabled])",
+        ) || []),
+      ].filter((el) => el.getClientRects().length > 0);
+    sidebar.current?.querySelector<HTMLButtonElement>(".mobile-close")?.focus();
+    const keys = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setMobile(false);
+      }
+      if (e.key !== "Tab") return;
+      const elements = focusable(),
+        first = elements[0],
+        last = elements.at(-1);
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", keys);
+    return () => {
+      document.removeEventListener("keydown", keys);
+      document.body.style.overflow = previousOverflow;
+      menuTrigger.current?.focus();
+    };
+  }, [mobile, smallScreen]);
   useEffect(() => {
     startup ||= initialize();
     startup
@@ -224,9 +300,14 @@ export default function App() {
   }
   async function saveVenue(v: Venue) {
     try {
-      const r = await post<{ saved: boolean }>(`/venues/${v.id}/save`);
+      const r = await api<{ saved: boolean }>(`/venues/${v.id}/save`, {
+        method: "PUT",
+        body: JSON.stringify({ saved: !v.saved }),
+      });
       setVenues((rows) =>
-        rows.map((x) => (x.id === v.id ? { ...x, saved: r.saved } : x)),
+        rows.some((x) => x.id === v.id)
+          ? rows.map((x) => (x.id === v.id ? { ...x, saved: r.saved } : x))
+          : [...rows, { ...v, saved: r.saved }],
       );
       setVenueDetail((x) => (x?.id === v.id ? { ...x, saved: r.saved } : x));
       setToast(
@@ -301,18 +382,51 @@ export default function App() {
     );
   if (!user) return <SignIn onSignedIn={reloadUser} />;
   const links = [
-    { to: "/", label: "Discover", icon: Compass },
-    { to: "/places", label: "Explore places", icon: MapTrifold },
-    { to: "/saved", label: "Saved for later", icon: BookmarkSimple },
-    { to: "/taste", label: "My taste", icon: Heart },
-    { to: "/sources", label: "From my feed", icon: FilmStrip },
+    {
+      to: "/",
+      label: "Discover",
+      detail: "Plan a few good hours",
+      icon: Compass,
+    },
+    {
+      to: "/places",
+      label: "Explore places",
+      detail: "Dishes, cafés & things to do",
+      icon: MapTrifold,
+    },
+    {
+      to: "/saved",
+      label: "Saved for later",
+      detail: "Your plans & places",
+      icon: BookmarkSimple,
+    },
+    {
+      to: "/taste",
+      label: "My taste",
+      detail: "Preferences & your diary",
+      icon: Heart,
+    },
+    {
+      to: "/sources",
+      label: "From my feed",
+      detail: "Share a place you found",
+      icon: FilmStrip,
+    },
   ];
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <aside className={`sidebar ${mobile ? "open" : ""}`}>
+      <aside
+        ref={sidebar}
+        id="app-navigation"
+        className={`sidebar ${mobile ? "open" : ""}`}
+        inert={smallScreen && !mobile}
+        role={smallScreen ? "dialog" : undefined}
+        aria-modal={smallScreen && mobile ? true : undefined}
+        aria-label={smallScreen ? "Main menu" : undefined}
+      >
         <NavLink to="/" className="brand" onClick={() => setMobile(false)}>
           <span className="brand-mark">
             b<span />
@@ -338,7 +452,10 @@ export default function App() {
               onClick={() => setMobile(false)}
             >
               <l.icon size={22} />
-              {l.label}
+              <span>
+                {l.label}
+                <small aria-hidden="true">{l.detail}</small>
+              </span>
             </NavLink>
           ))}
         </nav>
@@ -362,7 +479,13 @@ export default function App() {
               Operations
             </NavLink>
           )}
-          <button className="user-button" onClick={() => navigate("/taste")}>
+          <button
+            className="user-button"
+            onClick={() => {
+              setMobile(false);
+              navigate("/taste");
+            }}
+          >
             <span className="avatar">
               {user.name.slice(0, 1).toUpperCase()}
             </span>
@@ -390,21 +513,27 @@ export default function App() {
       {mobile && (
         <button
           className="menu-scrim"
-          aria-label="Close menu"
+          aria-hidden="true"
+          tabIndex={-1}
           onClick={() => setMobile(false)}
         />
       )}
-      <div className="main-shell">
+      <div className="main-shell" inert={smallScreen && mobile}>
         <header className="topbar">
           <button
             className="icon-button mobile-menu"
+            ref={menuTrigger}
             aria-label="Open navigation"
+            aria-expanded={mobile}
+            aria-controls="app-navigation"
             onClick={() => setMobile(true)}
           >
             <List size={24} />
           </button>
           <span className="topbar-note">
-            A little more flavour. A little more life.
+            <span>bites /</span>{" "}
+            {links.find((l) => l.to === routeLocation.pathname)?.label ||
+              "Operations"}
           </span>
           <LocationLabel />
         </header>
