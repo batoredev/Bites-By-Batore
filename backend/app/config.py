@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     analysis_provider: Literal["gemini", "ollama"] = "gemini"
     ollama_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "qwen3-vl:2b-instruct"
+    # Optional larger text-only model for the caption specialist. Empty = same model.
+    ollama_text_model: str = ""
     whisper_model: str = "base"
     analysis_reuse_enabled: bool = False
     research_pipeline_enabled: bool = False

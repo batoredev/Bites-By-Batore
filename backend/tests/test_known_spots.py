@@ -192,7 +192,7 @@ def test_new_caption_location_is_committed_before_video(enabled, monkeypatch):
 
     monkeypatch.setattr(research, "analyze", analyze)
     with Session() as db:
-        case, current = source(db, "unseen")
+        case, current = source(db, "unseen", caption="Beryl Cafe, " + ADDRESS)
         current.content = {
             **current.content,
             "media": {"base64": "unused", "mime": "video/mp4"},

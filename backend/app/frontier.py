@@ -8,11 +8,32 @@ from .providers import Unavailable
 from .research import start_case
 from .collection_control import bulk_enabled, count_request, daily_limits
 
+# Searched once for the whole city, before the area grid. Activities are few and
+# city-wide, so repeating them for every neighbourhood wastes searches.
+CITY_TOPICS = [
+    "go karting",
+    "trampoline park adventure activities",
+    "water park theme park",
+    "escape room VR gaming zone",
+    "snooker pool gaming lounge",
+    "pottery art workshop",
+    "turf pickleball badminton court",
+    "museum zoo places to visit",
+    "pubs bars breweries",
+    "kids play area",
+    "things to do with friends",
+    "date night places",
+    "new cafe opening",
+    "hidden gem restaurants",
+    "sushi Japanese Korean restaurants",
+    "buffet restaurants",
+]
+# Searched for every area below.
 CATEGORIES = [
-    "sushi restaurants",
+    "new restaurants",
     "cafes",
     "bowling gaming arcade",
-    "go karting adventure",
+    "rooftop restaurants bars",
     "parks",
     "cinema",
     "vegetarian restaurants",
@@ -50,7 +71,11 @@ def next_query(db, user_id):
             .limit(20)
         )
     )
-    topics = [f"Coimbatore {scope} food entertainment" for scope in scopes] + topics
+    topics = (
+        [f"Coimbatore {scope} food entertainment" for scope in scopes]
+        + [f"Coimbatore {topic}" for topic in CITY_TOPICS]
+        + topics
+    )
     seen = {}
     for case in db.scalars(select(Investigation).where(Investigation.user_id == user_id)):
         seen[case.query] = max(seen.get(case.query, ""), case.created_at)

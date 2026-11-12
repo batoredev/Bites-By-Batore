@@ -16,6 +16,7 @@ from .spot_identity import name_key, signature, source_urls
 from .spots import INACTIVE, lock_inventory, merge_data
 
 POLICY = "duplicate-agent-v1"
+SCAN_INTERVAL_MINUTES = 30
 
 
 def inventory_version(db, owner):
@@ -36,7 +37,7 @@ def inventory_version(db, owner):
     return hashlib.sha256(json.dumps([list(r) for r in fields]).encode()).hexdigest()
 
 
-def request_scan(db, owner, force=False):
+def request_scan(db, owner, force=False, min_interval_minutes=0):
     from .jobs import enqueue
 
     latest = db.scalar(
@@ -49,6 +50,12 @@ def request_scan(db, owner, force=False):
     version = inventory_version(db, owner)
     if latest and latest.state == "done" and latest.result.get("inventory_version") == version and not force:
         return latest
+    if latest and latest.state == "done" and min_interval_minutes and not force:
+        # A full scan takes minutes; during collection the inventory changes
+        # constantly, so the scheduler re-scans on an interval, not after every change.
+        finished = latest.completed_at or latest.created_at
+        if datetime.fromisoformat(finished) + timedelta(minutes=min_interval_minutes) > datetime.now(UTC):
+            return latest
     if latest and latest.state == "failed" and not force:
         failed_at = latest.completed_at or latest.created_at
         if datetime.fromisoformat(failed_at) + timedelta(minutes=5) > datetime.now(UTC):

@@ -67,7 +67,7 @@ def import_launch_leads(user=Depends(admin_user), db=Depends(get_db)):
     }
 
 
-CATEGORIES = ["food", "cafe", "park", "cinema", "gaming", "bowling", "adventure"]
+from .categories import CATEGORIES  # noqa: E402
 
 
 def coverage_report(db):

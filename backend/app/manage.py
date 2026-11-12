@@ -29,12 +29,45 @@ def main():
             "city-collection-report",
             "bulk-collection-resume",
             "duplicates-run",
+            "retune-drafts",
+            "test-inventory-publish",
+            "test-inventory-revert",
+            "geocode-drafts",
         ],
     )
     parser.add_argument("--user-id", default="local-operator")
+    parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--dialect", choices=["sqlite", "postgresql"], default="sqlite")
     args = parser.parse_args()
-    if args.command == "duplicates-run":
+    if args.command == "geocode-drafts":
+        from .geocode import geocode_drafts
+
+        if settings().app_mode != "local":
+            raise SystemExit("Draft coordinate lookup is available only in local mode")
+        from .geocode import coordinates_from_links
+
+        with Session() as db:
+            result = {"from_links": coordinates_from_links(db, args.user_id)}
+            db.commit()
+            if args.limit:
+                # Optional public geocoder pass; low yield for Coimbatore, off by default.
+                result["geocoder"] = geocode_drafts(db, args.user_id, args.limit)
+            print(json.dumps(result, indent=2))
+    elif args.command in {"retune-drafts", "test-inventory-publish", "test-inventory-revert"}:
+        from . import test_inventory
+
+        if settings().app_mode != "local":
+            raise SystemExit("The agent-approved test inventory is available only in local mode")
+        action = {
+            "retune-drafts": test_inventory.retune_drafts,
+            "test-inventory-publish": test_inventory.publish,
+            "test-inventory-revert": test_inventory.revert,
+        }[args.command]
+        with Session() as db:
+            result = action(db, args.user_id)
+            db.commit()
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+    elif args.command == "duplicates-run":
         from .duplicate_agent import request_scan
 
         if settings().app_mode not in {"local", "demo"}:

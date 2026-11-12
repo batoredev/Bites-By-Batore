@@ -33,15 +33,7 @@ export function defaultRequest(user: User): OutingRequest {
     budget_unit: "group",
     departure: `${day}T17:00:00+05:30`,
     transport: "drive",
-    categories: [
-      "food",
-      "cafe",
-      "park",
-      "cinema",
-      "gaming",
-      "bowling",
-      "adventure",
-    ],
+    categories: categories.map((c) => c.id),
     outing_type: "any",
     mood: "different",
     vegetarian: !!user.profile.vegetarian,
@@ -82,6 +74,7 @@ export default function Discover({
   request: OutingRequest;
   setRequest: (r: OutingRequest) => void;
 }) {
+  const [visiblePlans, setVisiblePlans] = useState(24);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [response, setResponse] = useState<PlanResponse | null>(
@@ -112,8 +105,11 @@ export default function Discover({
         query: request.query || "Something different",
         exclude_ids: [],
         lock_ids: [],
+        // Ask for every distinct plan the server will return, best first.
+        max_options: 400,
       });
       setPlans(r.options);
+      setVisiblePlans(24);
       setResponse(r);
       setTimeout(
         () =>
@@ -572,7 +568,9 @@ export default function Discover({
                 <div className="eyebrow">BUILT AROUND YOU</div>
                 <h2>
                   {plans.length
-                    ? "A few good possibilities."
+                    ? plans.length === 1
+                      ? "One plan fits."
+                      : `${plans.length} plans fit, best first.`
                     : "Let’s adjust the plan."}
                 </h2>
               </div>
@@ -580,7 +578,11 @@ export default function Discover({
                 {response.candidate_count} eligible places considered
               </span>
             </div>
-            <p className="muted">{response.message}</p>
+            <p className="muted">
+              {response.message}
+              {(response.total_options || 0) > plans.length &&
+                ` Showing the best ${plans.length} of ${response.total_options} possible combinations.`}
+            </p>
             {response.investigation_id && (
               <p className="notice">
                 We started an investigation for this request.{" "}
@@ -590,7 +592,7 @@ export default function Discover({
             )}
             {plans.length > 0 && (
               <div className="plan-grid">
-                {plans.map((p, i) => (
+                {plans.slice(0, visiblePlans).map((p, i) => (
                   <PlanCard
                     key={p.id}
                     plan={p}
@@ -599,6 +601,25 @@ export default function Discover({
                     onSave={() => onSavePlan(p)}
                   />
                 ))}
+              </div>
+            )}
+            {plans.length > visiblePlans && (
+              <div className="form-bottom">
+                <span>
+                  Showing {visiblePlans} of {plans.length} plans, best first.
+                </span>
+                <button
+                  className="secondary"
+                  onClick={() => setVisiblePlans(visiblePlans + 24)}
+                >
+                  Show 24 more
+                </button>
+                <button
+                  className="secondary"
+                  onClick={() => setVisiblePlans(plans.length)}
+                >
+                  Show all {plans.length}
+                </button>
               </div>
             )}
             {Object.keys(response.excluded).length > 0 && (

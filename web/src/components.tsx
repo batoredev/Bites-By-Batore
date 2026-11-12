@@ -14,6 +14,13 @@ import {
   BowlingBall,
   Mountains,
   CheckCircle,
+  Storefront,
+  IceCream,
+  Wine,
+  Ticket,
+  PaintBrush,
+  Bank,
+  SoccerBall,
 } from "@phosphor-icons/react";
 import type { Category, Venue, Plan } from "./types";
 import { money } from "./api";
@@ -22,13 +29,20 @@ export const categories: {
   label: string;
   icon: typeof Coffee;
 }[] = [
-  { id: "food", label: "Food", icon: CookingPot },
+  { id: "food", label: "Restaurants", icon: CookingPot },
+  { id: "street_food", label: "Street food", icon: Storefront },
   { id: "cafe", label: "Cafés", icon: Coffee },
-  { id: "park", label: "Parks", icon: Leaf },
+  { id: "dessert", label: "Desserts", icon: IceCream },
+  { id: "nightlife", label: "Bars & lounges", icon: Wine },
   { id: "cinema", label: "Movies", icon: Popcorn },
   { id: "gaming", label: "Gaming", icon: GameController },
   { id: "bowling", label: "Bowling", icon: BowlingBall },
   { id: "adventure", label: "Adventure", icon: Mountains },
+  { id: "amusement", label: "Theme parks", icon: Ticket },
+  { id: "park", label: "Parks & lakes", icon: Leaf },
+  { id: "workshop", label: "Workshops", icon: PaintBrush },
+  { id: "attraction", label: "Museums & sights", icon: Bank },
+  { id: "sports", label: "Turfs & courts", icon: SoccerBall },
 ];
 export function Art({
   category,
@@ -215,7 +229,9 @@ export function PlanCard({
             ? "Your best fit"
             : index === 1
               ? "Another way to go"
-              : "A change of scene"}
+              : index === 2
+                ? "A change of scene"
+                : `Option ${index + 1}`}
         </span>
         <button
           className="icon-button"

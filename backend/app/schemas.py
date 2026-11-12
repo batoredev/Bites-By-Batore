@@ -3,7 +3,22 @@ from zoneinfo import ZoneInfo
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
-Category = Literal["food", "cafe", "park", "cinema", "gaming", "bowling", "adventure"]
+Category = Literal[
+    "food",
+    "street_food",
+    "cafe",
+    "dessert",
+    "nightlife",
+    "cinema",
+    "gaming",
+    "bowling",
+    "adventure",
+    "amusement",
+    "park",
+    "workshop",
+    "attraction",
+    "sports",
+]
 
 
 class OutingRequest(BaseModel):
@@ -29,6 +44,8 @@ class OutingRequest(BaseModel):
     exclude_ids: list[str] = Field(default_factory=list, max_length=50)
     lock_ids: list[str] = Field(default_factory=list, max_length=4)
     max_stops: int = Field(default=2, ge=1, le=4)
+    # How many distinct plans to return, best first. Three by default.
+    max_options: int = Field(default=3, ge=1, le=400)
     occasion: str = Field(default="casual", max_length=60)
     companion_preferences: list[list[str]] = Field(default_factory=list, max_length=19)
 

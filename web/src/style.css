@@ -2990,3 +2990,8 @@ td:last-child {
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
+
+.unpublished-filters {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin: 14px 0 6px;
+}

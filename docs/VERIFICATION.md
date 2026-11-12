@@ -1,3 +1,22 @@
+# 12 November 2026 — test inventory, categories, collector fixes
+
+Details in [TEST_INVENTORY.md](TEST_INVENTORY.md).
+
+- Backend: `pytest -q` 397 passed. `ruff check app tests --select F` clean.
+- Web: `npm run build` passed. Browser end-to-end suite **not run**.
+- Rehearsed retune, coordinates-from-links, duplicate scan and publish on a
+  separate copy of the database before the real run.
+- Real database: 188 drafts held, 123 coordinates set from collected Maps links,
+  1 automatic merge, 559 test venues published; structural audit healthy.
+- Live `/api/plans` in local mode returned three plans for five different requests.
+- After the descriptor fix: 57 reel analyses completed, 0 failed, in 30 minutes.
+- Live collector check on five public reels: location tag present on one, two
+  alternative video streams captured on each.
+- Not verified: extraction accuracy, test venue facts, stream fallback on an
+  over-limit reel, cost of swapping two models.
+
+---
+
 # Dedicated duplicate agent — 8 November 2026
 
 Read [DUPLICATE_AGENT.md](DUPLICATE_AGENT.md). Implemented and locally tested:

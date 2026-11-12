@@ -94,6 +94,33 @@ def public_audio_reference(manifest):
     return None
 
 
+def public_video_references(manifest):
+    """Video-only tracks from the reel's DASH manifest, highest bitrate first."""
+    if not isinstance(manifest, str) or len(manifest) > 500000 or "<!" in manifest:
+        return []
+    try:
+        root = ElementTree.fromstring(manifest)
+    except ElementTree.ParseError:
+        return []
+    if root.find(".//{*}ContentProtection") is not None:
+        return []
+    found = []
+    for node in root.findall(".//{*}Representation"):
+        if not node.get("mimeType", "video/").startswith("video/") or node.get("width") is None:
+            continue
+        base = node.find("{*}BaseURL")
+        ref = (base.text or "") if base is not None else ""
+        host = urlparse(ref).hostname or ""
+        if browser_url_allowed(ref) and any(
+            host == h or host.endswith("." + h) for h in ("cdninstagram.com", "fbcdn.net")
+        ):
+            try:
+                found.append((int(node.get("bandwidth", "0")), ref))
+            except ValueError:
+                continue
+    return [ref for _, ref in sorted(found, reverse=True)]
+
+
 def extract_public_data(payloads, code, visible_text, max_comments=30):
     output, comments, video_urls = {}, {}, []
     visible = " ".join(visible_text.split())
@@ -141,9 +168,12 @@ def extract_public_data(payloads, code, visible_text, max_comments=30):
                 output["published_at"] = datetime.fromtimestamp(stamp, timezone.utc).isoformat()
             except (OverflowError, OSError, ValueError):
                 pass
-        refs = [item.get("video_url")] + [
-            v.get("url") for v in item.get("video_versions", []) if isinstance(v, dict)
-        ]
+        versions = [v for v in item.get("video_versions", []) if isinstance(v, dict)]
+        # Complete (video+audio) files first, largest first, then video-only tracks
+        # that the collector joins with the separate audio track.
+        versions.sort(key=lambda v: -(numeric(v.get("width")) or 0) * (numeric(v.get("height")) or 0))
+        refs = [item.get("video_url")] + [v.get("url") for v in versions]
+        refs += public_video_references(item.get("video_dash_manifest"))
         for ref in refs:
             if isinstance(ref, str) and browser_url_allowed(ref):
                 host = urlparse(ref).hostname or ""
@@ -152,6 +182,17 @@ def extract_public_data(payloads, code, visible_text, max_comments=30):
         audio = public_audio_reference(item.get("video_dash_manifest"))
         if audio:
             output["audio_url"] = audio
+        place = item.get("location")
+        if isinstance(place, dict) and isinstance(place.get("name"), str) and place["name"].strip():
+            # The creator's own location tag: the strongest venue clue a reel carries.
+            tag = {"name": " ".join(place["name"].split())[:150]}
+            for key in ("lat", "lng"):
+                value = place.get(key)
+                if isinstance(value, (int, float)) and not isinstance(value, bool):
+                    tag[key] = float(value)
+            if place.get("pk") or place.get("id"):
+                tag["id"] = str(place.get("pk") or place.get("id"))[:40]
+            output["location_tag"] = tag
         for key in ("comments_connection", "edge_media_to_parent_comment", "edge_media_to_comment"):
             connection = item.get(key) or {}
             if not isinstance(connection, dict):
@@ -176,7 +217,10 @@ def extract_public_data(payloads, code, visible_text, max_comments=30):
                 identity = str(row.get("pk") or row.get("id") or hashlib.sha256(text.encode()).hexdigest())
                 comments[identity] = text[:1000]
     if video_urls:
+        video_urls = list(dict.fromkeys(video_urls))
         output["media_url"] = video_urls[0]
+        if video_urls[1:]:
+            output["media_alternatives"] = video_urls[1:9]
     sample = list(comments.values())[:max_comments]
     if sample:
         output["comments"] = "\n".join(sample)

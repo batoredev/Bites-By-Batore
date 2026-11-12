@@ -85,6 +85,17 @@ def alert(row, kind, url, detail):
 
 def hold_published(db, row, reason):
     venue = db.get(Venue, row.venue_id) if row.venue_id else None
+    if venue and venue.details.get("test_inventory"):
+        # Test inventory is unverified by definition; keep it plannable and record the alert.
+        db.add(
+            Audit(
+                actor=row.user_id,
+                action="maintenance.test_venue_alert",
+                target=venue.id,
+                detail={"reason": reason, "spot_id": row.id},
+            )
+        )
+        return
     if venue and not venue.is_demo and venue.status == "published":
         venue.status, venue.updated_at = "review", now()
         venue.revision += 1

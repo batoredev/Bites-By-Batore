@@ -334,29 +334,25 @@ def identify_from_source(db, case, source):
             for role in ("caption", "video")
             for c in source.analysis.get(role, {}).get("venue_candidates", [])
         ]
+    tag = source.content.get("location_tag") or {}
+    if source.platform != "web" and tag.get("name") and not quality_issues(tag["name"]):
+        # The creator's own location tag names the place and usually carries a point.
+        # Attach it to the matching candidate, or add it when the caption named nothing.
+        candidates = [dict(c) for c in candidates]
+        matching = next((c for c in candidates if possible_match(c.get("name", ""), tag["name"])), None)
+        if matching is None:
+            matching = {"name": tag["name"], "address_clues": [], "dish_or_activity": ""}
+            candidates.append(matching)
+        matching["_location_tag"] = tag
     output, checks = [], []
     named_candidates = {
         name_key(c.get("name", "")) for c in candidates if not quality_issues(c.get("name", ""))
     }
     for candidate in candidates:
         area = infer_area(candidate.get("address_clues", []))
-        topic = (candidate.get("name", "") + " " + candidate.get("dish_or_activity", "")).lower()
-        category = next(
-            (
-                c
-                for word, c in [
-                    ("kart", "adventure"),
-                    ("bowling", "bowling"),
-                    ("arcade", "gaming"),
-                    ("gaming", "gaming"),
-                    ("cinema", "cinema"),
-                    ("park", "park"),
-                    ("cafe", "cafe"),
-                ]
-                if word in topic
-            ),
-            "food",
-        )
+        from .categories import classify
+
+        category = classify(candidate.get("name", ""), candidate.get("dish_or_activity", ""))
         observations = [
             {
                 "text": o["text"],
@@ -406,6 +402,19 @@ def identify_from_source(db, case, source):
                 and not re.search(r"\b(no|not|never|without|unknown|unconfirmed)\b", o["text"], re.I)
             ],
         }
+        point = candidate.get("_location_tag") or {}
+        if isinstance(point.get("lat"), float) and isinstance(point.get("lng"), float):
+            from .planner import km
+
+            if km((point["lat"], point["lng"]), (11.0168, 76.9558)) <= 40:
+                data["coordinates"] = {
+                    "lat": point["lat"],
+                    "lng": point["lng"],
+                    "source_url": source.canonical_url,
+                    "basis": "Instagram location tag on the reel; exact branch unverified",
+                }
+        if point:
+            data["location_tag"] = {"name": point.get("name"), "source_url": source.canonical_url}
         issues = quality_issues(candidate["name"], area, data)
         row = upsert_spot(db, case.user_id, candidate["name"], category, area, data)
         if row and row.status not in INACTIVE:

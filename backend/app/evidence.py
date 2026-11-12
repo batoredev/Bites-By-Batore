@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from urllib.parse import urlparse
 from sqlalchemy import select
 from .db import Claim, Venue, Audit, now
+from .categories import FOOD
 
 
 def validate_value(field, value):
@@ -105,7 +106,7 @@ def ingest_claim(db, data, actor, trusted=False):
     if not venue:
         raise ValueError("Unknown venue")
     value = data.value["value"]
-    if data.field in {"offerings", "dining_format"} and venue.category not in {"food", "cafe"}:
+    if data.field in {"offerings", "dining_format"} and venue.category not in FOOD:
         raise ValueError("Menus and dining formats apply to food venues")
     if not validate_value(data.field, value):
         raise ValueError("Invalid value for this fact")

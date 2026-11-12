@@ -33,6 +33,76 @@ GENERIC = set(
     "a an new best first hidden gem aesthetic inspired pinterest food foods foodie foodies spot spots place location venue facility track unknown unspecified unnamed for you page lounge club car race go karting simulator motion racing launch tea shop stall park sushi ramen momo kalan british date night".split()
 )
 
+# Words that describe a kind of place, dish, mood or occasion. A name made only
+# of these (plus a locality) is a description, not a venue.
+GENERIC |= set(
+    """local old school pet friendly family dining restaurant hotel dessert desserts icecream ice cream
+    biryani biriyani combo mutton chicken egg masala street experience experiences creative group
+    activities activity ride entertainment expo workshop tufting painting ceramic plate celebration
+    diwali pongal vibes vibe rainy day daily homecooked home cooked homefood homemade hostel branch
+    mess bakery juice snacks snack meals meal breakfast lunch dinner buffet unlimited veg nonveg
+    non vegetarian special famous popular viral trending budget cheap affordable rooftop roof top
+    theme themed outlet store eatery kitchen menu offer offers opening opened weekend must try visit
+    lover lovers friends couple couples kids fun gaming game games bowling arcade adventure
+    movie movies theatre cinema open air live music bbq grill shawarma dosa idli parotta kebab
+    noodles pizza burger momos chaat pani puri dishes dish item items review reviews restaurent restarunt resturant""".split()
+)
+LOCALITIES = AREAS + [
+    "Ram Nagar",
+    "Town Hall",
+    "Fort",
+    "Vincent Road",
+    "Cross Cut Road",
+    "Kottaimedu",
+    "Kottamedu",
+    "Kovaipudur",
+    "Kuniyamuthur",
+    "Hopes",
+    "Lakshmi Mills",
+    "Tatabad",
+    "Sidhapudur",
+    "Ramanathapuram",
+    "Sungam",
+    "Trichy Road",
+    "Mettupalayam Road",
+    "Pollachi Road",
+    "Palakkad Road",
+    "Kalapatti",
+    "Vilankurichi",
+    "Sitra",
+    "Neelambur",
+    "Racecourse",
+    "R S Puram",
+    "Kovai",
+    "Coimbatore",
+    "Tamil Nadu",
+]
+LANDMARK = re.compile(
+    r"\b(bus stand|bus stop|railway station|junction|airport|river|corporation|colony|college|"
+    r"university|school|hostel|apartment|apartments|rent|pg|temple|church|mosque|hospital|"
+    r"signal|flyover|bridge|market|bazaar|mall)\b"
+)
+
+# Real businesses whose names happen to be made of ordinary words.
+KNOWN_NAMES = {"cafe coffee day", "fun unlimited", "old school tea", "the chocolate room", "chai kings"}
+
+
+def _without_localities(key):
+    for place in sorted(LOCALITIES, key=len, reverse=True):
+        key = re.sub(r"\b" + re.escape(name_key(place)) + r"\b", " ", key)
+    return " ".join(key.split())
+
+
+def descriptive_only(name):
+    """True when nothing but kind/locality/occasion words remain."""
+    key = name_key(name)
+    if key in KNOWN_NAMES:
+        return False
+    for place in sorted(LOCALITIES, key=len, reverse=True):
+        key = re.sub(r"\b" + re.escape(name_key(place)) + r"\b", " ", key)
+    tokens = set(key.split()) - DESCRIPTORS - GENERIC - {"road", "street", "main", "near", "of", "on", "by"}
+    return not tokens
+
 
 def name_key(value):
     # Strip Latin accents but preserve Tamil and other non-Latin scripts.
@@ -72,8 +142,17 @@ def quality_issues(name, area="", data=None):
     key = name_key(name)
     tokens = set(key.split()) - DESCRIPTORS
     issues = []
-    if len(key) < 2 or not (tokens - GENERIC) or area_key(key) in {area_key(a) for a in AREAS}:
+    known = key in KNOWN_NAMES
+    if known:
+        pass
+    elif len(key) < 2 or not (tokens - GENERIC) or area_key(key) in {area_key(a) for a in AREAS}:
         issues.append("Generic description or neighbourhood, not an identifiable venue name")
+    elif descriptive_only(name) or re.match(r"^(a|an|some|any)\s+\w{2,}", key):
+        issues.append("Generic description or neighbourhood, not an identifiable venue name")
+    elif LANDMARK.search(_without_localities(key)) and not re.search(
+        r"\b(cafe|coffee|restaurant|hotel|mess|bakery|biryani|kitchen|cinemas?|park|food court)\b", key
+    ):
+        issues.append("Name may be a nearby landmark rather than the reviewed venue")
     if re.search(
         r"\b(first|best|new)\b.*\b(in|launch|opening|opened)\b|\b(foodspots|viralreels|trendingreels)\b", key
     ):

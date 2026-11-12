@@ -1,5 +1,18 @@
 export type Category =
-  "food" | "cafe" | "park" | "cinema" | "gaming" | "bowling" | "adventure";
+  | "food"
+  | "street_food"
+  | "cafe"
+  | "dessert"
+  | "nightlife"
+  | "cinema"
+  | "gaming"
+  | "bowling"
+  | "adventure"
+  | "amusement"
+  | "park"
+  | "workshop"
+  | "attraction"
+  | "sports";
 export type Profile = {
   liked_tags?: string[];
   avoided_tags?: string[];
@@ -73,6 +86,7 @@ export type Venue = {
 };
 export type OutingRequest = {
   max_stops?: number;
+  max_options?: number;
   occasion?: string;
   companion_preferences?: string[][];
   query: string;
@@ -149,6 +163,7 @@ export type PlanResponse = {
   excluded: Record<string, number>;
   message: string;
   candidate_count: number;
+  total_options?: number;
   warnings?: string[];
   interest_tags?: string[];
 };

@@ -465,7 +465,7 @@ def test_pipeline_complete_case_waits_for_sources_and_does_not_publish(client, m
     monkeypatch.setattr(research, "discover_stage", lambda *args: {"source_count": 1})
     monkeypatch.setattr(research, "google_search", lambda *args: [])
     monkeypatch.setattr(research, "web_search", lambda *args: [])
-    monkeypatch.setattr("app.analysis_reuse.model_digest", lambda: None)
+    monkeypatch.setattr("app.analysis_reuse.model_digest", lambda *role: None)
     calls = []
 
     def analyzer(db, role, *args, **kwargs):

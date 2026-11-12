@@ -187,7 +187,9 @@ def venue_dict(db, venue, user=None):
         "demo"
         if venue.is_demo
         else (
-            "needs checking"
+            "test estimate"
+            if venue.details.get("test_inventory")
+            else "needs checking"
             if any(c.expires_at < now() for c in accepted) or not accepted
             else "evidence on file"
         )
@@ -570,6 +572,23 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
         route = lambda a, b, origin, destination: demo_leg(
             origin, destination, data.transport, data.party_size
         )
+    elif settings().app_mode == "local" and not settings().google_maps_api_key:
+        # No map provider locally: stored hours and estimated travel, nearest and
+        # most relevant places first, with a per-category cap so plans can mix.
+        taken, nearby = {}, []
+        for v in live_candidate_order(data, rows, claims):
+            if taken.get(v.category, 0) < 6 and len(nearby) < 40:
+                taken[v.category] = taken.get(v.category, 0) + 1
+                nearby.append(v)
+        rows = nearby
+        warnings.append("Travel times are estimates from straight-line distance, not live routes")
+        if any(v.details.get("test_inventory") for v in rows):
+            warnings.append("Test inventory: prices and opening hours may be estimates, not verified")
+
+        def route(a, b, origin, destination):
+            leg = demo_leg(origin, destination, data.transport, data.party_size)
+            return {**leg, "basis": "Estimated from straight-line distance; not a live route"}
+
     else:
         if not rows:
             return {

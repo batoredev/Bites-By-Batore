@@ -38,8 +38,16 @@ def area_scope(payload):
 
 def category(tags):
     amenity, leisure, sport = tags.get("amenity"), tags.get("leisure"), tags.get("sport")
-    if amenity in {"restaurant", "fast_food", "food_court", "ice_cream"}:
-        return "food"
+    from .categories import match
+
+    named = match(tags.get("name", ""))
+    if amenity == "ice_cream":
+        return "dessert"
+    if amenity in {"bar", "pub", "nightclub"}:
+        return "nightlife"
+    if amenity in {"restaurant", "fast_food", "food_court"}:
+        # The directory tag proves it serves food; the name only picks the kind.
+        return named if named in {"street_food", "dessert", "cafe", "nightlife"} else "food"
     if amenity in {"cafe", "cinema"}:
         return amenity
     if leisure == "park":
@@ -48,7 +56,11 @@ def category(tags):
         return "gaming"
     if leisure == "bowling_alley" or sport == "bowling":
         return "bowling"
-    if leisure in {"miniature_golf", "escape_game", "water_park"} or sport in {
+    if leisure == "water_park" or tags.get("tourism") == "theme_park":
+        return "amusement"
+    if tags.get("tourism") in {"museum", "zoo", "aquarium", "gallery"}:
+        return "attraction"
+    if leisure in {"miniature_golf", "escape_game"} or sport in {
         "karting",
         "climbing",
         "paintball",
@@ -368,7 +380,7 @@ def collect_directory(db, user_id):
 
 
 def coverage(db, user_id):
-    from .frontier import AREAS, CATEGORIES
+    from .frontier import AREAS, CATEGORIES, CITY_TOPICS
     from .collection_control import daily_limits
 
     rows = list(db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user_id)))
@@ -405,6 +417,21 @@ def coverage(db, user_id):
         "discovery_queries": len(grid),
         "queries_scheduled": sum(c["state"] != "not_scheduled" for c in grid),
         "grid": grid,
+        "city_topics": [
+            {
+                "topic": topic,
+                "query": f"Coimbatore {topic}",
+                "state": next(
+                    (
+                        c.state
+                        for c in sorted(cases, key=lambda c: c.created_at, reverse=True)
+                        if c.query == f"Coimbatore {topic}"
+                    ),
+                    "not_scheduled",
+                ),
+            }
+            for topic in CITY_TOPICS
+        ],
         "city_complete": False,
         "source_attribution": ATTRIBUTION,
         "limitation": "Finite search grid and directory coverage are not an exhaustive venue census. Current facts, exact branches and operator approvals remain required.",

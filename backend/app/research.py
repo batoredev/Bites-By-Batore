@@ -324,7 +324,7 @@ def stream_source(db, case, source):
         **{
             k: v
             for k, v in source.content.items()
-            if k not in {"media", "media_url", "video_url", "audio_url"}
+            if k not in {"media", "media_url", "media_alternatives", "video_url", "audio_url"}
         },
         "streamed": True,
         "analysis_pending": False,
@@ -446,7 +446,18 @@ def collect_stage(db, case, task):
                 elif settings().instagram_provider == "meta" and content.get("external_id"):
                     content = collect_meta_comments(db, content)
                 if content.get("media_url") and not content.get("media"):
-                    content["media"] = download_media(db, content["media_url"])
+                    # Largest stream first; fall back to a smaller one when it is over the limit.
+                    streams = [content["media_url"], *content.get("media_alternatives", [])]
+                    for position, stream in enumerate(streams):
+                        try:
+                            content["media"] = download_media(db, stream)
+                            content["media_stream_rank"] = position
+                            break
+                        except DeferredCollection:
+                            raise
+                        except Unavailable as exc:
+                            if "download limit" not in str(exc) or position + 1 == len(streams):
+                                raise
                 if content.get("media") and not content.get("media_receipt"):
                     if content.get("audio_url"):
                         from .browser_media import download_audio, join_tracks
@@ -572,7 +583,7 @@ def analysis_stage(db, case, task, only_source=None):
                 data.update({k: content[k] for k in keys if k in content})
                 if role == "caption" and content.get("machine_transcript"):
                     data.pop("transcript", None)
-                digest = model_digest() if settings().app_mode == "local" else None
+                digest = model_digest(role) if settings().app_mode == "local" else None
                 key = analysis_key(role, data, content, digest)
                 existing = source.analysis.get(role, {})
                 if valid_result(existing, key) and (digest or not settings().analysis_reuse_enabled):
@@ -619,6 +630,14 @@ def analysis_stage(db, case, task, only_source=None):
                             digest,
                         )
                 renew_job(db)
+                if role == "caption":
+                    from .analysts import ground_candidates
+
+                    result = ground_candidates(
+                        result,
+                        " ".join(str(data.get(k, "")) for k in ("caption", "transcript")),
+                        content.get("creator", ""),
+                    )
                 speech = result.pop("_transcription", None)
                 signatures = result.pop("_visual_signatures", [])
                 if role == "video" and not result.get("reuse", {}).get("reused"):
@@ -935,7 +954,7 @@ def verification_stage(db, case, task):
         source.content = {
             k: v
             for k, v in source.content.items()
-            if k not in {"media", "media_url", "video_url", "audio_url"}
+            if k not in {"media", "media_url", "media_alternatives", "video_url", "audio_url"}
         }
     from .spots import identify_from_source, reconcile_spots
 
@@ -1018,7 +1037,7 @@ def execute_case(db, case_id, expected_ordinal=None):
             source.content = {
                 k: v
                 for k, v in source.content.items()
-                if k not in {"media", "media_url", "video_url", "audio_url"}
+                if k not in {"media", "media_url", "media_alternatives", "video_url", "audio_url"}
             }
         db.commit()
         return {"message": "Cancelled; results not advanced"}
@@ -1066,7 +1085,7 @@ def public_case(db, case):
                 "content": {
                     k: v
                     for k, v in s.content.items()
-                    if k not in {"media", "media_url", "apify_run", "video_url", "audio_url"}
+                    if k not in {"media", "media_url", "media_alternatives", "apify_run", "video_url", "audio_url"}
                 },
             }
             for s in case_sources(db, case)

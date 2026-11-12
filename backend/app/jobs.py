@@ -263,6 +263,8 @@ def execute_job(db, job):
         if venue.is_demo:
             return {"message": "Demo fixture inspected. No real-world verification performed.", "demo": True}
         place_id = venue.details.get("google_place_id")
+        if not place_id and venue.details.get("test_inventory"):
+            return {"message": "Test inventory entry; no provider check is possible without a place ID"}
         if not place_id:
             raise Unavailable(
                 "Venue needs an exact Google place ID or a merchant update before automated checks"
@@ -516,9 +518,9 @@ def schedule():
                     from .maintenance import schedule_maintenance
 
                     schedule_maintenance(db, "local-operator")
-                    from .duplicate_agent import request_scan
+                    from .duplicate_agent import SCAN_INTERVAL_MINUTES, request_scan
 
-                    request_scan(db, "local-operator")
+                    request_scan(db, "local-operator", min_interval_minutes=SCAN_INTERVAL_MINUTES)
                     if cfg.city_directory_enabled:
                         week = datetime.now(timezone.utc).strftime("%G-%V")
                         enqueue(

@@ -10,7 +10,30 @@ from .schemas import OutingRequest
 from .menu import current_fact, text_matches
 
 IST = ZoneInfo("Asia/Kolkata")
-FOOD = {"food", "cafe"}
+from .categories import FOOD  # noqa: E402
+
+
+SYNONYMS = {
+    "movies?": "cinema",
+    "films?": "cinema",
+    "dinner": "food",
+    "lunch": "food",
+    "restaurants?": "food",
+    "ice ?cream": "dessert",
+    "sweets?": "dessert",
+    "bakery": "dessert",
+    "pubs?": "nightlife",
+    "bars?": "nightlife",
+    "drinks": "nightlife",
+    "go ?kart(ing)?": "adventure",
+    "water ?park": "amusement",
+    "theme ?park": "amusement",
+    "museums?": "attraction",
+    "turf": "sports",
+    "pottery": "workshop",
+    "snacks?": "street food",
+    "chaat": "street food",
+}
 
 
 def km(a, b):
@@ -57,6 +80,20 @@ def parse_interest(query):
         "climbing",
         "go karting",
         "adventure",
+        "biryani",
+        "street food",
+        "ice cream",
+        "bakery",
+        "juice",
+        "pub",
+        "water park",
+        "trampoline",
+        "turf",
+        "pottery",
+        "workshop",
+        "museum",
+        "zoo",
+        "lake",
         "spicy",
         "quiet",
     ]
@@ -160,6 +197,12 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
     rejected = Counter()
     selected = []
     q = request.query.casefold()
+    # Everyday words for a category count as a request for it.
+    q += "".join(
+        " " + category
+        for word, category in SYNONYMS.items()
+        if re.search(r"(?<!\w)" + word + r"(?!\w)", q) and category not in q
+    )
     menu_terms = {}
     for v in venues:
         claim = current_fact([c for c in claims if c.venue_id == v.id], "offerings")
@@ -497,8 +540,9 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
                 reasons.append(
                     f"Matches interests for {sum(n > 0 for n in matches)} of {len(matches)} companions with stated preferences"
                 )
-        if len(sequence) == 2 and all(v.category == "food" for v in sequence):
-            score -= 12
+        # Two meals, or the same kind of activity twice, make a weak outing.
+        kinds = ["meal" if v.category in {"food", "street_food"} else v.category for v in sequence]
+        score -= 12 * (len(kinds) - len(set(kinds)))
         options.append(
             {
                 "title": " + ".join(v.name for v in sequence),
@@ -523,16 +567,29 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
     # Diversify by stop set rather than showing the same outing in reverse order.
     options.sort(key=lambda p: p["score"], reverse=True)
     distinct, seen = [], set()
-    for option in options:
-        key = tuple(sorted(s["venue_id"] for s in option["stops"]))
-        if key in seen:
-            continue
-        seen.add(key)
-        distinct.append(option)
-        if len(distinct) == 3:
+    limit = request.max_options
+    total_sets = len({tuple(sorted(s["venue_id"] for s in o["stops"])) for o in options})
+    # First pass prefers alternatives that share at most one stop with those already
+    # chosen; the second pass fills any remaining places with the next best sets.
+    for varied_only in (True, False):
+        for option in options:
+            ids = {s["venue_id"] for s in option["stops"]}
+            key = tuple(sorted(ids))
+            if key in seen:
+                continue
+            if varied_only and any(len(ids & set(other)) > min(1, len(ids) - 1) for other in seen):
+                continue
+            seen.add(key)
+            distinct.append(option)
+            if len(distinct) == limit:
+                break
+        if len(distinct) == limit:
             break
+    distinct.sort(key=lambda p: p["score"], reverse=True)
     return {
         "options": distinct,
+        # Distinct stop sets that fit every constraint, before the limit above.
+        "total_options": total_sets,
         "excluded": dict(rejected),
         "interest_tags": interests,
         "message": "Choose the outing that feels right."

@@ -257,7 +257,7 @@ def test_conversation_preserves_hard_constraints(client, auth):
         headers=auth,
         json={"message": "I'm tired and hungry", "answers": {"novelty": "different"}},
     ).json()
-    assert reply["ready"] and reply["suggestion"]["categories"] == ["food", "cafe"]
+    assert reply["ready"] and reply["suggestion"]["categories"] == ["food", "street_food", "cafe", "dessert"]
     assert not {"budget", "duration_minutes", "party_size", "lat", "lng"}.intersection(reply["suggestion"])
 
 

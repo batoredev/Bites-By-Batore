@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api, post, safeLink, dateText } from "./api";
-import { ErrorBox } from "./components";
+import { ErrorBox, categories } from "./components";
 import type { Venue, Category } from "./types";
 import { AgentControls, CorrectionEditor } from "./ResearchLearning";
 
@@ -264,16 +264,10 @@ function ResolveSource({
                     setDraft({ ...draft, category: e.target.value as Category })
                   }
                 >
-                  {[
-                    "food",
-                    "cafe",
-                    "park",
-                    "cinema",
-                    "gaming",
-                    "bowling",
-                    "adventure",
-                  ].map((c) => (
-                    <option key={c}>{c}</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
                   ))}
                 </select>
               </label>

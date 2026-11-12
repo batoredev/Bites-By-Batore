@@ -1,5 +1,6 @@
 """Local-only inference. No cloud fallback and no implicit model downloads."""
 
+from contextvars import ContextVar
 import base64
 import json
 import subprocess
@@ -36,12 +37,23 @@ def endpoint():
         or parsed.path
     ):
         raise Unavailable("Ollama must use a loopback IP, without credentials or a path")
-    if "cloud" in settings().ollama_model.lower():
+    if "cloud" in (settings().ollama_model + settings().ollama_text_model).lower():
         raise Unavailable("Cloud models are disabled for local research")
     return value
 
 
+# Set by the analyst around a call, so the call signature stays unchanged.
+ACTIVE_MODEL = ContextVar("batore_local_model", default="")
+
+
+def model_for(role=""):
+    """The caption specialist may use a larger text model; everything else is unchanged."""
+    cfg = settings()
+    return cfg.ollama_text_model if role == "caption" and cfg.ollama_text_model else cfg.ollama_model
+
+
 def local_chat(prompt, content, schema, frames=None):
+    model = ACTIVE_MODEL.get() or settings().ollama_model
     bases = ["visual", "inference"] if frames else ["caption", "transcript", "inference"]
     if "comments" in content:
         bases = ["comment", "inference"]
@@ -142,10 +154,12 @@ def local_chat(prompt, content, schema, frames=None):
         )
     from .local_tokenizer import input_tokens
 
+    # The evidence budget stays stricter for text, but the model is always loaded
+    # with one context size: changing num_ctx makes Ollama reload the model.
     context = 8192 if images else 4096
     # Reserve output, chat-template overhead and conservative visual token space.
     with span("token_budget"):
-        required = input_tokens(prompt, message["content"]) + 256 + 1024 * len(images) + 1536
+        required = input_tokens(prompt, message["content"], model) + 256 + 1024 * len(images) + 1536
     if required > context:
         raise AnalysisLimit("Evidence exceeds the verified context budget; split rather than truncate")
     try:
@@ -163,14 +177,14 @@ def local_chat(prompt, content, schema, frames=None):
                 response = inference_client().post(
                     endpoint() + "/api/chat",
                     json={
-                        "model": settings().ollama_model,
+                        "model": model,
                         "stream": False,
                         "think": False,
                         "format": compact,
                         "keep_alive": settings().ollama_keep_alive,
                         "options": {
                             "temperature": 0,
-                            "num_ctx": context,
+                            "num_ctx": 8192,
                             "num_predict": 1536,
                             "num_gpu": settings().ollama_gpu_layers,
                         },

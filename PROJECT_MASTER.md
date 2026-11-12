@@ -1,6 +1,37 @@
 # Bites by Batore — master project record and completion tracker
 
-Last consolidated: **8 November 2026 (Asia/Calcutta)**.
+Last consolidated: **12 November 2026 (Asia/Calcutta)**.
+
+## Agent-approved test inventory, new categories and collector tuning — 12 November 2026
+
+Read [TEST_INVENTORY.md](docs/TEST_INVENTORY.md). **Owner decision:** for the data
+collected so far, skip per-location owner approval so the planner can be tested.
+The agent dedupes and approves; missing prices and hours may be category estimates.
+This supersedes "every location requires explicit operator approval" for the local
+test inventory only. It is not verification and not a release decision.
+
+- [x] 559 venues published as labelled test inventory (`details.test_inventory`,
+  claims in source group `test-inventory`); 533 prices and 383 hours are estimates.
+  One command reverts it. Backup `data/backups/local-research-20261112T111443Z-pre-test-inventory.db`.
+- [x] Local planner works without a map provider: stored hours, travel estimated
+  from straight-line distance, both stated as warnings on every plan.
+- [x] Categories grew from 7 to 14 in one module; about 280 drafts recategorised.
+  Stricter name gate held 188 descriptive or landmark names. Search topics retuned,
+  with 16 city-wide activity topics.
+- [x] Root cause of 163 failed reel analyses fixed (501 feature points against a
+  500 limit) and the jobs requeued. Smaller video streams kept as fallback, limit
+  20 MB. Duplicate scans limited to one per 30 minutes. One model context size.
+- [x] Caption step: written-name check, Instagram location tag capture, and
+  `qwen3:4b` for captions via `OLLAMA_TEXT_MODEL`. 24-caption comparison only.
+- [x] Planner returns every distinct plan on request (`max_options`, up to 400);
+  new admin tab lists unpublished places with reasons and filters.
+- [x] 397 backend tests, required Ruff check and production web build pass.
+- [ ] Browser end-to-end suite not re-run. No extraction accuracy measurement.
+  597 active drafts still lack coordinates. Stream fallback, model swapping cost
+  and location-tag yield are not measured at scale. Test venues may be closed,
+  misnamed or the wrong branch. A reboot stops the API, worker and Ollama.
+
+---
 
 ## Dedicated duplicate agent — 8 November 2026, 19:56 IST
 

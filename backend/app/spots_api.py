@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from urllib.parse import urlencode
+
+from sqlalchemy import func, select
 from .auth import admin_user
 from .config import settings
 from .db import get_db, IdentifiedSpot, Venue, Audit, now
@@ -25,6 +27,81 @@ def duplicate_run(user=Depends(admin_user), db=Depends(get_db)):
 
     job = request_scan(db, user.id, force=True)
     return {"job_id": job.id, "state": job.state}
+
+
+def _unpublished_reason(row, has_point):
+    """One plain reason a draft is not in the planner."""
+    issues = row.data.get("quality_issues") or []
+    if row.status == "merged":
+        return "merged", "Merged into another record"
+    if row.status == "rejected":
+        return "rejected", "Rejected"
+    if row.status == "quarantined":
+        text = issues[0] if issues else "Held for review"
+        kind = "duplicate" if "duplicate" in text.casefold() else "held"
+        return kind, text
+    if row.status == "awaiting_approval":
+        return "awaiting_approval", "Prepared; awaiting approval"
+    if not has_point:
+        return "no_coordinates", "No map coordinates yet"
+    if quality_issues(row.name, row.area, row.data):
+        return "held", "Name needs review"
+    return "ready", "Ready; not yet published (new, or a duplicate of a nearby published place)"
+
+
+@router.get("/unpublished")
+def unpublished(user=Depends(admin_user), db=Depends(get_db)):
+    """Compact list of every draft the planner cannot use, with the reason."""
+    rows = []
+    for row in db.scalars(
+        select(IdentifiedSpot)
+        .where(IdentifiedSpot.user_id == user.id, IdentifiedSpot.status != "approved")
+        .order_by(IdentifiedSpot.updated_at.desc())
+    ):
+        data = row.data
+        point = data.get("coordinates") or {}
+        has_point = "lat" in point and "lng" in point
+        kind, reason = _unpublished_reason(row, has_point)
+        sources = data.get("sources") or []
+        types = {s.get("type") for s in sources}
+        first = next((s.get("url") for s in sources if str(s.get("url", "")).startswith("https://")), "")
+        rows.append(
+            {
+                "id": row.id,
+                "name": row.name,
+                "category": row.category,
+                "area": row.area,
+                "status": row.status,
+                "reason_kind": kind,
+                "reason": reason,
+                "has_coordinates": has_point,
+                "has_price": any(
+                    isinstance(o, dict) and o.get("price_inr") is not None for o in data.get("offerings", [])
+                ),
+                "has_hours": bool(data.get("hours") or data.get("hours_candidates")),
+                "source": "instagram"
+                if "instagram" in types
+                else "directory"
+                if "openstreetmap" in types
+                else "web",
+                "source_count": len(sources),
+                "source_url": first,
+                "offerings": [
+                    str(o.get("name"))[:60]
+                    for o in data.get("offerings", [])[:3]
+                    if isinstance(o, dict) and o.get("name")
+                ],
+                "updated_at": row.updated_at,
+                "map_search_url": "https://www.google.com/maps/search/?"
+                + urlencode({"api": 1, "query": " ".join([row.name, row.area, "Coimbatore"])}),
+            }
+        )
+    published = db.scalar(
+        select(func.count())
+        .select_from(IdentifiedSpot)
+        .where(IdentifiedSpot.user_id == user.id, IdentifiedSpot.status == "approved")
+    )
+    return {"places": rows, "unpublished": len(rows), "published": published or 0}
 
 
 @router.get("")

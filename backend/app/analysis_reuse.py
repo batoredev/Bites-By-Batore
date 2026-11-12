@@ -12,9 +12,9 @@ from .performance import span
 PIPELINE_VERSION = "2026-11-08-coverage-v4"
 
 
-def model_digest():
+def model_digest(role=""):
     import httpx
-    from .local_models import endpoint, inference_client
+    from .local_models import endpoint, inference_client, model_for
 
     if not settings().analysis_reuse_enabled:
         return None
@@ -25,12 +25,18 @@ def model_digest():
             (
                 m["digest"]
                 for m in response.json().get("models", [])
-                if m.get("name") == settings().ollama_model
+                if m.get("name") == model_for(role)
             ),
             None,
         )
     except (httpx.HTTPError, ValueError, KeyError):
         return None  # No model identity means no cross-source cache hit.
+
+
+def _model(role):
+    from .local_models import model_for
+
+    return model_for(role)
 
 
 def analysis_key(role, data, content, digest=None):
@@ -47,7 +53,7 @@ def analysis_key(role, data, content, digest=None):
         "pipeline": PIPELINE_VERSION,
         "role": role,
         "data": data,
-        "model": cfg.ollama_model,
+        "model": _model(role),
         "digest": digest,
         "gpu_layers": cfg.ollama_gpu_layers,
         "frames": cfg.media_max_frames,

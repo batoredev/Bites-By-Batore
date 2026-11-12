@@ -19,6 +19,7 @@ import type { AdminData, Claim, Venue } from "./types";
 import Research from "./Research";
 import Quality from "./Quality";
 import IdentifiedSpots from "./IdentifiedSpots";
+import Unpublished from "./Unpublished";
 
 function OperationsEditor({
   venue,
@@ -443,6 +444,7 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
           "review",
           "research",
           "spots",
+          "unpublished",
           "quality",
           "venues",
           "jobs",
@@ -461,6 +463,8 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
                 ? "Investigations"
                 : t === "spots"
                   ? "Identified spots"
+                  : t === "unpublished"
+                    ? "Unpublished places"
                   : t === "quality"
                     ? "Data readiness"
                     : t === "venues"
@@ -476,6 +480,7 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
       <ErrorBox message={error} />
       {tab === "research" && <Research admin venues={data.venues} />}
       {tab === "spots" && <IdentifiedSpots onChanged={load} />}
+      {tab === "unpublished" && <Unpublished />}
       {tab === "quality" && <Quality />}
       {message && (
         <div className="success" role="status">

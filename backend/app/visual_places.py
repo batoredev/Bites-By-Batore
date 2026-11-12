@@ -14,6 +14,9 @@ from .providers import quota, Unavailable
 os.environ.setdefault("OPENCV_IO_MAX_IMAGE_PIXELS", "16000000")
 
 
+MAX_POINTS = 500
+
+
 def signature(raw):
     import cv2
     import numpy as np
@@ -30,6 +33,9 @@ def signature(raw):
     scale = min(1, 800 / max(height, width))
     image = cv2.resize(image, (max(1, int(width * scale)), max(1, int(height * scale))))
     points, descriptors = cv2.ORB_create(nfeatures=500).detectAndCompute(image, None)
+    # OpenCV can return one or two more than requested; keep the stored size bounded.
+    points = points[:MAX_POINTS]
+    descriptors = descriptors[:MAX_POINTS] if descriptors is not None else None
     return {
         "sha256": hashlib.sha256(raw).hexdigest(),
         "width": image.shape[1],
@@ -48,9 +54,10 @@ def compare(query, reference):
 
     def decode(item):
         raw = base64.b64decode(item["descriptors"], validate=True)
-        if len(raw) != len(item["points"]) * 32 or len(raw) > 16000:
+        if len(raw) != len(item["points"]) * 32:
             raise ValueError("Invalid local visual descriptor")
-        return np.frombuffer(raw, dtype=np.uint8).reshape(-1, 32)
+        # References indexed before the bound existed may hold a few extra points.
+        return np.frombuffer(raw[: MAX_POINTS * 32], dtype=np.uint8).reshape(-1, 32)
 
     pairs = cv2.BFMatcher(cv2.NORM_HAMMING).knnMatch(decode(query), decode(reference), k=2)
     good = [pair[0] for pair in pairs if len(pair) == 2 and pair[0].distance < 0.70 * pair[1].distance]
@@ -125,11 +132,16 @@ def match_frames(db, user_id, frames):
         for ref in r.data.get("visual_references", [])
         if ref.get("signature")
     ]
-    matches = []
+    matches, unusable = [], set()
     for frame in frames:
         query = frame["signature"]
         for row, ref in references:
-            result = compare(query, ref["signature"])
+            try:
+                result = compare(query, ref["signature"])
+            except (ValueError, KeyError, TypeError):
+                # One damaged reference image must not fail the whole reel analysis.
+                unusable.add(ref.get("url", ""))
+                continue
             if result["matched"]:
                 matches.append(
                     {
@@ -143,6 +155,7 @@ def match_frames(db, user_id, frames):
     return {
         "reference_count": len(references),
         "frame_count": len(frames),
+        "unusable_reference_count": len(unusable),
         "matches": matches,
         "status": "candidate_matches" if matches else "no_match" if references else "no_references",
         "limitation": "Only indexed page images were compared. This is not worldwide visual geolocation or independent venue confirmation.",

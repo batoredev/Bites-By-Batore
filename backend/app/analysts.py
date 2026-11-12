@@ -95,7 +95,7 @@ def analyze(db, role, content, media=None, video_url=None, frames=None, on_pass=
             ]
         )
     if local:
-        from .local_models import local_chat, transcribe
+        from .local_models import ACTIVE_MODEL, local_chat, model_for, transcribe
         from .media import extract_frames
 
         if role in {"caption", "comments"}:
@@ -127,7 +127,11 @@ def analyze(db, role, content, media=None, video_url=None, frames=None, on_pass=
                 return
             renew_job(db)
             try:
-                output = local_chat(prompt, part, schema, group)
+                chosen = ACTIVE_MODEL.set(model_for(role))
+                try:
+                    output = local_chat(prompt, part, schema, group)
+                finally:
+                    ACTIVE_MODEL.reset(chosen)
             except AnalysisLimit:
                 if depth >= 8:
                     raise AnalysisLimit(
@@ -259,7 +263,7 @@ def analyze(db, role, content, media=None, video_url=None, frames=None, on_pass=
         **result,
         "_visual_signatures": visual_signatures,
         "status": "observations_only",
-        "model": cfg.ollama_model if local else cfg.gemini_model,
+        "model": _local_model(role) if local else cfg.gemini_model,
         "execution": "local" if local else "hosted",
         "learning_example_ids": [x["correction_id"] for x in content.get("reviewed_examples", [])],
         "sampling": sorted(inspected) if local else [],
@@ -268,6 +272,62 @@ def analyze(db, role, content, media=None, video_url=None, frames=None, on_pass=
         "audio_gap": content.get("audio_unavailable", "") if local else "",
         "_transcription": content.get("audio") if local and role == "video" else None,
         "video_analyzed": role == "video" and bool(media or video_url),
+    }
+
+
+def _local_model(role):
+    from .local_models import model_for
+
+    return model_for(role)
+
+
+_FILLER = {"the", "and", "at", "in", "of", "by", "coimbatore", "kovai", "cbe", "restaurant", "cafe", "hotel"}
+
+
+def ground_candidates(result, text, creator=""):
+    """Keep caption candidates whose name is really written in the caption.
+
+    Small models fill an empty answer with the creator's handle, a hashtag or a
+    phrase from their own instructions. A venue name must appear in the text, and
+    a name that is only the creator's handle needs a separate written mention.
+    """
+    from .spot_identity import name_key
+
+    def squash(value):
+        return name_key(value).replace(" ", "")
+
+    body = str(text or "")
+    whole = squash(body)
+    handle = squash(creator)
+    # Text with handles, hashtags and the "creator on <date>:" header removed.
+    plain = re.sub(r"[@#][\w.]+", " ", body)
+    if creator:
+        plain = re.sub(re.escape(creator), " ", plain, flags=re.I)
+    plain = squash(plain)
+    kept, dropped = [], []
+    for candidate in result.get("venue_candidates", []):
+        name = candidate.get("name", "")
+        key = squash(name)
+        words = [w for w in name_key(name).split() if w not in _FILLER and len(w) >= 3]
+        written = bool(key) and (key in whole or (bool(words) and all(w in whole for w in words)))
+        is_creator = (bool(handle) and len(key) >= 5 and (key in handle or handle in key)) or (
+            name.strip().startswith("@")
+        )
+        if not written:
+            dropped.append({"name": name, "reason": "Name is not written in the caption"})
+        elif is_creator and key not in plain and not all(w in plain for w in words):
+            dropped.append({"name": name, "reason": "Only the creator's handle; no venue is named"})
+        else:
+            kept.append(candidate)
+    if not dropped:
+        return result
+    return {
+        **result,
+        "venue_candidates": kept,
+        "ungrounded_candidates": dropped,
+        "unknowns": list(
+            dict.fromkeys([*result.get("unknowns", []), "Some proposed names were not written in the caption"])
+        )[:20],
     }
 
 

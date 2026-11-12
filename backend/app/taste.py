@@ -4,6 +4,7 @@ from collections import defaultdict
 from sqlalchemy import select
 from .db import Visit, Venue, DishEntry
 from .spot_identity import name_key
+from .categories import FOOD
 
 CONTEXT = {"quiet", "social", "outdoor", "indoor", "active"}
 
@@ -17,7 +18,7 @@ def rebuild_taste(db, user):
         snapshot = visit.experience or {}
         tags = {name_key(t) for t in snapshot.get("tags", venue.tags if venue else []) if name_key(t)}
         category = snapshot.get("category", venue.category if venue else "")
-        dimension = "food" if category in {"food", "cafe"} else "activity"
+        dimension = "food" if category in FOOD else "activity"
         if dimension in visit.dimensions:
             for tag in set(tags) - CONTEXT:
                 scores[name_key(tag)] += (visit.dimensions[dimension] - 3) * 0.2

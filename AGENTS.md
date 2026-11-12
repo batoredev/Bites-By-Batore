@@ -1,5 +1,16 @@
 # Project continuity
 
+Latest continuation (12 November): read docs/TEST_INVENTORY.md. Owner decision:
+for data collected so far, the agent may dedupe and approve locations itself and use
+category estimates for missing price/hours, so the planner can be tested. 559 venues
+are published as labelled test inventory (details.test_inventory); revert with
+`python -m app.manage test-inventory-revert`. This is not verification; do not
+present it as a verified guide. Categories are now 14, defined in
+backend/app/categories.py. Captions use qwen3:4b (OLLAMA_TEXT_MODEL); vision stays on
+qwen3-vl:2b-instruct. Caption names must be written in the caption; Instagram
+location tags are captured. 397 backend tests pass; browser suite not re-run. After
+a reboot start Ollama, then scripts/start.ps1.
+
 Latest continuation (8 November, 19:56 IST): read docs/DUPLICATE_AGENT.md. Dedicated
 local duplicate lane, conservative group/branch guards, scoped caption/sign aliases,
 held-source review UI and private job export/erasure are implemented. 345 backend

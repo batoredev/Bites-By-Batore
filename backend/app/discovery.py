@@ -90,9 +90,22 @@ def converse(data: DiscoveryInput, user=Depends(current_user), db=Depends(get_db
             if v > 0
         ]
     purpose, energy, novelty = answers["purpose"], answers["energy"], answers["novelty"]
-    food = ["food", "cafe"]
+    food = ["food", "street_food", "cafe", "dessert"]
     entertainment = (
-        ["park", "cinema"] if energy == "quiet" else ["gaming", "bowling", "adventure", "park", "cinema"]
+        ["park", "cinema", "attraction", "workshop"]
+        if energy == "quiet"
+        else [
+            "gaming",
+            "bowling",
+            "adventure",
+            "amusement",
+            "sports",
+            "nightlife",
+            "park",
+            "cinema",
+            "workshop",
+            "attraction",
+        ]
     )
     categories = (
         food if purpose == "food" else entertainment if purpose == "entertainment" else food + entertainment

@@ -32,12 +32,12 @@ def installed_tokenizer(url, model, digest):
     return tokenizer
 
 
-def input_tokens(prompt, text):
+def input_tokens(prompt, text, model=None):
     from .local_models import endpoint, inference_client
     from .config import settings
 
     try:
-        url, model = endpoint(), settings().ollama_model
+        url, model = endpoint(), model or settings().ollama_model
         response = inference_client().get(url + "/api/tags", timeout=3)
         response.raise_for_status()
         digest = next(m["digest"] for m in response.json()["models"] if m["name"] == model)
