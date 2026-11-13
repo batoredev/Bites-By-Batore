@@ -150,9 +150,18 @@ def quality_issues(name, area="", data=None):
     elif descriptive_only(name) or re.match(r"^(a|an|some|any)\s+\w{2,}", key):
         issues.append("Generic description or neighbourhood, not an identifiable venue name")
     elif LANDMARK.search(_without_localities(key)) and not re.search(
-        r"\b(cafe|coffee|restaurant|hotel|mess|bakery|biryani|kitchen|cinemas?|park|food court)\b", key
+        r"\b(cafe|coffee|restaurant|hotel|mess|bakery|biryani|kitchen|cinemas?|park|food court|canteen|stadium|grounds?|turf|court|arena|museum|zoo|bowling|gaming)\b",
+        key,
     ):
         issues.append("Name may be a nearby landmark rather than the reviewed venue")
+    scripts = {
+        "tamil" if "TAMIL" in unicodedata.name(c, "") else "latin"
+        for c in str(name)
+        if c.isalpha() and ("TAMIL" in unicodedata.name(c, "") or "LATIN" in unicodedata.name(c, ""))
+    }
+    if len(scripts) == 2 and not known:
+        # A sign misread as half Tamil, half Latin letters is not a usable name.
+        issues.append("Name mixes scripts; likely unreadable sign text")
     if re.search(
         r"\b(first|best|new)\b.*\b(in|launch|opening|opened)\b|\b(foodspots|viralreels|trendingreels)\b", key
     ):

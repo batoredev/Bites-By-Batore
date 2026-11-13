@@ -219,7 +219,15 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
     ]
     row = matches[0] if len(matches) == 1 else None
     issues = quality_issues(name, area, data)
+    if not data.get("operator_named"):
+        from .learned import rules
+
+        # A name the owner rejected as not a venue is never proposed again.
+        if name_key(name) in rules(records)["rejected"]:
+            return None
     identity_review = row.data.get("maps_identity", {}) if row else {}
+    if data.get("operator_named"):
+        issues = []  # The owner vouches for this name.
     if issues and not (
         identity_review.get("confirmed_by")
         and set(issues).issubset(identity_review.get("reviewed_warnings", []))
@@ -344,6 +352,9 @@ def identify_from_source(db, case, source):
             matching = {"name": tag["name"], "address_clues": [], "dish_or_activity": ""}
             candidates.append(matching)
         matching["_location_tag"] = tag
+    from .learned import category_for, load
+
+    learned = load(db, case.user_id)
     output, checks = [], []
     named_candidates = {
         name_key(c.get("name", "")) for c in candidates if not quality_issues(c.get("name", ""))
@@ -352,7 +363,9 @@ def identify_from_source(db, case, source):
         area = infer_area(candidate.get("address_clues", []))
         from .categories import classify
 
-        category = classify(candidate.get("name", ""), candidate.get("dish_or_activity", ""))
+        category = category_for(learned, candidate.get("name", "")) or classify(
+            candidate.get("name", ""), candidate.get("dish_or_activity", "")
+        )
         observations = [
             {
                 "text": o["text"],

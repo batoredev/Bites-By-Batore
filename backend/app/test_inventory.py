@@ -94,9 +94,69 @@ def retune_category(row):
     return classify(row.name, context)
 
 
+def _source_evidence(db, owner):
+    """Per reel: names the caption gave, and the sign and speech text the video gave."""
+    from .db import Investigation, ResearchSource
+
+    def squash(value):
+        return name_key(value).replace(" ", "")
+
+    evidence = {}
+    query = (
+        select(ResearchSource)
+        .join(Investigation, ResearchSource.case_id == Investigation.id)
+        .where(Investigation.user_id == owner, ResearchSource.platform == "instagram")
+    )
+    for source in db.scalars(query):
+        caption, video = source.analysis.get("caption", {}), source.analysis.get("video", {})
+        tag = (source.content.get("location_tag") or {}).get("name", "")
+        evidence[source.id] = {
+            "names": [c.get("name", "") for c in caption.get("venue_candidates", [])]
+            + ([tag] if tag else []),
+            "text": squash(
+                " ".join(
+                    [
+                        *(str(o.get("verbatim_text") or "") for o in video.get("observations", [])),
+                        str(source.content.get("transcript") or ""),
+                        str(source.content.get("caption") or ""),
+                    ]
+                )
+            ),
+            "analysed": video.get("status") == "observations_only",
+        }
+    return evidence
+
+
+def _name_has_support(row, evidence):
+    """False only when every source is an analysed reel and none backs the name."""
+    ids = row.data.get("source_ids", [])
+    if not ids or row.data.get("directory_refs") or row.data.get("location_tag"):
+        return True
+    if any(
+        s.get("type") not in {"instagram", "web_candidate", "monitored_page"}
+        for s in row.data.get("sources", [])
+    ):
+        return True
+    names = [row.name, *row.data.get("aliases", [])]
+    for ident in ids:
+        found = evidence.get(ident)
+        if not found or not found["analysed"]:
+            return True  # Not enough stored evidence to judge; leave it alone.
+        for name in names:
+            key = name_key(name).replace(" ", "")
+            if any(possible_match(name, other) for other in found["names"] if other):
+                return True
+            if key and key in found["text"]:
+                return True
+    return False
+
+
 def retune_drafts(db, owner):
     """Re-run the name gate and the category rules over existing unprepared drafts."""
+    from .learned import category_for, load
+
     held, moved = [], {}
+    learned, evidence = load(db, owner), _source_evidence(db, owner)
     for row in db.scalars(
         select(IdentifiedSpot).where(
             IdentifiedSpot.user_id == owner,
@@ -105,14 +165,21 @@ def retune_drafts(db, owner):
     ):
         if row.venue_id:
             continue
-        issues = quality_issues(row.name, row.area, row.data)
+        issues = [] if row.data.get("operator_named") else quality_issues(row.name, row.area, row.data)
+        if not issues and not row.data.get("operator_named"):
+            if name_key(row.name) in learned["rejected"]:
+                issues = ["You rejected this same name on another record"]
+            elif not _name_has_support(row, evidence):
+                issues = ["Name came only from video analysis, with no sign, speech or caption to back it"]
         if issues:
             row.data = {**row.data, "quality_issues": issues, "previous_status": row.status}
             row.status, row.updated_at = "quarantined", now()
             held.append(row.name)
             db.add(Audit(actor=AGENT, action="spot.held", target=row.id, detail={"reasons": issues}))
             continue
-        category = retune_category(row)
+        category = (
+            row.data.get("operator_category") or category_for(learned, row.name) or retune_category(row)
+        )
         if category != row.category:
             moved[f"{row.category}->{category}"] = moved.get(f"{row.category}->{category}", 0) + 1
             db.add(
@@ -187,7 +254,7 @@ def publish(db, owner):
         if _km(point, CENTRE) > 40:
             skipped["outside 40 km"] += 1
             continue
-        if quality_issues(row.name, row.area, row.data):
+        if not row.data.get("operator_named") and quality_issues(row.name, row.area, row.data):
             skipped["name needs review"] += 1
             continue
         # Same or near-identical name within 250 m is one place; farther apart is a branch.

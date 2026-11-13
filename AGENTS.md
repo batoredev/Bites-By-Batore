@@ -1,5 +1,14 @@
 # Project continuity
 
+Latest continuation (13 November): read the 13 November section of
+docs/TEST_INVENTORY.md. Owner can now edit, confirm, remove, restore and add places
+in Operations > Place manager; edits are reused as rules by backend/app/learned.py
+(not model training). backend/app/relevance.py skips reels with no Coimbatore
+signal before analysis; video-derived names need sign, speech or caption backing.
+OpenStreetMap query widened; test inventory is 700 venues. 413 backend tests pass.
+Overture Maps import is the recommended next source and needs the owner's approval
+to install a package.
+
 Latest continuation (12 November): read docs/TEST_INVENTORY.md. Owner decision:
 for data collected so far, the agent may dedupe and approve locations itself and use
 category estimates for missing price/hours, so the planner can be tested. 559 venues

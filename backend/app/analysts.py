@@ -331,6 +331,45 @@ def ground_candidates(result, text, creator=""):
     }
 
 
+def ground_video_candidates(result, transcript="", caption_candidates=()):
+    """Keep a video candidate only when a sign, the speech or the caption backs its name.
+
+    Without this the vision model turns a scene into a venue ("a restaurant",
+    "go-kart track") or guesses a spelling nobody wrote or said.
+    """
+    from .spot_identity import name_key, possible_match
+
+    def squash(value):
+        return name_key(value).replace(" ", "")
+
+    signs = squash(" ".join(str(o.get("verbatim_text") or "") for o in result.get("observations", [])))
+    spoken = squash(transcript)
+    known = [c.get("name", "") for c in caption_candidates]
+    kept, dropped = [], []
+    for candidate in result.get("venue_candidates", []):
+        name = candidate.get("name", "")
+        key = squash(name)
+        words = [w for w in name_key(name).split() if w not in _FILLER and len(w) >= 3]
+
+        def backed(text):
+            return bool(key) and bool(text) and (key in text or (bool(words) and all(w in text for w in words)))
+
+        if backed(signs) or backed(spoken) or any(possible_match(name, other) for other in known if other):
+            kept.append(candidate)
+        else:
+            dropped.append({"name": name, "reason": "Not backed by a sign or speech in this reel"})
+    if not dropped:
+        return result
+    return {
+        **result,
+        "venue_candidates": kept,
+        "ungrounded_candidates": [*result.get("ungrounded_candidates", []), *dropped],
+        "unknowns": list(
+            dict.fromkeys([*result.get("unknowns", []), "Some proposed names had no sign or speech support"])
+        )[:20],
+    }
+
+
 def comment_sample(text):
     values = text if isinstance(text, list) else str(text).splitlines()
     rows = [str(x).strip() for x in values if str(x).strip()][:100]

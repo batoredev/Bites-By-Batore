@@ -1,3 +1,20 @@
+# 13 November 2026 — owner edits, learning, relevance gate, wider directory
+
+Details in the 13 November section of [TEST_INVENTORY.md](TEST_INVENTORY.md).
+
+- Backend: `pytest -q` 413 passed. `ruff check app tests --select F` clean.
+- Web: TypeScript check and production build passed.
+- Rehearsed the retune on a separate copy before the real run.
+- Real database: 96 drafts held by the retune, 149 created from the wider
+  directory query, 141 published; 700 test venues; structural audit healthy.
+- Place manager loaded in a headless browser at desktop and phone widths; edit,
+  remove and add forms opened; no page errors or failed requests. No data was
+  changed through the browser.
+- Not verified: the relevance gate and video-name check on a fresh collection
+  run; any accuracy figure. Browser end-to-end suite not re-run.
+
+---
+
 # 12 November 2026 — test inventory, categories, collector fixes
 
 Details in [TEST_INVENTORY.md](TEST_INVENTORY.md).

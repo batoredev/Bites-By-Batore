@@ -658,7 +658,10 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
     return {
         **result,
         "options": output,
-        "investigation_id": investigate_gap() if not output and not result["candidate_count"] else None,
+        # A vague request ("something different") is not a research topic.
+        "investigation_id": investigate_gap()
+        if not output and not result["candidate_count"] and result.get("interest_tags")
+        else None,
     }
 
 

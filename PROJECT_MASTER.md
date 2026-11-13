@@ -1,6 +1,28 @@
 # Bites by Batore — master project record and completion tracker
 
-Last consolidated: **12 November 2026 (Asia/Calcutta)**.
+Last consolidated: **13 November 2026 (Asia/Calcutta)**.
+
+## Owner edits, learning, relevance gate and wider directory — 13 November 2026
+
+Read the 13 November section of [TEST_INVENTORY.md](docs/TEST_INVENTORY.md).
+
+- [x] Place manager: edit, confirm, remove, restore and add places by hand;
+  publish ready places. Each edit is kept on the record and reused as a rule
+  (rejected names, categories by name and by agreed word, renames as aliases and
+  reviewed examples, blocked creators). Not model training.
+- [x] Relevance gate before analysis; video-derived names need a sign, speech or
+  caption to back them; vague plan requests no longer start research.
+- [x] Wider OpenStreetMap query: 628 objects, 149 new drafts, 141 published.
+  Test inventory is 700 venues. Backup
+  `data/backups/local-research-20261113T045700Z-pre-owner-edits.db`.
+- [x] 413 backend tests, required Ruff check and production web build pass. Place
+  manager checked in a headless browser without saving changes.
+- [ ] Overture Maps import not done: needs a package install the owner must
+  approve. No accuracy measurement yet. The relevance gate and video-name check
+  are measured on stored data, not yet on a fresh collection run. 556 drafts
+  still lack coordinates.
+
+---
 
 ## Agent-approved test inventory, new categories and collector tuning — 12 November 2026
 

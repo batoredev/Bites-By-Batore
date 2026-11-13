@@ -15,7 +15,22 @@ from .planner import km
 
 ATTRIBUTION = "© OpenStreetMap contributors"
 LICENSE_URL = "https://www.openstreetmap.org/copyright"
-QUERY = """[out:json][timeout:90];rel["boundary"="administrative"]["name"~"Coimbatore",i](10.4,76.5,11.6,77.5)->.boundary;.boundary out tags bb;.boundary map_to_area->.a;(nwr(area.a)["name"]["amenity"~"^(restaurant|cafe|fast_food|food_court|ice_cream|cinema)$"](10.75,76.65,11.35,77.3);nwr(area.a)["name"]["leisure"~"^(park|amusement_arcade|bowling_alley|miniature_golf|escape_game|water_park)$"](10.75,76.65,11.35,77.3);nwr(area.a)["name"]["sport"~"^(karting|bowling|climbing|paintball)$"](10.75,76.65,11.35,77.3););out center;"""
+QUERY = (
+    '[out:json][timeout:120];rel["boundary"="administrative"]["name"~"Coimbatore",i](10.4,76.5,11.6,77.5)'
+    "->.boundary;.boundary out tags bb;.boundary map_to_area->.a;("
+    + "".join(
+        f'nwr(area.a)["name"]{selector}(10.75,76.65,11.35,77.3);'
+        for selector in (
+            '["amenity"~"^(restaurant|cafe|fast_food|food_court|ice_cream|cinema|bar|pub|nightclub)$"]',
+            '["shop"~"^(bakery|confectionery|pastry|tea|coffee)$"]',
+            '["leisure"~"^(park|garden|amusement_arcade|bowling_alley|miniature_golf|escape_game|water_park|trampoline_park|indoor_play|sports_centre)$"]',
+            '["leisure"="pitch"]["sport"~"^(soccer|cricket|futsal|badminton|tennis)$"]',
+            '["sport"~"^(karting|bowling|climbing|paintball)$"]',
+            '["tourism"~"^(museum|zoo|aquarium|theme_park|gallery)$"]',
+        )
+    )
+    + ");out center;"
+)
 
 
 def area_scope(payload):
@@ -40,6 +55,12 @@ def category(tags):
     amenity, leisure, sport = tags.get("amenity"), tags.get("leisure"), tags.get("sport")
     from .categories import match
 
+    shop = tags.get("shop")
+    if shop in {"bakery", "confectionery", "pastry"}:
+        return "dessert"
+    if shop in {"tea", "coffee"}:
+        return "cafe"
+
     named = match(tags.get("name", ""))
     if amenity == "ice_cream":
         return "dessert"
@@ -50,10 +71,14 @@ def category(tags):
         return named if named in {"street_food", "dessert", "cafe", "nightlife"} else "food"
     if amenity in {"cafe", "cinema"}:
         return amenity
-    if leisure == "park":
+    if leisure in {"park", "garden"}:
         return "park"
-    if leisure == "amusement_arcade":
+    if leisure in {"amusement_arcade", "indoor_play"}:
         return "gaming"
+    if leisure == "trampoline_park":
+        return "adventure"
+    if leisure in {"sports_centre", "pitch"}:
+        return "sports"
     if leisure == "bowling_alley" or sport == "bowling":
         return "bowling"
     if leisure == "water_park" or tags.get("tourism") == "theme_park":

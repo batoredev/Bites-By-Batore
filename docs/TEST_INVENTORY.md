@@ -87,6 +87,60 @@ Added later on 12 November at the owner's request.
   whether coordinates exist. At the time of writing: 1,012 unpublished, of which
   609 lack coordinates, 275 are held for their name and 106 as possible duplicates.
 
+## Owner edits, learning, relevance and wider sources (13 November)
+
+Requested by the owner on 13 November.
+
+**Place manager.** The "Unpublished places" tab is now "Place manager". Per place
+the owner can edit the name, category, area and coordinates (by pasting a Google
+Maps link that contains them), confirm a held name is real, remove a place with a
+reason, and restore a removed one. "Add places you know" takes names one per line;
+an owner-typed name is trusted and skips the name gate, and the agent can be asked
+to research each one. "Publish ready places" adds ready drafts to the test
+inventory. Endpoints are under `/api/admin/spots`: `add`, `{id}/edit`,
+`{id}/reject`, `{id}/restore`, `publish-ready`, `learned`.
+
+**What is learned from edits** (`backend/app/learned.py`). No model is trained.
+The decisions stay on the place records and are read back as rules:
+
+- A name removed as not a real place, out of scope or wrong city is never
+  proposed again, and other drafts with that name are held.
+- A category the owner set is reused for that name. When two edited names share
+  a distinctive word and agree, that word maps to the category for new names.
+- A rename keeps the old spelling as an alias, so later reels attach to the
+  corrected place, and it is stored as a reviewed example for the caption model.
+- A creator the owner blocks while removing a place is skipped in future.
+- Restoring a removed place removes its rule.
+
+**Relevance gate** (`backend/app/relevance.py`). Before any model time is spent,
+a reel is skipped unless its caption, creator handle or location tag ties it to
+Coimbatore, and it is skipped when the caption is plainly about property, jobs or
+similar with no food or entertainment word. Sources the owner supplied directly
+are never skipped. Measured on stored data: 33 of 691 analysed reels had no
+Coimbatore signal, and 26 of those had produced drafts.
+
+**Video names need backing.** A venue name proposed from video analysis is kept
+only if it appears in a sign read from the frames, in the speech transcript, or
+among the caption names. Measured on stored data: of 870 names that video
+analysis added beyond the caption, 498 had no such backing. The retune applies
+the same test to existing drafts where the stored evidence allows; it held 90,
+which includes some real places whose evidence text had already been purged.
+
+**Planner searches.** A plan request that finds nothing no longer starts research
+unless the request names something specific. A test request for "dinner and a
+movie" had started a search that collected unrelated reels.
+
+**Wider directory.** The OpenStreetMap query now also asks for bars, pubs,
+bakeries and sweet shops, tea and coffee shops, gardens, trampoline and play
+areas, sports centres and named pitches, museums, zoos and galleries. It returned
+628 objects (474 before), created 149 drafts and 141 were published. The test
+inventory is now 700 venues.
+
+**Not done: Overture Maps.** The best free source for missing places is the
+Overture Maps places dataset (open licence, built from Meta and Microsoft data).
+Reading it needs a new package (`overturemaps` or `duckdb`), and installing one
+was blocked by the session's permission rules, so it awaits the owner's approval.
+
 ## Categories
 
 The list grew from seven to fourteen and is defined once in
@@ -181,7 +235,8 @@ it was not done.
 
 ## Verification
 
-- 397 backend tests pass, including 52 new ones in `tests/test_test_inventory.py`.
+- 413 backend tests pass; the new ones are in `tests/test_test_inventory.py` and
+  `tests/test_owner_edits.py`.
 - `ruff check app tests --select F` is clean; the production web build passes.
 - Live local checks through `/api/plans`: default outing, "biryani", "dinner and a
   movie", an entertainment-only morning, and "go karting" each returned three

@@ -299,6 +299,10 @@ def stream_source(db, case, source):
 
     if try_skip(db, case, source):
         return
+    from .relevance import try_skip as skip_irrelevant
+
+    if skip_irrelevant(db, case, source):
+        return
     roles = (
         ("caption", "video", "comments")
         if settings().known_spot_skip_enabled
@@ -530,6 +534,11 @@ def analysis_stage(db, case, task, only_source=None):
                 }
             )
             continue
+        from .relevance import try_skip as skip_irrelevant
+
+        if skip_irrelevant(db, case, source):
+            gaps.append({"source_id": source.id, "reason": source.analysis["relevance_skip"]["reason"]})
+            continue
         if not only_source and source.content.get("analysis_pending"):
             from .db import Job
 
@@ -640,6 +649,14 @@ def analysis_stage(db, case, task, only_source=None):
                     )
                 speech = result.pop("_transcription", None)
                 signatures = result.pop("_visual_signatures", [])
+                if role == "video":
+                    from .analysts import ground_video_candidates
+
+                    result = ground_video_candidates(
+                        result,
+                        (speech or {}).get("text") or content.get("transcript", ""),
+                        source.analysis.get("caption", {}).get("venue_candidates", []),
+                    )
                 if role == "video" and not result.get("reuse", {}).get("reused"):
                     from .visual_places import match_frames
 
