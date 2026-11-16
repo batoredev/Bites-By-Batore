@@ -3022,3 +3022,12 @@ td > a.text-button {
   display: flex;
   margin-top: 4px;
 }
+.adult-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #fdecea;
+  color: #9a2b1f;
+  font-weight: 600;
+}

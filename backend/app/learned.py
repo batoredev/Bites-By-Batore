@@ -13,6 +13,7 @@ later reels using the old spelling attach to it.
 """
 
 from collections import Counter, defaultdict
+from contextvars import ContextVar
 
 from sqlalchemy import select
 
@@ -20,6 +21,15 @@ from .db import IdentifiedSpot
 from .spot_identity import DESCRIPTORS, LOCALITIES, name_key
 
 LEARN_FROM_REJECTION = {"not_a_venue", "out_of_scope", "wrong_city"}
+# Set while Claude teaches on the owner's behalf; every decision is then tagged.
+TEACHER = ContextVar("batore_teacher", default="")
+TEACHER_ACTOR = "agent:claude-teacher"
+
+
+def actor(user_id):
+    return TEACHER.get() or user_id
+
+
 _LOCAL_WORDS = {word for place in LOCALITIES for word in name_key(place).split()}
 
 
@@ -35,8 +45,16 @@ def _words(name):
 def rules(rows):
     """Derive the rule set from the owner's place records."""
     rejected, categories, votes, creators = {}, {}, defaultdict(Counter), set()
+    real, chains, distinct = set(), set(), defaultdict(set)
     for row in rows:
         data = row.data or {}
+        if row.status not in {"merged", "rejected"} and data.get("operator_named"):
+            real.add(name_key(row.name))  # A name the owner confirmed or typed is a real venue name.
+        for other in data.get("distinct_from", []):
+            distinct[row.id].add(other)
+            distinct[other].add(row.id)
+        if data.get("chain"):
+            chains.add(name_key(row.name))
         rejection = data.get("rejection") or {}
         if row.status == "rejected":
             creators.update(str(c).casefold().lstrip("@") for c in rejection.get("blocked_creators", []))
@@ -50,7 +68,15 @@ def rules(rows):
             for word in set(_words(row.name)):
                 votes[word][category] += 1
     words = {w: next(iter(c)) for w, c in votes.items() if len(c) == 1 and sum(c.values()) >= 2}
-    return {"rejected": rejected, "categories": categories, "words": words, "creators": creators}
+    return {
+        "rejected": rejected,
+        "categories": categories,
+        "words": words,
+        "creators": creators,
+        "real": real - set(rejected),
+        "chains": chains,
+        "distinct": distinct,
+    }
 
 
 def load(db, owner):
@@ -84,6 +110,13 @@ def summary(db, owner):
         "category_by_name": len(learned["categories"]),
         "category_by_word": learned["words"],
         "blocked_creators": sorted(learned["creators"]),
+        "confirmed_real_names": len(learned["real"]),
+        "chains": sorted(learned["chains"]),
+        "kept_apart_pairs": sum(len(v) for v in learned["distinct"].values()) // 2,
+        "merged_by_decision": sum(
+            r.status == "merged" and not (r.data or {}).get("merged_automatically", False) for r in rows
+        ),
+        "taught_by_claude": sum(bool((r.data or {}).get("taught_by")) for r in rows),
         "renames": renamed[-50:],
         "places_added_by_you": sum(
             any(s.get("type") == "owner" for s in (r.data or {}).get("sources", [])) for r in rows

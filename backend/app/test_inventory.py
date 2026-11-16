@@ -84,6 +84,12 @@ def _km(a, b):
 def retune_category(row):
     """Directory tags decide food vs activity; names only refine the kind."""
     named = match(row.name)
+    kind = (row.data.get("overture") or {}).get("type")
+    if kind:
+        from .overture import category as overture_category
+
+        # Overture's place type is authoritative, like a directory tag; the name only refines food.
+        return overture_category(kind, row.name) or row.category
     if row.data.get("directory_refs"):
         if row.category in FOOD:
             return named if named in {"street_food", "dessert", "nightlife"} else row.category
@@ -155,8 +161,22 @@ def retune_drafts(db, owner):
     """Re-run the name gate and the category rules over existing unprepared drafts."""
     from .learned import category_for, load
 
-    held, moved = [], {}
+    from .scope import CART_REASON, out_of_scope, unnamed_cart
+
+    held, moved, scoped = [], {}, {"out_of_scope": 0, "street_cart": 0}
     learned, evidence = load(db, owner), _source_evidence(db, owner)
+    # Held generic names that are street stalls move to the owner's "check yourself" list.
+    for row in db.scalars(
+        select(IdentifiedSpot).where(IdentifiedSpot.user_id == owner, IdentifiedSpot.status == "quarantined")
+    ):
+        issues = row.data.get("quality_issues") or []
+        generic = any(
+            "generic" in str(i).casefold() or "relative location" in str(i).casefold() for i in issues
+        )
+        if not row.data.get("scope_hold") and generic and unnamed_cart(row.name, issues):
+            row.data = {**row.data, "scope_hold": "street_cart", "quality_issues": [CART_REASON]}
+            row.updated_at = now()
+            scoped["street_cart"] += 1
     for row in db.scalars(
         select(IdentifiedSpot).where(
             IdentifiedSpot.user_id == owner,
@@ -165,7 +185,21 @@ def retune_drafts(db, owner):
     ):
         if row.venue_id:
             continue
+        reason = "" if row.data.get("operator_named") else out_of_scope(row.name)
+        if reason:
+            row.data = {
+                **row.data,
+                "scope_hold": "out_of_scope",
+                "quality_issues": [reason],
+                "previous_status": row.status,
+            }
+            row.status, row.updated_at = "quarantined", now()
+            scoped["out_of_scope"] += 1
+            db.add(Audit(actor=AGENT, action="spot.scope_held", target=row.id, detail={"reason": reason}))
+            continue
         issues = [] if row.data.get("operator_named") else quality_issues(row.name, row.area, row.data)
+        if issues and name_key(row.name) in learned["real"]:
+            issues = []
         if not issues and not row.data.get("operator_named"):
             if name_key(row.name) in learned["rejected"]:
                 issues = ["You rejected this same name on another record"]
@@ -192,7 +226,7 @@ def retune_drafts(db, owner):
             )
             row.category, row.updated_at = category, now()
     db.flush()
-    return {"held": len(held), "held_examples": held[:40], "recategorised": moved}
+    return {"held": len(held), "held_examples": held[:40], "recategorised": moved, "scope": scoped}
 
 
 def _price(row):
@@ -238,7 +272,13 @@ def publish(db, owner):
             .order_by(IdentifiedSpot.created_at, IdentifiedSpot.id)
         )
     )
-    skipped = {"no coordinates": 0, "outside 40 km": 0, "name needs review": 0, "duplicate nearby": 0}
+    skipped = {
+        "no coordinates": 0,
+        "outside 40 km": 0,
+        "name needs review": 0,
+        "duplicate nearby": 0,
+        "low-confidence Overture only": 0,
+    }
     published, estimated = [], {"price": 0, "hours": 0}
     # Venues published earlier count too, so a repeat run cannot add their duplicates.
     chosen = [(v.name, (v.lat, v.lng)) for v in db.scalars(select(Venue).where(Venue.is_demo.is_(False)))]
@@ -256,6 +296,11 @@ def publish(db, owner):
             continue
         if not row.data.get("operator_named") and quality_issues(row.name, row.area, row.data):
             skipped["name needs review"] += 1
+            continue
+        kinds = {s.get("type") for s in row.data.get("sources", [])}
+        if kinds == {"overture"} and row.data.get("overture", {}).get("confidence", 0) < 0.7:
+            # A lone Overture entry below 0.7 is often closed or duplicated; wait for a second source.
+            skipped["low-confidence Overture only"] += 1
             continue
         # Same or near-identical name within 250 m is one place; farther apart is a branch.
         if any(possible_match(row.name, other) and _km(point, there) <= 0.25 for other, there in chosen):

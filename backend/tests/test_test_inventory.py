@@ -130,6 +130,7 @@ def test_publish_marks_estimates_dedupes_and_reverts(local):
             "outside 40 km": 0,
             "name needs review": 1,
             "duplicate nearby": 1,
+            "low-confidence Overture only": 0,
         }
         live = select(Venue).where(Venue.is_demo.is_(False))
         venues = {v.name + "@" + str(v.lat): v for v in db.scalars(live)}

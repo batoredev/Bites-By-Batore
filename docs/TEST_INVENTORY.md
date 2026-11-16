@@ -275,3 +275,27 @@ it was not done.
 - 597 active drafts have no coordinates and cannot be planned with.
 - The stream fallback and the context-size change have not been measured live.
 - A machine reboot stops the API, worker and Ollama; none restart on their own.
+
+## Claude teaching pass and Overture import (16 November)
+
+The owner asked Claude to teach the agent on their behalf, following their scope rules
+(see `backend/app/scope.py`), with unnamed street stalls marked for the owner and bars
+flagged 21+. Backup first: `data/backups/local-research-20261116T133140Z-pre-teaching.db`.
+
+- Overture Maps places (open data, CDLA-Permissive-2.0) imported for the 40 km area
+  (`python -m app.manage overture-import --file ...`); places below confidence 0.7 that
+  only Overture knows stay out of the planner. Google Maps was not scraped: its terms
+  forbid it and the data could not be kept for production.
+- 1,102 decisions applied through the owner's own controls, each tagged
+  `agent:claude-teacher` with a before-snapshot: 702 removals, 261 merges, 56
+  confirmations, 29 kept-apart pairs (16 chains), 26 categories, 17 stalls, 6 renames,
+  5 areas. Undo all: `python -m app.manage teach-undo`.
+- Learning verified by replaying taught names: removed names are refused; new
+  out-of-scope finds are held automatically.
+- Test inventory: 1,513 places. Only 150 are confirmed by two independent sources;
+  783 come only from Overture. Each is marked `corroboration` single or multi source.
+- Owner spot-check sheets: `data/city-collection/spotcheck-claude-decisions-50.csv`
+  and `spotcheck-overture-50.csv` (open each Maps link in a browser and mark the last column).
+- Not done: the second half of the no-coordinate list (about 500 records) and an
+  automated check of each place's own website, which the worker's page checks cover
+  once collection runs again.

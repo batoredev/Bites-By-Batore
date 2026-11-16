@@ -33,7 +33,7 @@ export const categories: {
   { id: "street_food", label: "Street food", icon: Storefront },
   { id: "cafe", label: "Cafés", icon: Coffee },
   { id: "dessert", label: "Desserts", icon: IceCream },
-  { id: "nightlife", label: "Bars & lounges", icon: Wine },
+  { id: "nightlife", label: "Bars & lounges (21+)", icon: Wine },
   { id: "cinema", label: "Movies", icon: Popcorn },
   { id: "gaming", label: "Gaming", icon: GameController },
   { id: "bowling", label: "Bowling", icon: BowlingBall },

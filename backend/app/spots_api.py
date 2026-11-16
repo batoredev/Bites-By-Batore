@@ -12,6 +12,7 @@ from .db import get_db, IdentifiedSpot, Venue, Audit, now
 from .spots import spot_dict, reconcile_spots, INACTIVE
 from .spot_identity import maps_reference, quality_issues, name_key, clean_name
 from .schemas import Category, VenueInput, VenueOperations
+from .learned import TEACHER, actor
 
 router = APIRouter(prefix="/api/admin/spots")
 
@@ -31,6 +32,9 @@ def duplicate_run(user=Depends(admin_user), db=Depends(get_db)):
     return {"job_id": job.id, "state": job.state}
 
 
+from .scope import adults_only  # noqa: E402
+
+
 def _unpublished_reason(row, has_point):
     """One plain reason a draft is not in the planner."""
     issues = row.data.get("quality_issues") or []
@@ -41,6 +45,8 @@ def _unpublished_reason(row, has_point):
         return "rejected", "Rejected by you" + (": " + kind.replace("_", " ") if kind else "")
     if row.status == "quarantined":
         text = issues[0] if issues else "Held for review"
+        if row.data.get("scope_hold") in {"street_cart", "out_of_scope"}:
+            return row.data["scope_hold"], text
         kind = "duplicate" if "duplicate" in text.casefold() else "held"
         return kind, text
     if row.status == "awaiting_approval":
@@ -84,8 +90,13 @@ def unpublished(include_published: bool = False, user=Depends(admin_user), db=De
                 ),
                 "has_hours": bool(data.get("hours") or data.get("hours_candidates")),
                 "edited_by_you": bool(data.get("operator_edits") or data.get("operator_named")),
+                "taught_by_claude": bool(data.get("taught_by")),
+                "adults_only": adults_only(row.category, row.name),
+                "confidence": data.get("overture", {}).get("confidence"),
                 "source": "owner"
                 if "owner" in types
+                else "overture"
+                if "overture" in types
                 else "instagram"
                 if "instagram" in types
                 else "directory"
@@ -135,6 +146,13 @@ class PlacesAdd(BaseModel):
     area: str = Field(default="", max_length=100)
     maps_url: str = Field(default="", max_length=2048)
     investigate: bool = True
+
+
+def _tag(record):
+    """Mark a record changed while Claude teaches on the owner's behalf."""
+    if not TEACHER.get():
+        return record
+    return {**record, "taught_by": TEACHER.get()}
 
 
 def _owned(db, spot_id, user):
@@ -252,7 +270,7 @@ def add_places(data: PlacesAdd, user=Depends(admin_user), db=Depends(get_db)):
             row.status = "identified"
             row.data = {**row.data, "quality_issues": []}
         (existing if row.id in before else added).append(row.name)
-        db.add(Audit(actor=user.id, action="spot.owner_added", target=row.id, detail={"name": name}))
+        db.add(Audit(actor=actor(user.id), action="spot.owner_added", target=row.id, detail={"name": name}))
         db.commit()
         if data.investigate and settings().app_mode == "local" and started < 10:
             from .research import start_case
@@ -328,19 +346,27 @@ def edit_spot(spot_id: str, data: SpotEdit, user=Depends(admin_user), db=Depends
         record["coordinates"] = _link_point(data.maps_url)
         record["maps_links"] = list(dict.fromkeys([data.maps_url, *record.get("maps_links", [])]))
         edits.append({"field": "coordinates", "from": "", "to": data.maps_url[:200]})
-    if data.release and row.status == "quarantined":
-        edits.append({"field": "status", "from": "quarantined", "to": "identified"})
-        row.status = "identified"
-        record["quality_issues"] = []
+    if data.release:
+        # "It is real": the name is a real venue. Also releases a held record.
+        if row.status == "quarantined":
+            edits.append({"field": "status", "from": "quarantined", "to": "identified"})
+            row.status = "identified"
+            record["quality_issues"] = []
+            record.pop("scope_hold", None)
+        elif not record.get("operator_named"):
+            edits.append({"field": "confirmed_real", "from": "", "to": row.name})
         record["operator_named"], record["name_status"] = True, "operator_named"
     if not edits and not data.category:
         raise HTTPException(422, "Nothing to change")
     stamp = now()
-    history = [*record.get("operator_edits", []), *({**e, "at": stamp} for e in edits)]
+    history = [
+        *record.get("operator_edits", []),
+        *({**e, "at": stamp, "by": actor(user.id)} for e in edits),
+    ]
     record["operator_edits"] = history[-40:]
-    row.data, row.updated_at = record, stamp
+    row.data, row.updated_at = _tag(record), stamp
     _sync_venue(db, row)
-    db.add(Audit(actor=user.id, action="spot.edited", target=row.id, detail={"edits": edits}))
+    db.add(Audit(actor=actor(user.id), action="spot.edited", target=row.id, detail={"edits": edits}))
     db.commit()
     return {
         "id": row.id,
@@ -388,6 +414,7 @@ def reject_spot(spot_id: str, data: SpotRejection, user=Depends(admin_user), db=
             "blocked_creators": creators,
         },
     }
+    row.data = _tag(row.data)
     row.status, row.updated_at = "rejected", stamp
     also_held = 0
     if data.kind in LEARN_FROM_REJECTION:
@@ -407,7 +434,7 @@ def reject_spot(spot_id: str, data: SpotRejection, user=Depends(admin_user), db=
                 also_held += 1
     db.add(
         Audit(
-            actor=user.id,
+            actor=actor(user.id),
             action="spot.rejected",
             target=row.id,
             detail={"kind": data.kind, "blocked_creators": creators, "also_held": also_held},
@@ -415,6 +442,103 @@ def reject_spot(spot_id: str, data: SpotRejection, user=Depends(admin_user), db=
     )
     db.commit()
     return {"id": row.id, "status": row.status, "blocked_creators": creators, "also_held": also_held}
+
+
+class SameAs(BaseModel):
+    target_id: str
+
+
+class KeepApart(BaseModel):
+    other_id: str
+    chain: bool = False
+
+
+def _drop_test_venue(db, row):
+    from sqlalchemy import delete
+
+    from .db import Claim
+
+    venue = db.get(Venue, row.venue_id) if row.venue_id else None
+    if venue and not venue.details.get("test_inventory"):
+        raise HTTPException(409, "Pause this verified venue in the Venue desk instead")
+    if venue:
+        db.execute(delete(Claim).where(Claim.venue_id == venue.id))
+        db.delete(venue)
+    row.venue_id = ""
+    if row.status == "approved":
+        row.status = "identified"
+
+
+@router.post("/{spot_id}/same-as")
+def same_as(spot_id: str, data: SameAs, user=Depends(admin_user), db=Depends(get_db)):
+    """These two records are one place: merge this one into the target, keeping its names."""
+    from .duplicate_agent import merge_records
+    from .spots import lock_inventory
+
+    lock_inventory(db)
+    source, target = _owned(db, spot_id, user), _owned(db, data.target_id, user)
+    if (
+        source.id == target.id
+        or source.status in {"merged", "rejected"}
+        or target.status in INACTIVE - {"quarantined"}
+    ):
+        raise HTTPException(409, "Choose two different active places")
+    if source.venue_id:
+        _drop_test_venue(db, source)  # The surviving record keeps or gains the planner entry.
+    if target.venue_id:
+        target_venue = db.get(Venue, target.venue_id)
+        if target_venue and not target_venue.details.get("test_inventory"):
+            raise HTTPException(409, "Merge into a verified venue from the Venue desk instead")
+        _drop_test_venue(db, target)
+    if target.status == "quarantined":
+        target.status = "identified"
+        target.data = {**target.data, "quality_issues": [], "previous_status": "quarantined"}
+    try:
+        merge_records(db, source, target, user.id, ["Same place, by decision"])
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    target.data = _tag({**target.data, "operator_named": target.data.get("operator_named", False)})
+    source.data = _tag(source.data)
+    db.add(Audit(actor=actor(user.id), action="spot.same_as", target=source.id, detail={"into": target.id}))
+    db.commit()
+    return {"id": target.id, "merged": source.id}
+
+
+@router.post("/{spot_id}/distinct")
+def keep_apart(spot_id: str, data: KeepApart, user=Depends(admin_user), db=Depends(get_db)):
+    """These are different places (or branches). The duplicate finder never pairs them again."""
+    row, other = _owned(db, spot_id, user), _owned(db, data.other_id, user)
+    if row.id == other.id:
+        raise HTTPException(422, "Choose two different places")
+    released = 0
+    for one, two in ((row, other), (other, row)):
+        record = dict(one.data)
+        record["distinct_from"] = list(dict.fromkeys([*record.get("distinct_from", []), two.id]))
+        if data.chain:
+            record["chain"] = True
+        waiting = [c for c in record.get("duplicate_review_candidates", []) if c != two.id]
+        if two.id in record.get("duplicate_review_candidates", []):
+            record["duplicate_review_candidates"] = waiting
+            # Held only as a possible duplicate of the other record: release it.
+            issues = record.get("quality_issues", [])
+            if (
+                one.status == "quarantined"
+                and not waiting
+                and all("duplicate" in i.casefold() for i in issues)
+            ):
+                one.status, record["quality_issues"] = "identified", []
+                released += 1
+        one.data, one.updated_at = _tag(record), now()
+    db.add(
+        Audit(
+            actor=actor(user.id),
+            action="spot.distinct",
+            target=row.id,
+            detail={"other": other.id, "chain": data.chain, "released": released},
+        )
+    )
+    db.commit()
+    return {"ids": [row.id, other.id], "chain": data.chain, "released": released}
 
 
 @router.post("/{spot_id}/restore")
@@ -425,8 +549,8 @@ def restore_spot(spot_id: str, user=Depends(admin_user), db=Depends(get_db)):
         raise HTTPException(409, "Only a rejected place can be restored")
     record = {k: v for k, v in row.data.items() if k != "rejection"}
     row.status = record.pop("previous_status", "identified")
-    row.data, row.updated_at = record, now()
-    db.add(Audit(actor=user.id, action="spot.restored", target=row.id, detail={}))
+    row.data, row.updated_at = _tag(record), now()
+    db.add(Audit(actor=actor(user.id), action="spot.restored", target=row.id, detail={}))
     db.commit()
     return {"id": row.id, "status": row.status}
 

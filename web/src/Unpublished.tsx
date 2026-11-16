@@ -14,7 +14,10 @@ type Place = {
   has_price: boolean;
   has_hours: boolean;
   edited_by_you: boolean;
-  source: "instagram" | "directory" | "web" | "owner";
+  taught_by_claude: boolean;
+  adults_only: boolean;
+  confidence?: number | null;
+  source: "instagram" | "directory" | "web" | "owner" | "overture";
   source_count: number;
   source_url: string;
   offerings: string[];
@@ -28,14 +31,20 @@ type Learned = {
   blocked_creators: string[];
   renames: { from: string; to: string }[];
   places_added_by_you: number;
+  confirmed_real_names?: number;
+  chains?: string[];
+  kept_apart_pairs?: number;
+  taught_by_claude?: number;
 };
 
 const REASONS: Record<string, string> = {
   no_coordinates: "No map coordinates",
+  street_cart: "Street stalls: check yourself",
   held: "Held: name needs review",
   duplicate: "Held: possible duplicate",
   ready: "Ready, not yet published",
   awaiting_approval: "Awaiting approval",
+  out_of_scope: "Out of scope (your rules)",
   rejected: "Rejected by you",
   merged: "Merged into another",
   published: "Published",
@@ -43,6 +52,7 @@ const REASONS: Record<string, string> = {
 const SOURCES: Record<string, string> = {
   owner: "Added by you",
   instagram: "Instagram reel",
+  overture: "Overture Maps",
   directory: "OpenStreetMap directory",
   web: "Web page",
 };
@@ -70,6 +80,8 @@ export default function Unpublished({ onChanged }: { onChanged?: () => void }) {
     [coordinates, setCoordinates] = useState(""),
     [sort, setSort] = useState("updated"),
     [includePublished, setIncludePublished] = useState(false),
+    [adults, setAdults] = useState(""),
+    [taught, setTaught] = useState(""),
     [shown, setShown] = useState(PAGE);
   const [editing, setEditing] = useState<Place | null>(null),
     [draft, setDraft] = useState({ name: "", category: "", area: "", maps_url: "" });
@@ -139,15 +151,21 @@ export default function Unpublished({ onChanged }: { onChanged?: () => void }) {
         (!reason || p.reason_kind === reason) &&
         (!source || p.source === source) &&
         (!area || (area === "(none)" ? !p.area : p.area === area)) &&
-        (!coordinates || (coordinates === "yes") === p.has_coordinates),
+        (!coordinates || (coordinates === "yes") === p.has_coordinates) &&
+        (!adults || (adults === "only") === p.adults_only) &&
+        (!taught ||
+          (taught === "claude" ? p.taught_by_claude : p.edited_by_you && !p.taught_by_claude)),
     );
     if (sort === "name") rows.sort((a, b) => a.name.localeCompare(b.name));
     if (sort === "sources") rows.sort((a, b) => b.source_count - a.source_count);
     return rows;
-  }, [places, search, category, reason, source, area, coordinates, sort]);
+  }, [places, search, category, reason, source, area, coordinates, adults, taught, sort]);
 
-  useEffect(() => setShown(PAGE), [search, category, reason, source, area, coordinates, sort]);
-  const active = [search, category, reason, source, area, coordinates].some(
+  useEffect(
+    () => setShown(PAGE),
+    [search, category, reason, source, area, coordinates, adults, taught, sort],
+  );
+  const active = [search, category, reason, source, area, coordinates, adults, taught].some(
     Boolean,
   );
   function clear() {
@@ -157,6 +175,8 @@ export default function Unpublished({ onChanged }: { onChanged?: () => void }) {
     setSource("");
     setArea("");
     setCoordinates("");
+    setAdults("");
+    setTaught("");
   }
   const label = (id: string) =>
     categories.find((c) => c.id === id)?.label || id;
@@ -349,8 +369,22 @@ export default function Unpublished({ onChanged }: { onChanged?: () => void }) {
                 `: ${learned.blocked_creators.join(", ")}`}
             </li>
             <li>
+              <strong>{learned.confirmed_real_names ?? 0}</strong> names confirmed
+              as real places
+            </li>
+            <li>
+              <strong>{learned.kept_apart_pairs ?? 0}</strong> pairs kept apart
+              as different places
+              {(learned.chains?.length || 0) > 0 &&
+                `; chains with several branches: ${learned.chains!.slice(0, 15).join(", ")}`}
+            </li>
+            <li>
               <strong>{learned.places_added_by_you}</strong> places you added
               yourself
+            </li>
+            <li>
+              <strong>{learned.taught_by_claude ?? 0}</strong> places decided by
+              Claude on your behalf (filter “Decided by” to check them)
             </li>
           </ul>
           <p className="muted">
@@ -440,6 +474,22 @@ export default function Unpublished({ onChanged }: { onChanged?: () => void }) {
                 <option value="">Either</option>
                 <option value="yes">Has coordinates</option>
                 <option value="no">Missing coordinates</option>
+              </select>
+            </label>
+            <label>
+              21+ places (bars, pubs, lounges)
+              <select value={adults} onChange={(e) => setAdults(e.target.value)}>
+                <option value="">Show with everything</option>
+                <option value="only">Only 21+ places</option>
+                <option value="hide">Hide 21+ places</option>
+              </select>
+            </label>
+            <label>
+              Decided by
+              <select value={taught} onChange={(e) => setTaught(e.target.value)}>
+                <option value="">Anyone</option>
+                <option value="claude">Taught by Claude (to spot-check)</option>
+                <option value="you">Edited by you</option>
               </select>
             </label>
             <label>
@@ -654,7 +704,12 @@ export default function Unpublished({ onChanged }: { onChanged?: () => void }) {
                       <tr key={p.id}>
                         <td>
                           <strong>{p.name}</strong>
-                          {p.edited_by_you && <small>Edited by you</small>}
+                          {p.adults_only && <small className="adult-badge">21+</small>}
+                          {p.taught_by_claude ? (
+                            <small>Decided by Claude, check me</small>
+                          ) : (
+                            p.edited_by_you && <small>Edited by you</small>
+                          )}
                           {p.offerings.length > 0 && (
                             <small>{p.offerings.join(" · ")}</small>
                           )}
@@ -675,9 +730,12 @@ export default function Unpublished({ onChanged }: { onChanged?: () => void }) {
                           >
                             {REASONS[p.reason_kind] || p.status}
                           </span>
-                          {["held", "duplicate", "rejected"].includes(
+                          {["held", "duplicate", "rejected", "out_of_scope"].includes(
                             p.reason_kind,
                           ) && <small>{p.reason}</small>}
+                          {p.confidence != null && (
+                            <small>Overture confidence {Math.round(p.confidence * 100)}%</small>
+                          )}
                           <small>Updated {dateText(p.updated_at)}</small>
                         </td>
                         <td>

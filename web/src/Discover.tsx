@@ -33,7 +33,8 @@ export function defaultRequest(user: User): OutingRequest {
     budget_unit: "group",
     departure: `${day}T17:00:00+05:30`,
     transport: "drive",
-    categories: categories.map((c) => c.id),
+    // Bars and lounges (21+) are only planned when chosen explicitly.
+    categories: categories.map((c) => c.id).filter((id) => id !== "nightlife"),
     outing_type: "any",
     mood: "different",
     vegetarian: !!user.profile.vegetarian,

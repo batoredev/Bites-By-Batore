@@ -192,7 +192,13 @@ def spot_dict(row):
     }
 
 
-def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_key=""):
+def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_key="", records=None):
+    """Add or update one place draft.
+
+    `records` lets a bulk importer pass the owner's records it already holds, instead of
+    reloading every record from the database for each new place. Only safe while nothing
+    else is writing places, which the importer guarantees by running with the worker stopped.
+    """
     from .providers import renew_job
     from .duplicate_identity import identity_conflicts
     from types import SimpleNamespace
@@ -202,13 +208,14 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
     name, data = clean_name(name), deepcopy(data or {})
     if branch_key:
         data["branch_key"] = branch_key
-    records = list(
-        db.scalars(
-            select(IdentifiedSpot)
-            .where(IdentifiedSpot.user_id == user_id)
-            .execution_options(populate_existing=True)
+    if records is None:
+        records = list(
+            db.scalars(
+                select(IdentifiedSpot)
+                .where(IdentifiedSpot.user_id == user_id)
+                .execution_options(populate_existing=True)
+            )
         )
-    )
     proposal = SimpleNamespace(name=name, area=area, data=data)
     matches = [
         r
@@ -219,12 +226,23 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
     ]
     row = matches[0] if len(matches) == 1 else None
     issues = quality_issues(name, area, data)
+    hold = None  # (kind, reason) when a new record is kept but held for the owner.
     if not data.get("operator_named"):
         from .learned import rules
+        from .scope import CART_REASON, out_of_scope, unnamed_cart
 
+        learned = rules(records)
         # A name the owner rejected as not a venue is never proposed again.
-        if name_key(name) in rules(records)["rejected"]:
+        if name_key(name) in learned["rejected"]:
             return None
+        if name_key(name) in learned["real"]:
+            issues = []  # The owner already confirmed this exact name is a real place.
+        reason = out_of_scope(name)
+        if reason:
+            # The owner's scope rule decides; keep it visible under "out of scope".
+            hold, issues = ("out_of_scope", reason), []
+        elif unnamed_cart(name, issues):
+            hold, issues = ("street_cart", CART_REASON), []
     identity_review = row.data.get("maps_identity", {}) if row else {}
     if data.get("operator_named"):
         issues = []  # The owner vouches for this name.
@@ -294,7 +312,16 @@ def upsert_spot(db, user_id, name, category="food", area="", data=None, branch_k
             row = db.scalar(select(IdentifiedSpot).where(IdentifiedSpot.identity_key == identity))
             if row is None:
                 raise
-        if ambiguous:
+        if hold:
+            # The owner's scope rules: kept for a decision, never planned automatically.
+            row.status = "quarantined"
+            data = {
+                **data,
+                "scope_hold": hold[0],
+                "quality_issues": [hold[1]],
+                "previous_status": "identified",
+            }
+        elif ambiguous:
             row.status = "quarantined"
             data = {
                 **data,

@@ -33,13 +33,40 @@ def main():
             "test-inventory-publish",
             "test-inventory-revert",
             "geocode-drafts",
+            "overture-import",
+            "teach-apply",
+            "teach-undo",
+            "teach-report",
         ],
     )
     parser.add_argument("--user-id", default="local-operator")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--file", default="")
     parser.add_argument("--dialect", choices=["sqlite", "postgresql"], default="sqlite")
     args = parser.parse_args()
-    if args.command == "geocode-drafts":
+    if args.command in {"overture-import", "teach-apply", "teach-undo", "teach-report"}:
+        if settings().app_mode != "local":
+            raise SystemExit("Local mode only")
+        with Session() as db:
+            if args.command == "overture-import":
+                from .overture import import_file
+
+                result = import_file(db, args.user_id, args.file)
+            elif args.command == "teach-apply":
+                from .teacher import apply
+
+                decisions = json.loads(open(args.file, encoding="utf-8").read())
+                result = apply(db, args.user_id, decisions)
+            elif args.command == "teach-undo":
+                from .teacher import undo
+
+                result = undo(db, args.user_id)
+            else:
+                from .teacher import report
+
+                result = report(db, args.user_id)
+            print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+    elif args.command == "geocode-drafts":
         from .geocode import geocode_drafts
 
         if settings().app_mode != "local":

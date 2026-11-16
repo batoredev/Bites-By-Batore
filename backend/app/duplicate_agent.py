@@ -275,7 +275,12 @@ def merge_records(db, source, target, actor, reasons, automatic=False):
             }
     target.updated_at = now()
     source.status, source.updated_at = "merged", now()
-    source.data = {**source.data, "merged_into": target.id, "previous_status": before["source_status"]}
+    source.data = {
+        **source.data,
+        "merged_into": target.id,
+        "previous_status": before["source_status"],
+        "merged_automatically": automatic,
+    }
     db.add(
         Audit(
             actor=actor,
@@ -302,6 +307,16 @@ def _survivor_key(row, anchors=None, signs=None):
     return (not reviewed, not official, not_sign, partial, handle, row.created_at, row.id)
 
 
+def _far_apart_chain(left, right, chains):
+    """Two records of a known chain more than 250 m apart are different branches."""
+    if not chains or name_key(left.name) not in chains or name_key(right.name) not in chains:
+        return False
+    from .duplicate_identity import _coordinate, _distance
+
+    (a, _), (b, _) = _coordinate(left.data), _coordinate(right.data)
+    return bool(a and b) and _distance(a, b) > 0.25
+
+
 def run_scan(db, owner):
     from .providers import renew_job
 
@@ -315,9 +330,27 @@ def run_scan(db, owner):
     by_id = {r.id: r for r in rows}
     reviews, graph, judgements = {}, defaultdict(set), {}
     pairs = _candidate_pairs(rows)
+    from .learned import load
+
+    learned = load(db, owner)
     for n, (a, b) in enumerate(pairs):
         if n and n % 100 == 0:
             renew_job(db)
+        if b in learned["distinct"].get(a, ()):
+            # The owner (or Claude on the owner's behalf) said these are different places.
+            judgements[(a, b)] = {
+                "decision": "separate",
+                "reasons": ["Kept apart by decision"],
+                "conflicts": [],
+            }
+            continue
+        if _far_apart_chain(by_id[a], by_id[b], learned["chains"]):
+            judgements[(a, b)] = {
+                "decision": "separate",
+                "reasons": ["Known chain; different branch"],
+                "conflicts": [],
+            }
+            continue
         result = decision(db, by_id[a], by_id[b])
         judgements[(a, b)] = result
         if result["decision"] == "merge":
