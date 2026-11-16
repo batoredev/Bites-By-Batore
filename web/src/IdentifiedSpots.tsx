@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, post, dateText, money } from "./api";
+import { api, post, dateText, money, safeLink } from "./api";
 import { ErrorBox, Loading, Modal, categories } from "./components";
 import DuplicateDesk from "./DuplicateDesk";
 
@@ -135,7 +135,7 @@ function Prepare({
           nicknames as aliases. Use independent branch evidence for your saved
           address and coordinates.
         </p>
-        <a href={spot.map_search_url} target="_blank" rel="noreferrer">
+        <a href={safeLink(spot.map_search_url)} target="_blank" rel="noreferrer">
           Open Google Maps to check this branch
         </a>
         <button
@@ -174,7 +174,7 @@ function Prepare({
                     <li key={c.id}>
                       <a
                         href={
-                          c.googleMapsUri ||
+                          safeLink(c.googleMapsUri) ||
                           `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.displayName?.text || spot.name)}&query_place_id=${encodeURIComponent(c.id)}`
                         }
                         target="_blank"
@@ -434,7 +434,7 @@ export default function IdentifiedSpots({
                 <h3>{spot.name}</h3>
                 {spot.data.source_licenses?.map((source) => (
                   <p className="small-text" key={source.url}>
-                    <a href={source.url} target="_blank" rel="noreferrer">
+                    <a href={safeLink(source.url)} target="_blank" rel="noreferrer">
                       {source.attribution} · {source.license}
                     </a>
                   </p>
@@ -492,12 +492,12 @@ export default function IdentifiedSpots({
                   <a
                     target="_blank"
                     rel="noreferrer"
-                    href={spot.map_search_url}
+                    href={safeLink(spot.map_search_url)}
                   >
                     Search this place on Maps
                   </a>
                   {spot.data.maps_links?.map((url, i) => (
-                    <a key={url} href={url} target="_blank" rel="noreferrer">
+                    <a key={url} href={safeLink(url)} target="_blank" rel="noreferrer">
                       Source map link {i + 1}
                     </a>
                   ))}
@@ -511,7 +511,7 @@ export default function IdentifiedSpots({
                 <h4>Menu and activities</h4>
                 {spot.data.menu_links?.map((url) => (
                   <p key={url}>
-                    <a href={url} target="_blank" rel="noreferrer">
+                    <a href={safeLink(url)} target="_blank" rel="noreferrer">
                       Open source menu
                     </a>
                   </p>
@@ -541,7 +541,7 @@ export default function IdentifiedSpots({
                               </td>
                               <td>
                                 <a
-                                  href={item.source_url}
+                                  href={safeLink(item.source_url)}
                                   target="_blank"
                                   rel="noreferrer"
                                 >
@@ -574,7 +574,7 @@ export default function IdentifiedSpots({
                         <li key={i}>
                           {o.text}{" "}
                           <a
-                            href={o.source_url}
+                            href={safeLink(o.source_url)}
                             target="_blank"
                             rel="noreferrer"
                           >
@@ -590,7 +590,7 @@ export default function IdentifiedSpots({
                     {spot.data.vibes.map((v, i) => (
                       <li key={i}>
                         {v.tag}: {v.evidence || v.basis}{" "}
-                        <a href={v.source_url} target="_blank" rel="noreferrer">
+                        <a href={safeLink(v.source_url)} target="_blank" rel="noreferrer">
                           Source
                         </a>
                       </li>
@@ -607,7 +607,7 @@ export default function IdentifiedSpots({
                   <ul>
                     {spot.data.sources?.map((s, i) => (
                       <li key={i}>
-                        <a href={s.url} target="_blank" rel="noreferrer">
+                        <a href={safeLink(s.url)} target="_blank" rel="noreferrer">
                           {s.type} source
                         </a>{" "}
                         ·{" "}

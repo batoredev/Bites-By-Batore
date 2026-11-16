@@ -144,10 +144,27 @@ def _owned(db, spot_id, user):
     return row
 
 
+MAPS_HOSTS = {"google.com", "www.google.com", "maps.google.com", "google.co.in", "www.google.co.in"}
+
+
 def _link_point(maps_url):
+    """Coordinates from a pasted Google Maps link. Only HTTPS Google Maps links are stored."""
+    from urllib.parse import urlparse
+
     from .geocode import link_points
     from .planner import km
 
+    parsed = urlparse(maps_url.strip())
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in MAPS_HOSTS
+        or parsed.username
+        or parsed.password
+        or parsed.port not in {None, 443}
+        or not (parsed.path.startswith("/maps") or parsed.hostname == "maps.google.com")
+    ):
+        raise HTTPException(422, "Paste an https://www.google.com/maps/... link")
+    maps_url = parsed.geturl()
     points = link_points([maps_url])
     if not points:
         raise HTTPException(

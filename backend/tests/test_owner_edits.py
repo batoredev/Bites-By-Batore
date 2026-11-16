@@ -286,3 +286,28 @@ def test_vague_plan_requests_do_not_start_research(local, request_data, monkeypa
     }
     assert local.client.post("/api/plans", headers=local.auth, json=body).json()["options"] == []
     assert started == []
+
+
+@pytest.mark.parametrize(
+    "link",
+    [
+        "javascript:alert(1)//@11.02,76.99",
+        "http://www.google.com/maps/place/x/@11.02,76.99,17z",
+        "https://evil.example/maps/@11.02,76.99,17z",
+        "https://www.google.com.evil.example/maps/@11.02,76.99,17z",
+        "https://user:pass@www.google.com/maps/@11.02,76.99,17z",
+        "https://www.google.com/search?q=x&ll=11.02,76.99",
+    ],
+)
+def test_only_https_google_maps_links_are_accepted(local, link):
+    with Session() as db:
+        row = spot(db, local.owner, "Zircon Cafe", "cafe")
+        db.commit()
+        ident = row.id
+    edit = local.client.post(f"/api/admin/spots/{ident}/edit", headers=local.auth, json={"maps_url": link})
+    added = local.client.post(
+        "/api/admin/spots/add", headers=local.auth, json={"names": ["Opal Cafe"], "maps_url": link}
+    )
+    assert edit.status_code == 422 and added.status_code == 422
+    with Session() as db:
+        assert "maps_links" not in db.get(IdentifiedSpot, ident).data

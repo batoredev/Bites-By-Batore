@@ -1,4 +1,9 @@
-"""Local-only inference. No cloud fallback and no implicit model downloads."""
+"""Model calls. Local Ollama by default; optional Ollama cloud models for chosen roles.
+
+A cloud call that fails for any reason (no credits, rate limit, outage) is retried
+once on the local model, so collection never depends on the cloud being available.
+No implicit model downloads.
+"""
 
 from contextvars import ContextVar
 import base64
@@ -38,7 +43,19 @@ def endpoint():
     ):
         raise Unavailable("Ollama must use a loopback IP, without credentials or a path")
     if "cloud" in (settings().ollama_model + settings().ollama_text_model).lower():
-        raise Unavailable("Cloud models are disabled for local research")
+        raise Unavailable("Use OLLAMA_CLOUD_TEXT_MODEL / OLLAMA_CLOUD_VISION_MODEL for cloud models")
+    return value
+
+
+CLOUD = "cloud/"
+
+
+def cloud_endpoint():
+    """The key is only ever sent to Ollama's own HTTPS service."""
+    value = settings().ollama_cloud_url.rstrip("/")
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or parsed.hostname not in {"ollama.com", "www.ollama.com"} or parsed.path:
+        raise Unavailable("OLLAMA_CLOUD_URL must be https://ollama.com")
     return value
 
 
@@ -46,14 +63,64 @@ def endpoint():
 ACTIVE_MODEL = ContextVar("batore_local_model", default="")
 
 
-def model_for(role=""):
-    """The caption specialist may use a larger text model; everything else is unchanged."""
+def local_model_for(role=""):
     cfg = settings()
     return cfg.ollama_text_model if role == "caption" and cfg.ollama_text_model else cfg.ollama_model
 
 
+def model_for(role=""):
+    """Model for a specialist. Cloud names carry the "cloud/" prefix."""
+    cfg = settings()
+    if cfg.ollama_api_key:
+        if role in {"caption", "comments"} and cfg.ollama_cloud_text_model:
+            return CLOUD + cfg.ollama_cloud_text_model
+        if role in {"video", "reinspect"} and cfg.ollama_cloud_vision_model:
+            return CLOUD + cfg.ollama_cloud_vision_model
+    return local_model_for(role)
+
+
+# Every model that actually answered during the current analysis, cloud or local.
+USED_MODELS = ContextVar("batore_used_models", default=None)
+
+
+def _note_model(name):
+    used = USED_MODELS.get()
+    if used is not None and name not in used:
+        used.append(name)
+
+
+def _cloud_chat(model, prompt, message, compact):
+    """One cloud request; raises Unavailable on any failure so the caller can fall back."""
+    try:
+        with span("cloud_model"):
+            response = inference_client().post(
+                cloud_endpoint() + "/api/chat",
+                headers={"Authorization": "Bearer " + settings().ollama_api_key},
+                json={
+                    "model": model,
+                    "stream": False,
+                    "think": False,
+                    "format": compact,
+                    "options": {"temperature": 0, "num_predict": 2048},
+                    "messages": [{"role": "system", "content": prompt}, message],
+                },
+            )
+            if response.status_code != 200:
+                raise Unavailable(f"Ollama cloud returned HTTP {response.status_code}")
+            result = response.json()
+            model_metrics(result)
+            if result.get("done_reason") == "length":
+                raise Unavailable("Cloud answer was cut off at the output limit")
+            content = result["message"]["content"]
+            json.loads(content)  # A malformed answer counts as a failure.
+            return content
+    except (httpx.HTTPError, ValueError, KeyError) as exc:
+        raise Unavailable("Ollama cloud request failed") from exc
+
+
 def local_chat(prompt, content, schema, frames=None):
     model = ACTIVE_MODEL.get() or settings().ollama_model
+    cloud = model.startswith(CLOUD)
     bases = ["visual", "inference"] if frames else ["caption", "transcript", "inference"]
     if "comments" in content:
         bases = ["comment", "inference"]
@@ -152,6 +219,17 @@ def local_chat(prompt, content, schema, frames=None):
         message["content"] += "\nFrame times (seconds, in image order): " + str(
             [f["seconds"] for f in images]
         )
+    if cloud:
+        try:
+            answer = _cloud_chat(model.removeprefix(CLOUD), prompt, message, compact)
+            _note_model(model)
+            return answer
+        except Unavailable:
+            # Fall back to the local model for this call; the span counts how often.
+            with span("cloud_fallback"):
+                pass
+            cfg = settings()
+            model = cfg.ollama_model if images else cfg.ollama_text_model or cfg.ollama_model
     from .local_tokenizer import input_tokens
 
     # The evidence budget stays stricter for text, but the model is always loaded
@@ -198,6 +276,7 @@ def local_chat(prompt, content, schema, frames=None):
                     raise AnalysisLimit(
                         "Local analysis exceeded output limit; split the evidence instead of discarding it"
                     )
+                _note_model(model)
                 return result["message"]["content"]
         finally:
             GPU_LANE.release()

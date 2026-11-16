@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     ollama_model: str = "qwen3-vl:2b-instruct"
     # Optional larger text-only model for the caption specialist. Empty = same model.
     ollama_text_model: str = ""
+    # Optional Ollama cloud models (ollama.com). Empty = stay local. Needs credits on the account.
+    ollama_api_key: str = ""
+    ollama_cloud_url: str = "https://ollama.com"
+    ollama_cloud_text_model: str = ""  # caption and comment specialists
+    ollama_cloud_vision_model: str = ""  # video frame specialist
     whisper_model: str = "base"
     analysis_reuse_enabled: bool = False
     research_pipeline_enabled: bool = False

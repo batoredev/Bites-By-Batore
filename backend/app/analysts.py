@@ -95,7 +95,10 @@ def analyze(db, role, content, media=None, video_url=None, frames=None, on_pass=
             ]
         )
     if local:
-        from .local_models import ACTIVE_MODEL, local_chat, model_for, transcribe
+        from .local_models import ACTIVE_MODEL, USED_MODELS, local_chat, model_for, transcribe
+
+        used_models = []
+        USED_MODELS.set(used_models)
         from .media import extract_frames
 
         if role in {"caption", "comments"}:
@@ -263,7 +266,7 @@ def analyze(db, role, content, media=None, video_url=None, frames=None, on_pass=
         **result,
         "_visual_signatures": visual_signatures,
         "status": "observations_only",
-        "model": _local_model(role) if local else cfg.gemini_model,
+        "model": (", ".join(used_models) or _local_model(role)) if local else cfg.gemini_model,
         "execution": "local" if local else "hosted",
         "learning_example_ids": [x["correction_id"] for x in content.get("reviewed_examples", [])],
         "sampling": sorted(inspected) if local else [],

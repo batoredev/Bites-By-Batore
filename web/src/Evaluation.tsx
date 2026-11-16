@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, post } from "./api";
+import { api, post, safeLink } from "./api";
 import { ErrorBox } from "./components";
 
 type Report = {
@@ -220,7 +220,7 @@ export default function Evaluation() {
             </label>
             {source && (
               <>
-                <a href={source.url} target="_blank" rel="noreferrer">
+                <a href={safeLink(source.url)} target="_blank" rel="noreferrer">
                   Inspect original reel/post
                 </a>
                 <label>

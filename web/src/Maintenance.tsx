@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, post } from "./api";
+import { api, post, safeLink } from "./api";
 import { ErrorBox } from "./components";
 
 type Alert = {
@@ -263,7 +263,7 @@ export default function Maintenance() {
                   ? "Ready for your final review in Venue desk"
                   : "Evidence or review work remains"}
               </p>
-              <a href={packet.maps_url} target="_blank" rel="noreferrer">
+              <a href={safeLink(packet.maps_url)} target="_blank" rel="noreferrer">
                 Inspect Maps identity
               </a>
               <ul>
@@ -293,7 +293,7 @@ export default function Maintenance() {
                 <ul>
                   {packet.sources.map((s, i) => (
                     <li key={i}>
-                      <a href={s.url} target="_blank" rel="noreferrer">
+                      <a href={safeLink(s.url)} target="_blank" rel="noreferrer">
                         {s.type}: {s.url}
                       </a>{" "}
                       · {s.collected_at || "Date unknown"}
@@ -349,7 +349,7 @@ export default function Maintenance() {
             <ul>
               {data.evaluation_queue.map((s) => (
                 <li key={s.id}>
-                  <a href={s.url} target="_blank" rel="noreferrer">
+                  <a href={safeLink(s.url)} target="_blank" rel="noreferrer">
                     {s.url}
                   </a>{" "}
                   · detected languages: {s.languages.join(", ") || "unknown"} ·{" "}

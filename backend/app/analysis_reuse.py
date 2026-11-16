@@ -18,6 +18,8 @@ def model_digest(role=""):
 
     if not settings().analysis_reuse_enabled:
         return None
+    if model_for(role).startswith("cloud/"):
+        return model_for(role)  # A hosted model has no local digest; its name identifies it.
     try:
         response = inference_client().get(endpoint() + "/api/tags", timeout=2)
         response.raise_for_status()

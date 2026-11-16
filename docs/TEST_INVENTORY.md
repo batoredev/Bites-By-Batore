@@ -141,6 +141,29 @@ Overture Maps places dataset (open licence, built from Meta and Microsoft data).
 Reading it needs a new package (`overturemaps` or `duckdb`), and installing one
 was blocked by the session's permission rules, so it awaits the owner's approval.
 
+## Ollama cloud key and link safety (16 November)
+
+**Ollama cloud.** The owner supplied an Ollama API key; it is stored as
+`OLLAMA_API_KEY` in the git-ignored `.env`. The key is valid and lists 24 cloud
+models, but every model tried (11, small and large) returned HTTP 402 "add usage
+credits or subscribe", so none can be used yet.
+
+The routing is built and off by default. Setting `OLLAMA_CLOUD_TEXT_MODEL` sends
+the caption and comment specialists to that cloud model; `OLLAMA_CLOUD_VISION_MODEL`
+does the same for video frames. Any cloud failure (no credits, rate limit, outage,
+malformed answer) retries that call on the local model, so collection never stalls.
+The key is only ever sent to `https://ollama.com`. Each analysis records which
+model actually answered. A live check with a real caption confirmed the 402 and
+the fallback to `qwen3:4b`. This changes the earlier "models stay local" rule only
+for the roles the owner switches on.
+
+**Link safety.** An automated security review flagged that a pasted Maps link was
+stored without checking it, and that collected links were rendered without the
+`safeLink` guard, so a `javascript:` link could have run script when clicked.
+Pasted links must now be `https://` Google Maps addresses, and every collected
+link in the Identified spots, Evaluation and Maintenance views goes through
+`safeLink`, which only allows `https:` links.
+
 ## Categories
 
 The list grew from seven to fourteen and is defined once in

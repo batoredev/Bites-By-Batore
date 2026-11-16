@@ -1,5 +1,11 @@
 # Project continuity
 
+Latest continuation (16 November): Ollama cloud key is in .env (OLLAMA_API_KEY) but the
+account has no credits, so every cloud model returns 402. Cloud routing for chosen roles
+exists (OLLAMA_CLOUD_TEXT_MODEL / OLLAMA_CLOUD_VISION_MODEL, empty = local) with automatic
+local fallback. Pasted Maps links are validated and all collected links use safeLink.
+431 backend tests pass. See the 16 November section of docs/TEST_INVENTORY.md.
+
 Latest continuation (13 November): read the 13 November section of
 docs/TEST_INVENTORY.md. Owner can now edit, confirm, remove, restore and add places
 in Operations > Place manager; edits are reused as rules by backend/app/learned.py
