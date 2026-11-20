@@ -28,6 +28,7 @@ import {
 } from "@phosphor-icons/react";
 import { api, post, setupAuth, authClient } from "./api";
 import { ErrorBox, Loading, LocationLabel } from "./components";
+import { BrandLockup } from "./dots";
 import Discover, { defaultRequest } from "./Discover";
 import { Places, Saved, Taste } from "./Library";
 const Sources = lazy(() => import("./Sources"));
@@ -117,12 +118,7 @@ function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   return (
     <main className="sign-in">
       <div className="brand">
-        <span className="brand-mark">
-          b<span />
-        </span>
-        <div>
-          bites<span>by Batore</span>
-        </div>
+        <BrandLockup />
       </div>
       <div className="sign-in-copy">
         <div className="eyebrow">YOUR CITY. YOUR KIND OF DAY.</div>
@@ -428,12 +424,7 @@ export default function App() {
         aria-label={smallScreen ? "Main menu" : undefined}
       >
         <NavLink to="/" className="brand" onClick={() => setMobile(false)}>
-          <span className="brand-mark">
-            b<span />
-          </span>
-          <div>
-            bites<span>by Batore</span>
-          </div>
+          <BrandLockup />
         </NavLink>
         <button
           className="mobile-close icon-button"
@@ -531,7 +522,7 @@ export default function App() {
             <List size={24} />
           </button>
           <span className="topbar-note">
-            <span>bites /</span>{" "}
+            <span>Bites /</span>{" "}
             {links.find((l) => l.to === routeLocation.pathname)?.label ||
               "Operations"}
           </span>
@@ -649,7 +640,7 @@ export default function App() {
             </Routes>
           </Suspense>
           <footer className="footer">
-            <span>bites by Batore</span>
+            <span>Bites by Batore</span>
             <span>Made for a good few hours.</span>
           </footer>
         </main>

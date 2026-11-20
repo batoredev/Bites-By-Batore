@@ -1,13 +1,22 @@
 /* Shared UI refresh. Existing domain-specific layouts remain in style.css.
    Geometry: 16px panels, 10px controls, pill tags. Motion is optional and brief. */
 :root {
-  --green: #17543f;
-  --muted: #52645c;
-  --line: #dce5df;
-  --soft: #edf4ef;
-  --ink: #193b2e;
-  --surface: #fff;
-  --canvas: #f4f7f5;
+  /* Bites palette. Leaf and Pistachio are reserved for success/confirmed states. */
+  --espresso: #1f140c;
+  --cocoa: #4a2e18;
+  --caramel: #8a5a2b;
+  --gold: #c8962e;
+  --turmeric: #f5c842;
+  --leaf: #2e6b3e;
+  --pistachio: #9bbf65;
+  --cream: #fbf2dc;
+  --accent: var(--espresso);
+  --muted: #6b4423;
+  --line: #ead7b1;
+  --soft: #faf0d9;
+  --ink: var(--espresso);
+  --surface: #fffcf5;
+  --canvas: #fdf6e6;
   --sidebar-width: 244px;
   font-size: 16px;
   color: var(--ink);
@@ -46,7 +55,7 @@ small,
 label,
 .label {
   font-size: 13px;
-  color: #375347;
+  color: #4a2e18;
   line-height: 1.5;
 }
 input,
@@ -55,8 +64,8 @@ textarea {
   font-size: 14px;
   min-height: 46px;
   border-radius: 10px;
-  border-color: #cedbd2;
-  background: #fff;
+  border-color: #dec69b;
+  background: #fffcf5;
 }
 textarea {
   min-height: 108px;
@@ -64,7 +73,7 @@ textarea {
 input[type="checkbox"],
 input[type="radio"] {
   min-height: auto;
-  accent-color: var(--green);
+  accent-color: var(--accent);
 }
 button,
 a,
@@ -78,13 +87,13 @@ button:focus-visible,
 a:focus-visible,
 summary:focus-visible,
 [tabindex="0"]:focus-visible {
-  outline: 3px solid #36805d;
+  outline: 3px solid #8a5a2b;
   outline-offset: 4px;
 }
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #36805d;
+  outline: 3px solid #8a5a2b;
   outline-offset: 2px;
 }
 .primary,
@@ -118,30 +127,27 @@ textarea:focus-visible {
 }
 .sidebar {
   width: var(--sidebar-width);
-  background: #143d2f;
-  color: #f3f8f4;
+  background: #1f140c;
+  color: #fdf6e6;
   padding: 30px 18px 20px;
   border: none;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 .sidebar .brand {
-  color: #fff;
+  color: #fffcf5;
   font-size: 33px;
   margin: 0 10px;
 }
 .sidebar .brand-mark {
-  background: #f0f6ea;
-  color: #143d2f;
+  background: #faf0d9;
+  color: #1f140c;
   width: 43px;
   height: 46px;
   font-size: 38px;
 }
-.sidebar .brand-mark > span {
-  background: #9cbf75;
-}
 .nav-heading {
-  color: #bacdc1;
+  color: #cdaf7f;
   font-size: 10px;
   margin: 40px 12px 15px;
   letter-spacing: 1.3px;
@@ -153,7 +159,7 @@ textarea:focus-visible {
   min-height: 64px;
   padding: 12px;
   border-radius: 12px;
-  color: #e4eee7;
+  color: #f1e1bf;
   font-size: 14px;
   gap: 12px;
 }
@@ -162,44 +168,44 @@ textarea:focus-visible {
 }
 .sidebar nav > a small {
   display: block;
-  color: #c0d2c5;
+  color: #cdaf7f;
   font-size: 11px;
   margin-top: 4px;
   font-weight: 400;
 }
 .sidebar nav > a.active {
-  background: #e6f2dd;
-  color: #123e2d;
+  background: #f5c842;
+  color: #1f140c;
 }
 .sidebar nav > a.active small {
-  color: #45604b;
+  color: #4a2e18;
 }
 .sidebar nav > a.active svg {
-  color: #235d3d;
+  color: #1f140c;
 }
 .sidebar nav > a:hover {
-  background: #244e3e;
-  color: #fff;
+  background: #4a2e18;
+  color: #fffcf5;
 }
 .sidebar nav > a.active:hover {
-  background: #e6f2dd;
-  color: #123e2d;
+  background: #f5c842;
+  color: #1f140c;
 }
 .sidebar :focus-visible {
-  outline-color: #c9e9ac;
+  outline-color: #f5c842;
 }
 .sidebar-bottom {
   padding-top: 28px;
 }
 .city-note {
-  background: #214b3a;
-  border: 1px solid #3b6250;
-  color: #e5efe6;
+  background: #4a2e18;
+  border: 1px solid #6b4423;
+  color: #fbf2dc;
   padding: 16px;
   border-radius: 12px;
 }
 .city-note .eyebrow {
-  color: #d4e5c7;
+  color: #dec69b;
   font-size: 9px;
 }
 .city-note p {
@@ -210,19 +216,19 @@ textarea:focus-visible {
   display: none;
 }
 .admin-link {
-  color: #e0ede1;
+  color: #f1e1bf;
   margin: 18px 8px;
   padding: 8px 4px;
   min-height: 42px;
   font-size: 13px;
 }
 .admin-link.active {
-  color: #dbf4be;
+  color: #dec69b;
   font-weight: 650;
 }
 .user-button {
-  color: #fff;
-  border-top-color: #41604e;
+  color: #fffcf5;
+  border-top-color: #4a2e18;
   padding-top: 18px;
 }
 .user-button strong {
@@ -230,7 +236,7 @@ textarea:focus-visible {
 }
 .user-button small,
 .logout {
-  color: #d2dfd5;
+  color: #dec69b;
   font-size: 11px;
 }
 .user-button > span:last-child {
@@ -240,12 +246,12 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 .avatar {
-  background: #dcebcf;
-  color: #244732;
+  background: #ead7b1;
+  color: #1f140c;
   flex-shrink: 0;
 }
 .logout:hover {
-  color: #fff;
+  color: #fffcf5;
 }
 .main-shell {
   margin-left: var(--sidebar-width);
@@ -253,18 +259,18 @@ textarea:focus-visible {
 .topbar {
   height: 68px;
   padding: 0 38px;
-  background: #fff;
+  background: #fffcf5;
 }
 .topbar-note {
   display: inline-flex;
   gap: 12px;
   align-items: center;
-  color: #284f3c;
+  color: #4a2e18;
   font-size: 13px;
   font-weight: 600;
 }
 .topbar-note > span {
-  color: #62776b;
+  color: #8a5a2b;
   font-weight: 400;
 }
 .location-label {
@@ -276,8 +282,8 @@ textarea:focus-visible {
   gap: 12px;
   padding: 10px 38px;
   font-size: 11px;
-  background: #eaf1e5;
-  color: #39573e;
+  background: #f6e9cc;
+  color: #4a2e18;
 }
 .demo-banner > span {
   font-size: 9px;
@@ -323,9 +329,9 @@ textarea:focus-visible {
   display: flex;
   align-items: flex-start;
   gap: 15px;
-  border-left: 1px solid #c8d6c8;
+  border-left: 1px solid #dec69b;
   padding: 20px 0 20px 24px;
-  color: #547043;
+  color: #6b4423;
 }
 .city-callout > svg {
   flex-shrink: 0;
@@ -341,13 +347,13 @@ textarea:focus-visible {
   font-size: 21px;
   line-height: 1.4;
   letter-spacing: -0.5px;
-  color: #315437;
+  color: #4a2e18;
   font-weight: 550;
 }
 .planner-form {
   padding: 28px;
   border-radius: 18px;
-  box-shadow: 0 6px 24px #183a2c06;
+  box-shadow: 0 6px 24px #1f140c06;
 }
 .form-intro {
   gap: 18px;
@@ -361,8 +367,8 @@ textarea:focus-visible {
   font-size: 12px;
 }
 .query-field {
-  border: 1px solid #b8cebc;
-  background: #f6f9f4;
+  border: 1px solid #cdaf7f;
+  background: #fdf6e6;
   padding: 0 15px;
   border-radius: 12px;
   gap: 12px;
@@ -390,9 +396,9 @@ textarea:focus-visible {
   white-space: normal;
 }
 .chip.active {
-  border-color: #608867;
-  background: #e7f1e0;
-  color: #244e30;
+  border-color: var(--gold);
+  background: var(--turmeric);
+  color: var(--espresso);
 }
 .chip svg {
   width: 18px;
@@ -415,7 +421,7 @@ textarea:focus-visible {
   padding-top: 22px;
 }
 .discovery-guide > .text-button {
-  color: #1e5c3d;
+  color: #4a2e18;
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -544,7 +550,7 @@ textarea:focus-visible {
 .search-box {
   max-width: none;
   border-radius: 12px;
-  background: #fff;
+  background: #fffcf5;
   padding: 3px 16px;
 }
 .search-box input {
@@ -594,8 +600,8 @@ textarea:focus-visible {
 .filter-count {
   display: inline-grid;
   place-items: center;
-  background: #e5efdf;
-  color: #305435;
+  background: #f1e1bf;
+  color: #4a2e18;
   min-width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -609,8 +615,8 @@ textarea:focus-visible {
 .venue-card,
 .plan-card {
   border-radius: 16px;
-  border-color: #dce5df;
-  background: #fff;
+  border-color: #ead7b1;
+  background: #fffcf5;
 }
 .venue-card {
   display: flex;
@@ -676,7 +682,7 @@ textarea:focus-visible {
   height: 40px;
   top: 12px;
   right: 12px;
-  background: #ffffffed;
+  background: #fffcf5ed;
 }
 .plan-card {
   padding: 22px;
@@ -756,11 +762,11 @@ textarea:focus-visible {
 }
 .section-shortcuts a {
   padding: 10px 15px;
-  border: 1px solid #d2ded5;
-  background: #fff;
+  border: 1px solid #dec69b;
+  background: #fffcf5;
   border-radius: 24px;
   font-size: 12px;
-  color: #315742;
+  color: #4a2e18;
 }
 [id="preferences"],
 [id="privacy"],
@@ -777,7 +783,7 @@ textarea:focus-visible {
   max-width: 310px;
 }
 .visit-list {
-  background: #fff;
+  background: #fffcf5;
   border: 1px solid var(--line);
   padding: 0 22px;
   border-radius: 14px;
@@ -810,7 +816,7 @@ textarea:focus-visible {
   padding: 5px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: #fffcf5;
 }
 .tabs button {
   border: 0;
@@ -819,17 +825,17 @@ textarea:focus-visible {
   min-height: 44px;
   font-size: 13px;
   line-height: 1.5;
-  color: #49614f;
+  color: #6b4423;
 }
 .tabs button.active {
-  background: #e8f1e2;
-  color: #214c30;
-  box-shadow: inset 0 0 0 1px #d6e4ca;
+  background: var(--turmeric);
+  color: var(--espresso);
+  box-shadow: inset 0 0 0 1px var(--gold);
   font-weight: 650;
 }
 .tabs button > span {
   font-size: 11px;
-  background: #e9f0e5;
+  background: #f1e1bf;
 }
 .admin-tabs {
   position: relative;
@@ -903,14 +909,14 @@ pre {
   width: min(780px, calc(100% - 40px));
   max-height: 92dvh;
   border-radius: 20px;
-  background: #fff;
+  background: #fffcf5;
 }
 .modal.wide {
   width: min(1060px, calc(100% - 40px));
 }
 .modal-head {
   padding: 16px 24px;
-  background: #fff;
+  background: #fffcf5;
 }
 .modal-head h2 {
   font-size: 19px;
@@ -980,7 +986,7 @@ pre {
 .menu-item {
   padding: 20px;
   border-radius: 14px;
-  background: #fbfcfa;
+  background: #fdf6e6;
 }
 .menu-item h4 {
   font-size: 18px;
@@ -1057,8 +1063,8 @@ pre {
 }
 .empty {
   padding: 35px 24px;
-  background: #edf3eb;
-  border: 1px dashed #bacdb6;
+  background: #f6e9cc;
+  border: 1px dashed #cdaf7f;
   border-radius: 16px;
 }
 .empty h3 {
@@ -1090,12 +1096,12 @@ pre {
 }
 @media (hover: hover) and (pointer: fine) {
   .venue-card:hover {
-    box-shadow: 0 5px 18px #1d412b0b;
-    border-color: #abc4ad;
+    box-shadow: 0 5px 18px #1f140c0b;
+    border-color: #cdaf7f;
   }
   .section-shortcuts a:hover {
-    border-color: #638465;
-    background: #edf4e7;
+    border-color: #8a5a2b;
+    background: #f6e9cc;
   }
 }
 @media (max-width: 1200px) {
@@ -1175,7 +1181,7 @@ pre {
     position: absolute;
     top: 24px;
     right: 12px;
-    color: #fff;
+    color: #fffcf5;
   }
   .sidebar .brand {
     margin-left: 0;
@@ -1187,7 +1193,7 @@ pre {
     display: block;
     position: fixed;
     inset: 0;
-    background: #1733237a;
+    background: #1f140c7a;
     z-index: 40;
     border-radius: 0;
   }
@@ -1642,5 +1648,94 @@ pre {
   .secondary:active,
   .icon-button:active {
     transform: none;
+  }
+}
+
+/* ---- Bites dot language (from the promo): halftone mark, dotted roads, dot ring ---- */
+.brand-mark {
+  background: var(--espresso);
+  color: var(--turmeric);
+  padding: 0;
+  border-radius: 14px;
+}
+.sidebar .brand-mark {
+  background: var(--turmeric);
+  color: var(--espresso);
+}
+/* Real logo files from public/brand, painted with masks so they take palette colours. */
+.logo-star,
+.logo-batore {
+  display: block;
+  background: currentColor;
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
+}
+.logo-star {
+  --logo: url("/brand/bites-star.svg");
+  width: 34px;
+  height: 34px;
+}
+.logo-batore {
+  --logo: url("/brand/batore-wordmark.svg");
+  width: 46px; /* wordmark is 4.42 : 1 */
+  height: 10.4px;
+}
+.batore {
+  display: inline-flex;
+  vertical-align: middle;
+  background: var(--espresso);
+  color: var(--cream);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.sidebar .batore {
+  background: var(--cream);
+  color: var(--espresso);
+}
+.sidebar {
+  background: var(--espresso) url("/dots-roads.svg") no-repeat center bottom / 100% auto;
+}
+.sign-in {
+  background: url("/dots-roads.svg") no-repeat right -40px center / auto 92%;
+}
+.sign-in-copy em {
+  background: var(--turmeric);
+  color: var(--espresso);
+  padding: 0 0.16em;
+  border-radius: 8px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+/* Dotted underline, like "Plan-Maker" in the promo. */
+.hero-copy h1 em,
+.dot-underline {
+  color: inherit;
+  background-image: radial-gradient(circle, var(--gold) 1.5px, transparent 1.9px);
+  background-size: 7px 6px;
+  background-repeat: repeat-x;
+  background-position: 0 100%;
+  padding-bottom: 5px;
+}
+.dot-ring {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.dot-ring circle {
+  opacity: 0.22;
+  animation: dot-tick 1.2s linear infinite;
+}
+@keyframes dot-tick {
+  0% {
+    opacity: 1;
+  }
+  55%,
+  100% {
+    opacity: 0.22;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot-ring circle {
+    animation: none;
+    opacity: 0.75;
   }
 }

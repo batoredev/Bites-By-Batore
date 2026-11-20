@@ -1,5 +1,5 @@
 // Cache only public app-shell assets. Never cache APIs, identities or private plans.
-const CACHE = "batore-shell-v2";
+const CACHE = "batore-shell-v3";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -8,6 +8,9 @@ self.addEventListener("install", (event) => {
         cache.addAll([
           "/",
           "/icon.svg",
+          "/dots-roads.svg",
+          "/brand/bites-star.svg",
+          "/brand/batore-wordmark.svg",
           "/icon-192.png",
           "/icon-512.png",
           "/manifest.webmanifest",

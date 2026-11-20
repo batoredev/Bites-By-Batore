@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { DotRing } from "./dots";
 import {
   ArrowUpRight,
   BookmarkSimple,
@@ -100,7 +101,7 @@ export function Loading({
 }) {
   return (
     <div className="loading" role="status">
-      <span className="spinner" />
+      <DotRing />
       {label}
     </div>
   );
