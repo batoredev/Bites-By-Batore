@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · My taste</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#4a2e18}a:hover{color:#1f140c}
+.chip{transition:background .2s,border-color .2s,transform .2s}
+.chip:active{transform:scale(.95)}
+.sdot{transition:background .25s,transform .25s}
+.rise{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.rise{animation:none}.chip,.sdot{transition:none}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#fbf2dc;color:#1f140c;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;padding:24px 20px 28px;gap:16px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="Home.dc.html" aria-label="Back" style="width:44px;height:44px;border-radius:22px;display:grid;place-items:center;margin-left:-10px">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <div style="font-size:26px;font-weight:800;letter-spacing:-.8px">My taste</div>
+  </div>
+
+  <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:15px;font-weight:700">Food</div>
+      <div role="radiogroup" aria-label="Food preference" style="display:flex;gap:4px;background:#f3e4c4;border-radius:20px;padding:3px">
+        <sc-for list="{{diets}}" as="d" hint-placeholder-count="2">
+          <button role="radio" aria-checked="{{d.on}}" onClick="{{d.pick}}" style="{{d.style}}">{{d.label}}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:15px;font-weight:700">Spice</div>
+        <div style="font-size:13px;color:#6b4423">{{spiceLabel}}</div>
+      </div>
+      <div style="display:flex;gap:2px">
+        <sc-for list="{{spice}}" as="s" hint-placeholder-count="5">
+          <button class="sdot" onClick="{{s.pick}}" aria-label="Spice level {{s.n}}" style="width:30px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0"><span style="{{s.style}}"></span></button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;animation-delay:.05s">
+    <div style="font-size:15px;font-weight:700">Cuisines you like</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+      <sc-for list="{{cuisines}}" as="c" hint-placeholder-count="6">
+        <button class="chip" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">{{c.label}}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div class="rise" style="background:#fffcf5;border-radius:22px;padding:4px 16px;animation-delay:.1s">
+    <a href="#visits" style="display:flex;justify-content:space-between;align-items:center;min-height:56px;text-decoration:none;color:#1f140c;border-bottom:1px solid #ead7b1">
+      <span style="font-size:15px;font-weight:700">Places you’ve been</span><span style="font-size:14px;color:#6b4423">8</span>
+    </a>
+    <a href="#diary" style="display:flex;justify-content:space-between;align-items:center;min-height:56px;text-decoration:none;color:#1f140c">
+      <span style="font-size:15px;font-weight:700">Dish diary</span><span style="font-size:14px;color:#6b4423">14 dishes</span>
+    </a>
+  </div>
+
+  <div class="rise" style="background:#fffcf5;border-radius:22px;padding:4px 16px;animation-delay:.15s">
+    <a href="#export" style="display:flex;align-items:center;min-height:52px;text-decoration:none;color:#1f140c;font-size:15px;font-weight:600;border-bottom:1px solid #ead7b1">Download my data</a>
+    <a href="#signout" style="display:flex;align-items:center;min-height:52px;text-decoration:none;color:#1f140c;font-size:15px;font-weight:600;border-bottom:1px solid #ead7b1">Sign out</a>
+    <a href="#delete" style="display:flex;align-items:center;min-height:52px;text-decoration:none;color:#963c35;font-size:15px;font-weight:600">Delete my account</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { diet: 'Veg', spice: 2, likes: { 'South Indian': true, 'Chettinad': true, 'Desserts': true } }; }
+  renderVals() {
+    const s = this.state;
+    const diets = ['Veg', 'Non-veg'].map((label) => {
+      const on = s.diet === label;
+      return { label, on: String(on), pick: () => this.setState({ diet: label }),
+        style: 'min-height:36px;padding:0 14px;border:none;border-radius:17px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') };
+    });
+    const spice = Array.from({ length: 5 }, (_, k) => ({
+      n: k + 1, pick: () => this.setState({ spice: k }),
+      style: 'display:block;width:' + (10 + k * 2) + 'px;height:' + (10 + k * 2) + 'px;border-radius:50%;background:' + (k <= s.spice ? (k === s.spice ? '#1f140c' : '#f5c842') : '#ead7b1')
+    }));
+    const cuisines = ['South Indian', 'Chettinad', 'North Indian', 'Chinese', 'Italian', 'Desserts'].map((label) => {
+      const on = !!s.likes[label];
+      return { label, on: String(on), pick: () => this.setState({ likes: Object.assign({}, s.likes, { [label]: !on }) }),
+        style: 'min-height:40px;padding:0 14px;border-radius:20px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid ' + (on ? '#c8962e;background:#f5c842;color:#1f140c' : '#ead7b1;background:#fffcf5;color:#4a2e18') };
+    });
+    const spiceLabel = ['Mild', 'Medium', 'Hot', 'Very hot', 'Fiery'][s.spice];
+    return { diets, spice, cuisines, spiceLabel };
+  }
+}
+</script>
+</body>
+</html>

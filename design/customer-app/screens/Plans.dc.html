@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Your plans</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Fraunces:ital,opsz,wght@1,9..144,600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#4a2e18}a:hover{color:#1f140c}
+.card{animation:slide .5s cubic-bezier(.2,.8,.2,1) both}
+.stop{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.pager{transition:width .3s,background .3s}
+@keyframes slide{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.card,.stop{animation:none}.pager{transition:none}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#fbf2dc;color:#1f140c;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;padding:24px 20px 32px;gap:20px;overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <a href="Vibe.dc.html" aria-label="Back" style="width:44px;height:44px;border-radius:22px;display:grid;place-items:center;text-decoration:none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <div style="font-size:14px;font-weight:600;color:#6b4423">Chill · A date · ₹800</div>
+    <span style="width:44px"></span>
+  </div>
+
+  <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.1;padding:0 4px">Three plans<br>for <span style="font-family:Fraunces,serif;font-style:italic;font-weight:600;color:#8a5a2b">tonight.</span></div>
+
+  <sc-for list="{{plans}}" as="p" hint-placeholder-count="1">
+    <sc-if value="{{p.active}}" hint-placeholder-val="{{true}}">
+      <div class="card" style="flex:1;background:#fffcf5;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:20px;box-shadow:0 18px 40px -24px rgba(31,20,12,.35)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1.2">{{p.title}}</div>
+          <div style="flex-shrink:0;font-size:13px;font-weight:700;background:#9bbf65;color:#1f140c;border-radius:14px;padding:6px 10px">{{p.time}}</div>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{p.stops}}" as="s" hint-placeholder-count="3">
+            <div class="stop" style="display:flex;gap:14px;animation-delay:{{s.delay}}">
+              <div style="display:flex;flex-direction:column;align-items:center;width:14px">
+                <span style="width:14px;height:14px;border-radius:50%;background:#1f140c;flex-shrink:0"></span>
+                <sc-if value="{{s.more}}" hint-placeholder-val="{{true}}">
+                  <span style="flex:1;width:4px;min-height:34px;background-image:radial-gradient(circle,#c8962e 1.6px,transparent 2px);background-size:4px 8px;background-repeat:repeat-y;margin:4px 0"></span>
+                </sc-if>
+              </div>
+              <div style="padding-bottom:18px;margin-top:-3px">
+                <div style="font-size:16px;font-weight:700">{{s.name}}</div>
+                <div style="font-size:13px;color:#6b4423;margin-top:2px">{{s.note}}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed #ead7b1;padding-top:16px">
+          <span style="font-size:13px;color:#6b4423">About</span>
+          <span style="font-size:22px;font-weight:800">{{p.cost}} <span style="font-size:13px;font-weight:600;color:#6b4423">per person</span></span>
+        </div>
+      </div>
+    </sc-if>
+  </sc-for>
+
+  <div style="display:flex;justify-content:center;gap:4px" aria-label="Choose a plan">
+    <sc-for list="{{pagers}}" as="g" hint-placeholder-count="3">
+      <button onClick="{{g.pick}}" aria-label="Plan {{g.n}}" aria-pressed="{{g.on}}" style="width:44px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0">
+        <span class="pager" style="{{g.style}}"></span>
+      </button>
+    </sc-for>
+  </div>
+
+  <a href="Plan.dc.html" style="display:flex;align-items:center;justify-content:center;height:56px;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:16px;text-decoration:none">Choose this plan</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { i: 0 }; }
+  renderVals() {
+    const data = [
+      { title: 'Coffee, a walk and dosa', time: '3 hrs', cost: '₹540', stops: [['Quiet café', 'Filter coffee · 45 min'], ['Race Course walk', 'Evening loop · 40 min'], ['Dosa place', 'Dinner · 1 hr']] },
+      { title: 'Board games and street food', time: '2.5 hrs', cost: '₹620', stops: [['Board game café', 'Two rounds · 1 hr 30 min'], ['Street food lane', 'Shared plates · 45 min']] },
+      { title: 'Dinner, live music and dessert', time: '3.5 hrs', cost: '₹780', stops: [['Rooftop restaurant', 'Book ahead · 1 hr 15 min'], ['Open mic night', 'From 8 pm · 1 hr 30 min'], ['Dessert stop', '20 min']] }
+    ];
+    const plans = data.map((p, k) => ({
+      ...p, active: this.state.i === k,
+      stops: p.stops.map(([name, note], j) => ({ name, note, more: j < p.stops.length - 1, delay: (0.15 + j * 0.08) + 's' }))
+    }));
+    const pagers = data.map((_, k) => {
+      const on = this.state.i === k;
+      return { n: k + 1, on: String(on), style: 'display:block;height:8px;border-radius:4px;width:' + (on ? 24 : 8) + 'px;background:' + (on ? '#1f140c' : '#dec69b'), pick: () => this.setState({ i: k }) };
+    });
+    return { plans, pagers };
+  }
+}
+</script>
+</body>
+</html>

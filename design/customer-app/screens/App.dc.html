@@ -1,0 +1,1295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · App</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Fraunces:ital,opsz,wght@1,9..144,600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.star{-webkit-mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat}
+.wordmark{background:#1f140c;-webkit-mask:url(/_blob/dfc862a98dc33be0dc5c89cb0c10efb2) center/contain no-repeat;mask:url(/_blob/dfc862a98dc33be0dc5c89cb0c10efb2) center/contain no-repeat}
+.fwd{animation:fwd .42s cubic-bezier(.2,.8,.2,1) both}
+.back{animation:bck .42s cubic-bezier(.2,.8,.2,1) both}
+.tab{animation:fade .3s ease both}
+.rise{animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
+.assemble{animation:assemble 1.4s cubic-bezier(.2,.8,.2,1) both}
+.road{stroke-dasharray:0 11;stroke-linecap:round;animation:travel 6s linear infinite}
+.ping{transform-box:fill-box;transform-origin:center;animation:ping 3.2s ease-out infinite}
+.band{background-image:radial-gradient(circle,#4a2e18 2.2px,transparent 2.7px);background-size:12px 12px;-webkit-mask:linear-gradient(to bottom,transparent,#000);mask:linear-gradient(to bottom,transparent,#000)}
+.tick{opacity:.18;animation:tick 2.4s linear infinite}
+.hand{transform-origin:0 0;animation:sweep 2.4s linear infinite}
+.say{position:absolute;inset:0;opacity:0;animation:say 7.2s ease infinite}
+.spin{animation:turn 14s linear infinite}
+.press{transition:transform .2s,background .25s,border-color .25s,color .25s}
+.press:active{transform:scale(.95)}
+.dotted{background-image:radial-gradient(circle,#c8962e 1.6px,transparent 2px);background-size:4px 8px;background-repeat:repeat-y}
+.route{stroke-dasharray:0 12;stroke-linecap:round;animation:draw 2s ease-out both,travel 5s linear 2s infinite}
+.pop{transform-box:fill-box;transform-origin:center;animation:popin .5s cubic-bezier(.2,1.5,.4,1) both}
+.hero{background-color:#c8962e;background-image:radial-gradient(circle,#f5c842 3px,transparent 3.6px);background-size:16px 16px;animation:drift 18s linear infinite}
+.blink{animation:blink 2s ease-in-out infinite}
+.ring circle{opacity:.25;animation:tick 1.2s linear infinite}
+.field{transition:border-color .2s,box-shadow .2s}
+.field:focus-within{border-color:#c8962e;box-shadow:0 0 0 4px rgba(245,200,66,.3)}
+.sheetup{animation:sheetup .38s cubic-bezier(.2,.8,.2,1) both}
+@keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fwd{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes bck{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes assemble{0%{opacity:0;transform:scale(.4) rotate(-25deg);filter:blur(6px)}60%{opacity:1;filter:blur(0)}100%{transform:none}}
+@keyframes travel{to{stroke-dashoffset:-110}}
+@keyframes ping{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(3.4);opacity:0}}
+@keyframes tick{0%{opacity:1}45%,100%{opacity:.2}}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@keyframes say{0%{opacity:0;transform:translateY(8px)}6%,30%{opacity:1;transform:none}36%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes turn{to{transform:rotate(360deg)}}
+@keyframes draw{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes popin{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes drift{to{background-position:160px 80px}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.say{opacity:0}.say:first-child{opacity:1}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;position:relative;overflow:hidden;font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:{{bg}};color:{{fg}};transition:background .4s">
+
+  <sc-if value="{{roads}}" hint-placeholder-val="{{false}}">
+    <svg aria-hidden="true" width="390" height="844" viewBox="0 0 390 844" fill="none" style="position:absolute;inset:0">
+      <g stroke="#c8962e" stroke-opacity=".14" stroke-width="1.2">
+        <path d="M-10 150C120 130 260 190 400 160"></path>
+        <path d="M70-10C90 260 50 560 110 860"></path>
+        <path d="M310-10C280 300 350 600 300 860"></path>
+        <path d="M-10 610C140 570 260 650 400 590"></path>
+      </g>
+      <path class="road" d="M-20 800C110 700 250 600 410 420" stroke="#c8962e" stroke-opacity=".5" stroke-width="4"></path>
+      <path class="road" d="M200 860C215 720 180 640 210 520" stroke="#c8962e" stroke-opacity=".4" stroke-width="4" style="animation-duration:8s"></path>
+      <circle class="ping" cx="295" cy="168" r="6" stroke="#f5c842" stroke-width="1.5"></circle>
+      <circle cx="295" cy="168" r="4.5" fill="#f5c842"></circle>
+      <circle class="ping" cx="76" cy="240" r="6" stroke="#9bbf65" stroke-width="1.5" style="animation-delay:1.6s"></circle>
+      <circle cx="76" cy="240" r="3.5" fill="#9bbf65"></circle>
+    </svg>
+    <div class="band" aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:110px"></div>
+  </sc-if>
+
+  <!-- 1 · Welcome: the Batore hero, a 3D dot star over a sea of dots -->
+  <sc-if value="{{is.welcome}}" hint-placeholder-val="{{true}}">
+    <div class="{{anim}}" style="position:absolute;inset:0">
+      <canvas ref="{{heroRef}}" aria-hidden="true" style="position:absolute;inset:0;width:390px;height:844px;display:block;touch-action:none"></canvas>
+      <div class="rise" style="position:absolute;left:0;right:0;top:350px;display:flex;flex-direction:column;align-items:center;gap:10px;animation-delay:.9s">
+        <div style="font-size:60px;font-weight:800;letter-spacing:-2.8px;line-height:.9">Bites</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#dec69b">by
+          <span style="display:inline-flex;background:#fbf2dc;border-radius:4px;padding:4px 7px"><span class="wordmark" role="img" aria-label="Batore" style="display:block;width:66px;height:15px"></span></span>
+        </div>
+      </div>
+      <div class="rise" style="position:absolute;left:0;right:0;bottom:0;padding:0 32px 32px;display:flex;flex-direction:column;align-items:center;text-align:center;animation-delay:1.1s">
+        <div style="font-size:28px;font-weight:800;letter-spacing:-.9px;line-height:1.25">Your personal<br><span style="background:#f5c842;color:#1f140c;border-radius:8px;padding:0 8px;white-space:nowrap">plan‑maker.</span></div>
+        <div style="font-size:15px;line-height:1.55;color:#dec69b;margin-top:14px">For the days you want to go out,<br><span style="color:#fbf2dc;font-weight:700">but have no clue where.</span></div>
+        <button class="press" onClick="{{nav.signin}}" style="margin-top:28px;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border:none;border-radius:28px;background:#f5c842;color:#1f140c;font-weight:800;font-size:16px;cursor:pointer">Let’s go out
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </button>
+        <div style="margin-top:18px;font-family:Fraunces,serif;font-style:italic;font-size:15px;color:#9bbf65">Different people. Different plan.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 2 · Sign in (dark) -->
+  <sc-if value="{{is.signin}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:28px 24px 40px">
+      <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;margin-left:-10px;cursor:pointer;color:#fbf2dc">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+      </button>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px;position:relative">
+        <div class="star assemble" role="img" aria-label="Bites" style="width:72px;height:72px;background:#f5c842"></div>
+        <div class="rise" style="animation-delay:.2s">
+          <div style="font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1.12">Sign in to save<br>your <span style="background:#f5c842;color:#1f140c;border-radius:8px;padding:0 6px">plans.</span></div>
+          <div style="font-size:15px;color:#dec69b;margin-top:12px;line-height:1.5">Your taste and saved places stay with your account.</div>
+        </div>
+        <div class="rise" style="display:flex;flex-direction:column;gap:12px;animation-delay:.35s">
+          <button class="press" onClick="{{nav.signedIn}}" style="display:flex;align-items:center;justify-content:center;gap:12px;height:56px;border:none;border-radius:28px;background:#fbf2dc;font-size:16px;font-weight:700;color:#1f140c;cursor:pointer">
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.3H12v4.3h5.9a5 5 0 0 1-2.2 3.3v2.8h3.6c2.1-1.9 3.3-4.8 3.3-8.1z"></path><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0 0 12 23z"></path><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10l3.7-2.9z"></path><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"></path></svg>
+            Continue with Google
+          </button>
+          <div style="display:flex;align-items:center;gap:12px;color:#c8962e;font-size:13px;font-weight:600;margin:2px 0">
+            <span style="flex:1;border-top:2px dotted #4a2e18"></span>or<span style="flex:1;border-top:2px dotted #4a2e18"></span>
+          </div>
+          <label class="field" style="display:flex;flex-direction:column;gap:4px;border:1.5px solid #4a2e18;border-radius:18px;background:#2b1c11;padding:10px 18px">
+            <span style="font-size:12px;font-weight:700;color:#dec69b">Email</span>
+            <input type="email" placeholder="you@example.com" style="border:none;background:transparent;font:inherit;font-size:16px;color:#fbf2dc;outline:none;padding:0">
+          </label>
+          <button class="press" onClick="{{nav.signedIn}}" style="height:56px;border:none;border-radius:28px;background:#f5c842;color:#1f140c;font-weight:800;font-size:16px;cursor:pointer">Email me a sign-in link</button>
+        </div>
+      </div>
+      <div class="rise" style="position:relative;text-align:center;font-size:13px;color:#dec69b;line-height:1.5;animation-delay:.5s">
+        <button onClick="{{nav.guest}}" style="border:none;background:none;min-height:44px;font-size:14px;font-weight:700;color:#f5c842;cursor:pointer">Not now, just look around</button>
+        <div>By continuing you agree to the <button onClick="{{nav.terms}}" style="border:none;background:none;padding:0;font-size:13px;color:#f5c842;text-decoration:underline;text-underline-offset:3px;cursor:pointer">Terms</button> and <button onClick="{{nav.privacy}}" style="border:none;background:none;padding:0;font-size:13px;color:#f5c842;text-decoration:underline;text-underline-offset:3px;cursor:pointer">Privacy policy</button>.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 3 · Home -->
+  <sc-if value="{{is.home}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:28px 20px 0;gap:22px">
+      <div class="rise" style="display:flex;flex-direction:column;gap:14px;padding:0 4px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <button class="press" onClick="{{nav.openArea}}" aria-label="Change area, now {{area}}" style="display:flex;align-items:center;gap:6px;min-height:40px;padding:0 14px 0 10px;border:1.5px solid #ead7b1;border-radius:20px;background:#fffcf5;font-size:13px;font-weight:700;color:#4a2e18;cursor:pointer">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#c8962e"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"></path></svg>
+            {{area}}, Coimbatore
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+          <button class="press" onClick="{{nav.taste}}" aria-label="My taste and account" style="position:relative;width:56px;height:56px;border:none;border-radius:28px;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0">
+            <svg aria-hidden="true" width="56" height="56" viewBox="0 0 56 56" style="position:absolute;inset:0"><circle cx="28" cy="28" r="26" fill="none" stroke="#f5c842" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="0 6.53"></circle></svg>
+            <span style="width:42px;height:42px;border-radius:21px;background:#1f140c;color:#f5c842;display:grid;place-items:center;font-weight:800;font-size:17px">{{initial}}</span>
+          </button>
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:600;color:#6b4423">{{greeting}},</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+            <span style="font-family:Fraunces,serif;font-style:italic;font-weight:600;font-size:40px;letter-spacing:-1px;line-height:1.1;background-image:radial-gradient(circle,#c8962e 1.6px,transparent 2px);background-size:8px 6px;background-repeat:repeat-x;background-position:0 100%;padding-bottom:6px">{{name}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="rise" style="position:relative;overflow:hidden;background:#1f140c;color:#fbf2dc;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:18px;animation-delay:.08s">
+        <svg aria-hidden="true" width="350" height="220" viewBox="0 0 350 220" fill="none" style="position:absolute;right:-20px;bottom:-10px"><path class="road" d="M10 210C120 180 200 120 340 40" stroke="#c8962e" stroke-opacity=".5" stroke-width="4"></path></svg>
+        <div class="star" aria-hidden="true" style="position:absolute;right:22px;top:20px;width:56px;height:56px;background:#f5c842"></div>
+        <div style="position:relative;font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.15">Where to<br>today?</div>
+        <div style="position:relative;display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{quick}}" as="q" hint-placeholder-count="3">
+            <button class="press" onClick="{{q.go}}" style="min-height:40px;padding:0 14px;border:none;border-radius:20px;background:#4a2e18;color:#fbf2dc;font-size:14px;font-weight:700;cursor:pointer">{{q.label}}</button>
+          </sc-for>
+        </div>
+        <button class="press" onClick="{{nav.vibe}}" style="position:relative;height:54px;border:none;border-radius:27px;background:#f5c842;color:#1f140c;font-weight:800;font-size:16px;cursor:pointer">Plan something</button>
+      </div>
+      <sc-if value="{{upcoming.has}}" hint-placeholder-val="{{true}}">
+        <div class="rise" style="display:flex;flex-direction:column;gap:10px;animation-delay:.16s">
+          <div style="font-size:16px;font-weight:800;padding:0 4px">Coming up</div>
+          <button class="press" onClick="{{upcoming.open}}" style="display:flex;align-items:center;gap:14px;background:#fffcf5;border:none;border-radius:22px;padding:16px;text-align:left;cursor:pointer">
+            <span style="width:52px;height:52px;border-radius:16px;background:#9bbf65;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;line-height:1;color:#1f140c">
+              <span style="font-size:11px;font-weight:700">Sat</span><span style="font-size:20px;font-weight:800">23</span>
+            </span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-size:16px;font-weight:700">{{upcoming.title}}</span>
+              <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">7 pm · 4 people</span>
+            </span>
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+        </div>
+      </sc-if>
+      <button class="press" onClick="{{nav.share}}" style="display:flex;align-items:center;gap:14px;border:2px solid transparent;background:linear-gradient(#fffcf5,#fffcf5) padding-box,linear-gradient(45deg,#feda75,#fa7e1e,#d62976,#962fbf,#4f5bd5) border-box;border-radius:22px;padding:16px;text-align:left;cursor:pointer;box-shadow:0 12px 26px -18px rgba(214,41,118,.55)">
+        <span style="width:46px;height:46px;border-radius:15px;background:radial-gradient(circle at 30% 107%,#fdf497 0%,#fdf497 5%,#fd5949 45%,#d6249f 60%,#285aeb 90%);display:grid;place-items:center;flex-shrink:0">
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.2" cy="6.8" r="1.1" fill="#fff" stroke="none"></circle></svg>
+        </span>
+        <span>
+          <span style="display:block;font-size:15px;font-weight:700">Saw a place on Instagram?</span>
+          <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">Share the link and we’ll find it.</span>
+        </span>
+      </button>
+    </div>
+  </sc-if>
+
+  <!-- 4 · Set the vibe -->
+  <sc-if value="{{is.vibe}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 20px 8px">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:14px;display:grid;place-items:center;background:#f3e4c4;cursor:pointer">
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <span style="width:44px"></span>
+      </div>
+      <div style="padding:6px 22px 14px;font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.1">What’s the <span style="font-family:Fraunces,serif;font-style:italic;font-weight:600;color:#8a5a2b">vibe</span> today?</div>
+      <div style="flex:1;min-height:0;overflow-y:auto;padding:0 16px 8px;display:flex;flex-direction:column;gap:12px">
+        <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px">
+          <div style="font-size:14px;font-weight:700;color:#6b4423">Your mood</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+            <sc-for list="{{moods}}" as="m" hint-placeholder-count="5"><button class="press" onClick="{{m.pick}}" aria-pressed="{{m.on}}" style="{{m.style}}">{{m.label}}</button></sc-for>
+          </div>
+        </div>
+        <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;animation-delay:.06s">
+          <div style="font-size:14px;font-weight:700;color:#6b4423">Who’s coming</div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px">
+            <sc-for list="{{people}}" as="p" hint-placeholder-count="4">
+              <button class="press" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="{{p.style}}">
+                <span style="display:flex;gap:3px;justify-content:center;height:12px;align-items:center"><sc-for list="{{p.dots}}" as="d"><span style="width:9px;height:9px;border-radius:50%;background:currentColor"></span></sc-for></span>
+                <span style="font-size:12px;font-weight:700">{{p.label}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;animation-delay:.09s">
+          <div style="font-size:14px;font-weight:700;color:#6b4423">Leaving today</div>
+          <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:6px;margin-top:10px">
+            <sc-for list="{{leaves}}" as="l" hint-placeholder-count="4"><button class="press" onClick="{{l.pick}}" aria-pressed="{{l.on}}" style="{{l.style}}">{{l.label}}</button></sc-for>
+            <label class="press" style="{{clockStyle}}">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+              <sc-if value="{{customLeave}}" hint-placeholder-val="{{false}}"><span style="font-size:13px;font-weight:700;white-space:nowrap">{{leave}}</span></sc-if>
+              <input type="time" aria-label="Pick another time" value="{{timeVal}}" onChange="{{onTime}}" onClick="{{openTime}}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">
+            </label>
+          </div>
+          <div style="height:1px;background:#ead7b1;margin:16px 0 14px"></div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div style="font-size:14px;font-weight:700;color:#6b4423">Total time</div>
+            <div style="font-size:20px;font-weight:800">{{hoursText}}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:12px">
+            <sc-for list="{{tdots}}" as="t" hint-placeholder-count="11"><button onClick="{{t.pick}}" aria-label="{{t.label}}" style="width:26px;height:26px;border:none;padding:0;background:transparent;display:grid;place-items:center;cursor:pointer"><span class="press" style="{{t.style}}"></span></button></sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b4423;margin-top:6px"><span>1 hr</span><span>6 hrs</span></div>
+        </div>
+        <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;animation-delay:.12s">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:14px;font-weight:700;color:#6b4423">Budget</div>
+            <div role="radiogroup" aria-label="Budget applies to" style="display:flex;gap:2px;background:#f3e4c4;border-radius:16px;padding:3px">
+              <sc-for list="{{budgetModes}}" as="m" hint-placeholder-count="2"><button class="press" role="radio" aria-checked="{{m.on}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button></sc-for>
+            </div>
+          </div>
+          <div style="font-size:22px;font-weight:800;margin-top:10px">₹{{budgetShown}} <span style="font-size:13px;font-weight:600;color:#6b4423">{{budgetUnit}}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:14px">
+            <sc-for list="{{bdots}}" as="b" hint-placeholder-count="12">
+              <button onClick="{{b.pick}}" aria-label="₹{{b.value}} per person" style="width:24px;height:24px;border:none;padding:0;background:transparent;display:grid;place-items:center;cursor:pointer"><span class="press" style="{{b.style}}"></span></button>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b4423;margin-top:6px"><span>₹{{budgetLo}}</span><span>₹{{budgetHi}}</span></div>
+        </div>
+        <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;animation-delay:.18s">
+          <div style="font-size:14px;font-weight:700;color:#6b4423">Interests</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+            <sc-for list="{{interests}}" as="i" hint-placeholder-count="6"><button class="press" onClick="{{i.pick}}" aria-pressed="{{i.on}}" style="{{i.style}}">{{i.label}}</button></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="padding:14px 16px 28px">
+        <button class="press" onClick="{{nav.planning}}" style="width:100%;height:58px;border:none;border-radius:18px;background:#1f140c;color:#fbf2dc;font-weight:800;font-size:17px;cursor:pointer">Make my plan</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 5 · Making your plan (dark) -->
+  <sc-if value="{{is.planning}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:0 32px 44px">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px;position:relative">
+        <svg role="img" aria-label="Making your plan" width="180" height="180" viewBox="-90 -90 180 180">
+          <sc-for list="{{ticks}}" as="t" hint-placeholder-count="24"><circle class="tick" cx="{{t.x}}" cy="{{t.y}}" r="{{t.r}}" fill="#c8962e" style="animation-delay:{{t.delay}}"></circle></sc-for>
+          <g class="hand"><sc-for list="{{hand}}" as="h" hint-placeholder-count="6"><circle cx="0" cy="{{h.y}}" r="{{h.r}}" fill="#f5c842"></circle></sc-for></g>
+          <circle cx="0" cy="0" r="6" fill="#f5c842"></circle>
+        </svg>
+        <div style="position:relative;width:300px;height:30px;text-align:center;font-size:18px;font-weight:600">
+          <div class="say">Finding places near you…</div>
+          <div class="say" style="animation-delay:2.4s">Matching your mood…</div>
+          <div class="say" style="animation-delay:4.8s">Fitting it into your time…</div>
+        </div>
+      </div>
+      <button class="press" onClick="{{nav.plansNow}}" style="position:relative;width:100%;height:56px;border:none;border-radius:28px;background:#f5c842;color:#1f140c;font-weight:800;font-size:16px;cursor:pointer">See plans</button>
+    </div>
+  </sc-if>
+
+  <!-- 6 · Your plans -->
+  <sc-if value="{{is.plans}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 32px;gap:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;cursor:pointer">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <button onClick="{{nav.vibe}}" style="border:none;background:none;font-size:14px;font-weight:600;color:#6b4423;min-height:44px;cursor:pointer">{{summary}} · Edit</button>
+        <span style="width:44px"></span>
+      </div>
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.1;padding:0 4px">{{plansHeading}}<br>for <span style="font-family:Fraunces,serif;font-style:italic;font-weight:600;color:#8a5a2b">tonight.</span></div>
+      <sc-if value="{{noPlans}}" hint-placeholder-val="{{false}}">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center;padding:0 20px">
+          <div style="font-size:18px;font-weight:700">Nothing fits ₹{{budgetText}} per person in {{hoursText}} yet.</div>
+          <button class="press" onClick="{{nav.vibe}}" style="min-height:48px;padding:0 22px;border:1.5px solid #1f140c;border-radius:24px;background:transparent;font-weight:700;cursor:pointer">Change filters</button>
+        </div>
+      </sc-if>
+      <sc-for list="{{planCards}}" as="p" hint-placeholder-count="1">
+        <sc-if value="{{p.active}}" hint-placeholder-val="{{true}}">
+          <div class="fwd" style="flex:1;background:#fffcf5;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:20px;box-shadow:0 18px 40px -24px rgba(31,20,12,.35)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+              <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1.2">{{p.title}}</div>
+              <div style="flex-shrink:0;font-size:13px;font-weight:700;background:#9bbf65;color:#1f140c;border-radius:14px;padding:6px 10px">{{p.time}}</div>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{p.stops}}" as="s" hint-placeholder-count="3">
+                <div class="rise" style="display:flex;gap:14px;animation-delay:{{s.delay}}">
+                  <div style="display:flex;flex-direction:column;align-items:center;width:14px">
+                    <span style="width:14px;height:14px;border-radius:50%;background:#1f140c;flex-shrink:0"></span>
+                    <sc-if value="{{s.more}}" hint-placeholder-val="{{true}}"><span class="dotted" style="flex:1;width:4px;min-height:34px;margin:4px 0"></span></sc-if>
+                  </div>
+                  <div style="padding-bottom:18px;margin-top:-3px">
+                    <div style="font-size:16px;font-weight:700">{{s.name}}</div>
+                    <div style="font-size:13px;color:#6b4423;margin-top:2px">{{s.note}}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed #ead7b1;padding-top:16px">
+              <span style="font-size:13px;color:#6b4423">About</span>
+              <span style="font-size:22px;font-weight:800">₹{{p.cost}} <span style="font-size:13px;font-weight:600;color:#6b4423">per person</span></span>
+            </div>
+          </div>
+        </sc-if>
+      </sc-for>
+      <sc-if value="{{hasPlans}}" hint-placeholder-val="{{true}}">
+        <div style="display:flex;justify-content:center;gap:4px" aria-label="Choose a plan">
+          <sc-for list="{{pagers}}" as="g" hint-placeholder-count="3">
+            <button onClick="{{g.pick}}" aria-label="Plan {{g.n}}" aria-pressed="{{g.on}}" style="width:44px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0"><span class="press" style="{{g.style}}"></span></button>
+          </sc-for>
+        </div>
+        <button class="press" onClick="{{nav.choosePlan}}" style="height:56px;border:none;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:16px;cursor:pointer">Choose this plan</button>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- 7 · Plan detail -->
+  <sc-if value="{{is.plan}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:24px 20px 4px">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;cursor:pointer">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <button class="press" onClick="{{plan.toggleSave}}" aria-label="{{plan.saveLabel}}" aria-pressed="{{plan.saved}}" style="{{plan.saveStyle}}">
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="{{plan.saveFill}}" stroke="#1f140c" stroke-width="2.2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path></svg>
+        </button>
+      </div>
+      <div style="padding:0 24px">
+        <div style="font-size:14px;font-weight:700;color:#8a5a2b">{{plan.when}}</div>
+        <div style="font-size:28px;font-weight:800;letter-spacing:-.8px;line-height:1.15;margin-top:6px">{{plan.title}}</div>
+      </div>
+      <svg aria-hidden="true" width="390" height="140" viewBox="0 0 390 140" style="margin-top:6px" fill="none">
+        <path class="route" d="M48 104C110 112 130 56 196 64S300 36 342 30" stroke="#c8962e" stroke-width="5"></path>
+        <circle class="pop" cx="48" cy="104" r="9" fill="#1f140c" style="animation-delay:.2s"></circle>
+        <circle class="pop" cx="196" cy="64" r="9" fill="#1f140c" style="animation-delay:1s"></circle>
+        <circle class="pop" cx="342" cy="30" r="11" fill="#9bbf65" style="animation-delay:1.9s"></circle>
+      </svg>
+      <div style="flex:1;padding:0 24px;display:flex;flex-direction:column">
+        <sc-for list="{{plan.stops}}" as="s" hint-placeholder-count="3">
+          <div class="rise" style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #ead7b1;animation-delay:{{s.delay}}">
+            <div style="width:48px;font-size:14px;font-weight:700;color:#6b4423">{{s.time}}</div>
+            <button onClick="{{s.open}}" style="flex:1;min-width:0;border:none;background:none;text-align:left;padding:4px 0;cursor:pointer">
+              <span style="display:block;font-size:16px;font-weight:700">{{s.name}}</span>
+              <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">{{s.note}}</span>
+            </button>
+            <button class="press" onClick="{{s.toggle}}" aria-label="{{s.lockLabel}}" aria-pressed="{{s.locked}}" style="{{s.lockStyle}}">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="{{s.shackle}}"></path></svg>
+            </button>
+          </div>
+        </sc-for>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 28px">
+          <span style="font-size:14px;color:#6b4423">About ₹{{plan.cost}} per person · {{plan.time}}</span>
+          <button onClick="{{plan.swap}}" style="border:none;background:none;font-size:14px;font-weight:700;text-decoration:underline;text-underline-offset:4px;min-height:44px;cursor:pointer">{{plan.swapLabel}}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 8 · Explore -->
+  <sc-if value="{{is.explore}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:28px 20px 0;gap:18px">
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;padding:0 4px">Explore</div>
+      <label class="field" style="display:flex;align-items:center;gap:10px;height:52px;border-radius:26px;background:#fffcf5;border:1.5px solid #ead7b1;padding:0 18px">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+        <input aria-label="Search" value="{{query}}" onChange="{{onSearch}}" placeholder="Search dishes, places or areas" style="flex:1;border:none;background:transparent;font:inherit;font-size:15px;color:#1f140c;outline:none;min-width:0">
+      </label>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+        <sc-for list="{{cats}}" as="c" hint-placeholder-count="2">
+          <button class="press" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">
+            <span style="display:grid;place-items:center;height:52px;position:relative;z-index:1">
+              <sc-if value="{{c.isFood}}" hint-placeholder-val="{{true}}">
+                <svg aria-hidden="true" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.8" stroke-linecap="round"><path d="M4.5 15.5a7.5 7.5 0 0 1 15 0"></path><path d="M2.5 15.5h19M6 18.8h12"></path><circle cx="12" cy="6.3" r="1.5" fill="#9bbf65" stroke="none"></circle></svg>
+              </sc-if>
+              <sc-if value="{{c.isDo}}" hint-placeholder-val="{{false}}">
+                <svg aria-hidden="true" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M6 4.6Q12 1 18 4.6M6 19.4Q12 23 18 19.4" stroke="#f5c842"></path><path d="M8.6 6.9Q12 5.2 15.4 6.9M8.6 17.1Q12 18.8 15.4 17.1" stroke="#9bbf65"></path><path d="M10.3 9h3.6M12.3 9v5.6" stroke="#f5c842"></path><ellipse cx="11" cy="14.6" rx="1.6" ry="1.2" fill="#f5c842"></ellipse></svg>
+              </sc-if>
+            </span>
+            <span style="position:relative;z-index:1;font-size:14px;font-weight:700;color:#fbf2dc">{{c.label}}</span>
+            <span class="band" style="position:absolute;left:0;right:0;bottom:0;height:46px"></span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px">
+        <div style="font-size:18px;font-weight:800">Near {{area}}</div>
+        <button onClick="{{nav.openArea}}" style="border:none;background:none;font-size:14px;font-weight:700;color:#4a2e18;text-decoration:underline;text-underline-offset:4px;min-height:44px;cursor:pointer;padding:0">Change</button>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <sc-if value="{{noResults}}" hint-placeholder-val="{{false}}">
+          <div style="padding:24px 4px;font-size:15px;color:#6b4423">No matches. Try another word.</div>
+        </sc-if>
+        <sc-for list="{{results}}" as="it" hint-placeholder-count="4">
+          <button class="rise" onClick="{{it.open}}" style="display:flex;align-items:center;gap:14px;padding:12px 4px;border:none;border-bottom:1px solid #ead7b1;background:none;text-align:left;cursor:pointer;animation-delay:{{it.delay}}">
+            <span style="width:46px;height:46px;border-radius:16px;background:{{it.tint}};flex-shrink:0"></span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-size:16px;font-weight:700">{{it.name}}</span>
+              <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">{{it.note}}</span>
+            </span>
+            <sc-if value="{{it.closed}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;font-weight:700;color:#8a5a2b">Closed</span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 9 · Place -->
+  <sc-if value="{{is.place}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column">
+      <div class="hero" role="img" aria-label="Photo of {{place.name}}" style="height:250px;flex-shrink:0;position:relative">
+        <div style="position:absolute;left:16px;right:16px;top:24px;display:flex;justify-content:space-between">
+          <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:#fffcf5;display:grid;place-items:center;cursor:pointer">
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f140c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+          </button>
+          <button class="press" onClick="{{place.toggleSave}}" aria-label="{{place.saveLabel}}" aria-pressed="{{place.saved}}" style="{{place.saveStyle}}">
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="{{place.saveFill}}" stroke="#1f140c" stroke-width="2.2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div class="rise" style="flex:1;margin-top:-28px;background:#fbf2dc;border-radius:28px 28px 0 0;position:relative;padding:26px 24px 28px;display:flex;flex-direction:column;gap:20px">
+        <div>
+          <div style="font-size:28px;font-weight:800;letter-spacing:-.8px">{{place.name}}</div>
+          <div style="font-size:14px;color:#6b4423;margin-top:4px">{{place.kind}} · {{place.area}}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+          <div style="background:#fffcf5;border-radius:16px;padding:12px"><div style="font-size:14px;font-weight:800;color:{{place.statusColor}}">{{place.status}}</div><div style="font-size:12px;color:#6b4423;margin-top:2px">{{place.hours}}</div></div>
+          <div style="background:#fffcf5;border-radius:16px;padding:12px"><div style="font-size:14px;font-weight:800">{{place.price}}</div><div style="font-size:12px;color:#6b4423;margin-top:2px">{{place.priceUnit}}</div></div>
+          <div style="background:#fffcf5;border-radius:16px;padding:12px"><div style="font-size:14px;font-weight:800">{{place.mins}}</div><div style="font-size:12px;color:#6b4423;margin-top:2px">By car</div></div>
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:800">Popular here</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+            <sc-for list="{{place.popular}}" as="d" hint-placeholder-count="3"><span style="padding:8px 14px;border-radius:18px;border:1.5px solid #ead7b1;font-size:14px;font-weight:600">{{d.label}}</span></sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:800">Good to know</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;font-size:14px;color:#4a2e18">
+            <sc-for list="{{place.notes}}" as="n" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:center"><span style="width:6px;height:6px;border-radius:50%;background:#c8962e;flex-shrink:0"></span>{{n.label}}</div></sc-for>
+          </div>
+        </div>
+        <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1.4fr;gap:10px">
+          <a class="press" href="{{place.mapsUrl}}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;height:56px;border-radius:28px;border:1.5px solid #1f140c;box-sizing:border-box;font-weight:700;font-size:15px;text-decoration:none;color:#1f140c">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"></path></svg>
+            Directions
+          </a>
+          <button class="press" onClick="{{nav.vibe}}" style="height:56px;border:none;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:15px;cursor:pointer">Plan around this</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 10 · Saved -->
+  <sc-if value="{{is.saved}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:28px 20px 0;gap:18px">
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;padding:0 4px">Saved</div>
+      <div role="tablist" aria-label="Saved items" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;background:#f3e4c4;border-radius:24px;padding:4px">
+        <sc-for list="{{savedTabs}}" as="t" hint-placeholder-count="2"><button class="press" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button></sc-for>
+      </div>
+      <sc-if value="{{savedEmpty}}" hint-placeholder-val="{{false}}">
+        <div style="padding:24px 4px;font-size:15px;color:#6b4423">Nothing saved yet. Tap the bookmark on a plan or place.</div>
+      </sc-if>
+      <sc-if value="{{showSavedPlans}}" hint-placeholder-val="{{true}}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{savedPlanCards}}" as="s" hint-placeholder-count="2">
+            <button class="rise press" onClick="{{s.open}}" style="display:flex;flex-direction:column;gap:8px;background:#fffcf5;border:none;border-radius:22px;padding:18px;text-align:left;cursor:pointer;animation-delay:{{s.delay}}">
+              <span style="display:flex;justify-content:space-between;align-items:center;width:100%">
+                <span style="font-size:13px;font-weight:700;color:#8a5a2b">{{s.when}}</span>
+                <sc-if value="{{s.soon}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;font-weight:700;background:#9bbf65;color:#1f140c;border-radius:12px;padding:4px 10px">Coming up</span></sc-if>
+              </span>
+              <span style="font-size:18px;font-weight:800">{{s.title}}</span>
+              <sc-if value="{{s.soon}}" hint-placeholder-val="{{false}}">
+                <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6b4423"><span class="blink" style="width:8px;height:8px;border-radius:50%;background:#c8962e;flex-shrink:0"></span>Street food lane now closes at 10 pm. Your plan still fits.</span>
+              </sc-if>
+              <sc-if value="{{s.notSoon}}" hint-placeholder-val="{{true}}"><span style="font-size:13px;color:#6b4423">{{s.meta}}</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{showSavedPlaces}}" hint-placeholder-val="{{false}}">
+        <div style="display:flex;flex-direction:column">
+          <sc-for list="{{savedPlaceRows}}" as="p" hint-placeholder-count="3">
+            <button class="rise" onClick="{{p.open}}" style="display:flex;align-items:center;gap:14px;padding:12px 4px;border:none;border-bottom:1px solid #ead7b1;background:none;text-align:left;cursor:pointer;animation-delay:{{p.delay}}">
+              <span style="width:46px;height:46px;border-radius:16px;background:{{p.tint}};flex-shrink:0"></span>
+              <span style="flex:1;min-width:0"><span style="display:block;font-size:16px;font-weight:700">{{p.name}}</span><span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">{{p.note}}</span></span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- 11 · My taste -->
+  <sc-if value="{{is.taste}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 28px;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;margin-left:-10px;cursor:pointer">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.8px">My taste</div>
+      </div>
+      <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:15px;font-weight:700">Food</div>
+          <div role="radiogroup" aria-label="Food preference" style="display:flex;gap:4px;background:#f3e4c4;border-radius:20px;padding:3px">
+            <sc-for list="{{diets}}" as="d" hint-placeholder-count="2"><button class="press" role="radio" aria-checked="{{d.on}}" onClick="{{d.pick}}" style="{{d.style}}">{{d.label}}</button></sc-for>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:15px;font-weight:700">Spice</div><div style="font-size:13px;color:#6b4423">{{spiceLabel}}</div></div>
+          <div style="display:flex;gap:2px">
+            <sc-for list="{{spice}}" as="s" hint-placeholder-count="5"><button onClick="{{s.pick}}" aria-label="Spice level {{s.n}}" style="width:30px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0"><span class="press" style="{{s.style}}"></span></button></sc-for>
+          </div>
+        </div>
+      </div>
+      <div class="rise" style="background:#fffcf5;border-radius:22px;padding:16px;animation-delay:.05s">
+        <div style="font-size:15px;font-weight:700">Cuisines you like</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+          <sc-for list="{{cuisines}}" as="c" hint-placeholder-count="6"><button class="press" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">{{c.label}}</button></sc-for>
+        </div>
+      </div>
+      <div class="rise" style="background:#fffcf5;border-radius:22px;padding:2px 16px;animation-delay:.1s">
+        <button onClick="{{nav.visits}}" style="display:flex;width:100%;justify-content:space-between;align-items:center;min-height:52px;border:none;border-bottom:1px solid #ead7b1;background:none;cursor:pointer;padding:0"><span style="font-size:15px;font-weight:700">Places you’ve been</span><span style="display:flex;align-items:center;gap:8px;font-size:14px;color:#6b4423">{{visitCount}}<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span></button>
+        <button onClick="{{nav.diary}}" style="display:flex;width:100%;justify-content:space-between;align-items:center;min-height:52px;border:none;background:none;cursor:pointer;padding:0"><span style="font-size:15px;font-weight:700">Dish diary</span><span style="display:flex;align-items:center;gap:8px;font-size:14px;color:#6b4423">{{dishCount}}<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg></span></button>
+      </div>
+      <div class="rise" style="background:#fffcf5;border-radius:22px;padding:2px 16px;animation-delay:.15s">
+        <button onClick="{{downloadData}}" style="display:block;width:100%;text-align:left;min-height:50px;border:none;border-bottom:1px solid #ead7b1;background:none;font-size:15px;font-weight:600;cursor:pointer">Download my data</button>
+        <button onClick="{{nav.privacy}}" style="display:block;width:100%;text-align:left;min-height:50px;border:none;border-bottom:1px solid #ead7b1;background:none;font-size:15px;font-weight:600;cursor:pointer">Privacy and terms</button>
+        <button onClick="{{nav.signOut}}" style="display:block;width:100%;text-align:left;min-height:50px;border:none;border-bottom:1px solid #ead7b1;background:none;font-size:15px;font-weight:600;cursor:pointer">Sign out</button>
+        <button onClick="{{nav.askDelete}}" style="display:block;width:100%;text-align:left;min-height:50px;border:none;background:none;font-size:15px;font-weight:600;color:#963c35;cursor:pointer">Delete my account</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 11a · Places you've been -->
+  <sc-if value="{{is.visits}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 28px;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;margin-left:-10px;cursor:pointer">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.8px">Places you’ve been</div>
+      </div>
+      <div style="font-size:14px;color:#6b4423;padding:0 4px;line-height:1.5">Your ratings help us suggest better places. Only you can see this.</div>
+      <sc-if value="{{noVisits}}" hint-placeholder-val="{{false}}">
+        <div style="padding:24px 4px;font-size:15px;color:#6b4423">No visits yet. Log one after your next outing.</div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{visitRows}}" as="v" hint-placeholder-count="4">
+          <div class="rise" style="background:#fffcf5;border-radius:20px;padding:12px 12px 12px 14px;display:flex;align-items:center;gap:12px;animation-delay:{{v.delay}}">
+            <button onClick="{{v.open}}" style="flex:1;min-width:0;display:flex;align-items:center;gap:12px;border:none;background:none;text-align:left;padding:0;cursor:pointer">
+              <span style="width:42px;height:42px;border-radius:14px;background:{{v.tint}};flex-shrink:0"></span>
+              <span style="min-width:0">
+                <span style="display:block;font-size:15px;font-weight:700">{{v.name}}</span>
+                <span style="display:block;font-size:12px;color:#6b4423;margin-top:2px">{{v.when}}</span>
+              </span>
+            </button>
+            <span style="display:flex" aria-label="Your rating">
+              <sc-for list="{{v.dots}}" as="d" hint-placeholder-count="5"><button onClick="{{d.pick}}" aria-label="Rate {{d.n}} of 5" style="width:22px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0"><span class="press" style="{{d.style}}"></span></button></sc-for>
+            </span>
+            <button onClick="{{v.remove}}" aria-label="Remove {{v.name}}" style="width:36px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;color:#8a5a2b;padding:0">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+      <button class="press" onClick="{{addVisit}}" style="margin-top:auto;height:56px;border:none;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:16px;cursor:pointer">Log a visit</button>
+    </div>
+  </sc-if>
+
+  <!-- 11b · Dish diary -->
+  <sc-if value="{{is.diary}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 28px;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;margin-left:-10px;cursor:pointer">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.8px">Dish diary</div>
+      </div>
+      <div role="tablist" aria-label="Filter dishes" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:#f3e4c4;border-radius:24px;padding:4px">
+        <sc-for list="{{dishTabs}}" as="t" hint-placeholder-count="3"><button class="press" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button></sc-for>
+      </div>
+      <sc-if value="{{noDishes}}" hint-placeholder-val="{{false}}">
+        <div style="padding:24px 4px;font-size:15px;color:#6b4423">Nothing here yet.</div>
+      </sc-if>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{dishRows}}" as="d" hint-placeholder-count="5">
+          <div class="rise" style="display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid #ead7b1;animation-delay:{{d.delay}}">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:16px;font-weight:700">{{d.dish}}</div>
+              <div style="font-size:13px;color:#6b4423;margin-top:2px">{{d.where}}</div>
+            </div>
+            <span style="display:flex" aria-label="Your rating for {{d.dish}}">
+              <sc-for list="{{d.dots}}" as="x" hint-placeholder-count="5"><button onClick="{{x.pick}}" aria-label="Rate {{x.n}} of 5" style="width:22px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0"><span class="press" style="{{x.style}}"></span></button></sc-for>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+      <button class="press" onClick="{{addDish}}" style="margin-top:auto;height:56px;border:none;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:16px;cursor:pointer">Add a dish</button>
+    </div>
+  </sc-if>
+
+  <!-- 11c · Privacy and Terms (draft copy for legal review) -->
+  <sc-if value="{{legal.show}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 28px;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;margin-left:-10px;cursor:pointer">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.8px">{{legal.title}}</div>
+      </div>
+      <div role="tablist" aria-label="Legal pages" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;background:#f3e4c4;border-radius:24px;padding:4px">
+        <sc-for list="{{legal.tabs}}" as="t" hint-placeholder-count="2"><button class="press" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button></sc-for>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#8a5a2b;padding:0 4px">Draft for legal review · Last updated 21 Nov 2026</div>
+      <div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{legal.sections}}" as="sec" hint-placeholder-count="4">
+          <div class="rise" style="background:#fffcf5;border-radius:18px;padding:14px 16px">
+            <div style="font-size:15px;font-weight:800">{{sec.h}}</div>
+            <div style="font-size:14px;line-height:1.55;color:#4a2e18;margin-top:4px">{{sec.p}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 12 · Share a find (dark) -->
+  <sc-if value="{{is.share}}" hint-placeholder-val="{{false}}">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 28px;gap:18px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;margin-left:-10px;cursor:pointer;color:#fbf2dc">
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+        </button>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-.8px">Share a <span style="background:#f5c842;color:#1f140c;border-radius:8px;padding:0 6px">find</span></div>
+      </div>
+      <div style="font-size:15px;color:#dec69b;line-height:1.5;padding:0 4px;position:relative">Paste a reel or post link. We check it, and if we can confirm the place, it shows up in Bites.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;position:relative">
+        <label class="field" style="display:flex;flex-direction:column;gap:4px;border:1.5px solid #4a2e18;border-radius:18px;background:#2b1c11;padding:10px 18px">
+          <span style="font-size:12px;font-weight:700;color:#dec69b">Link</span>
+          <input type="url" value="{{link}}" onChange="{{onLink}}" placeholder="instagram.com/reel/…" style="border:none;background:transparent;font:inherit;font-size:16px;color:#fbf2dc;outline:none;padding:0">
+        </label>
+        <button class="press" onClick="{{send}}" style="height:56px;border:none;border-radius:28px;background:#f5c842;color:#1f140c;font-weight:800;font-size:16px;cursor:pointer">Send</button>
+        <label style="position:relative;display:flex;align-items:center;justify-content:center;min-height:44px;font-size:14px;font-weight:700;color:#f5c842;cursor:pointer">
+          Upload a video instead
+          <input type="file" accept="video/*" aria-label="Upload a video" onChange="{{onVideo}}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer">
+        </label>
+      </div>
+      <div style="position:relative;background:#271910;border:1px solid #3a2616;border-radius:22px;padding:14px 16px 4px;display:flex;flex-direction:column">
+      <div style="font-size:16px;font-weight:800;padding-bottom:2px">Your finds</div>
+      <div style="display:flex;flex-direction:column">
+        <sc-for list="{{finds}}" as="f" hint-placeholder-count="3">
+          <div class="rise" style="display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid #3a2616">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{f.title}}</div>
+              <div style="font-size:13px;color:#dec69b;margin-top:2px">{{f.when}}</div>
+            </div>
+            <sc-if value="{{f.checking}}" hint-placeholder-val="{{false}}">
+              <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#f5c842">
+                <svg class="ring" aria-hidden="true" width="16" height="16" viewBox="-8 -8 16 16"><circle cx="0" cy="-6" r="1.6" fill="#f5c842"></circle><circle cx="5.2" cy="-3" r="1.6" fill="#f5c842" style="animation-delay:.2s"></circle><circle cx="5.2" cy="3" r="1.6" fill="#f5c842" style="animation-delay:.4s"></circle><circle cx="0" cy="6" r="1.6" fill="#f5c842" style="animation-delay:.6s"></circle><circle cx="-5.2" cy="3" r="1.6" fill="#f5c842" style="animation-delay:.8s"></circle><circle cx="-5.2" cy="-3" r="1.6" fill="#f5c842" style="animation-delay:1s"></circle></svg>
+                Checking
+              </span>
+            </sc-if>
+            <sc-if value="{{f.added}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;font-weight:700;background:#9bbf65;color:#1f140c;border-radius:12px;padding:4px 10px">Added</span></sc-if>
+            <sc-if value="{{f.unsure}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;font-weight:700;color:#dec69b;border:1.5px solid #4a2e18;border-radius:12px;padding:3px 9px">Couldn’t confirm</span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Tab bar: Home, Explore, Saved only -->
+  <sc-if value="{{showTabs}}" hint-placeholder-val="{{false}}">
+    <nav aria-label="Main" style="position:absolute;left:20px;right:20px;bottom:24px;height:68px;border-radius:34px;background:#1f140c;display:flex;justify-content:space-around;align-items:center;box-shadow:0 16px 30px -16px rgba(31,20,12,.6);z-index:5">
+      <button onClick="{{nav.tabHome}}" aria-label="Home" aria-current="{{tabs.home}}" style="{{tabs.homeStyle}}">
+        <span class="star" style="display:block;width:28px;height:28px;background:#f5c842"></span>
+        <sc-if value="{{tabs.isHome}}" hint-placeholder-val="{{true}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
+      </button>
+      <button onClick="{{nav.tabExplore}}" aria-label="Explore" aria-current="{{tabs.explore}}" style="{{tabs.exploreStyle}}">
+        <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M3 5.5 8.5 3l7 2.5L21 3v15.5L15.5 21l-7-2.5L3 21z"></path><path d="M8.5 3v15.5M15.5 5.5V21"></path><g fill="#9bbf65" stroke="none"><circle cx="5.6" cy="16.2" r=".9"></circle><circle cx="7.6" cy="14.8" r=".9"></circle><circle cx="10.2" cy="14" r=".9"></circle><circle cx="12.6" cy="12.4" r=".9"></circle><circle cx="15.2" cy="11" r=".9"></circle><circle cx="18.2" cy="8.4" r="1.6"></circle></g></svg>
+        <sc-if value="{{tabs.isExplore}}" hint-placeholder-val="{{false}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
+      </button>
+      <button onClick="{{nav.tabSaved}}" aria-label="Saved" aria-current="{{tabs.saved}}" style="{{tabs.savedStyle}}">
+        <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path><circle cx="12" cy="9.5" r="1.6" fill="#9bbf65" stroke="none"></circle></svg>
+        <sc-if value="{{tabs.isSaved}}" hint-placeholder-val="{{false}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
+      </button>
+    </nav>
+  </sc-if>
+
+  <!-- Delete account confirmation -->
+  <sc-if value="{{delOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;inset:0;z-index:20">
+      <button aria-label="Cancel" onClick="{{nav.cancelDelete}}" class="tab" style="position:absolute;inset:0;border:none;background:rgba(31,20,12,.5);cursor:pointer"></button>
+      <div role="alertdialog" aria-label="Delete your account?" class="sheetup" style="position:absolute;left:0;right:0;bottom:0;background:#fbf2dc;border-radius:28px 28px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="align-self:center;width:40px;height:5px;border-radius:3px;background:#dec69b"></span>
+        <div style="font-size:22px;font-weight:800;padding-top:6px">Delete your account?</div>
+        <div style="font-size:15px;line-height:1.55;color:#4a2e18">This removes your taste, saved plans and places, places you’ve been, dish diary and the links you shared. It can’t be undone.</div>
+        <div style="font-size:13px;color:#6b4423">Tip: download your data first from My taste.</div>
+        <button class="press" onClick="{{nav.confirmDelete}}" style="height:56px;border:none;border-radius:28px;background:#963c35;color:#fff;font-weight:800;font-size:16px;cursor:pointer;margin-top:4px">Delete my account</button>
+        <button class="press" onClick="{{nav.cancelDelete}}" style="height:52px;border:1.5px solid #1f140c;border-radius:26px;background:transparent;font-weight:700;font-size:15px;cursor:pointer">Keep my account</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Toast -->
+  <sc-if value="{{toastOn}}" hint-placeholder-val="{{false}}">
+    <div role="status" class="rise" style="position:absolute;left:20px;right:20px;bottom:108px;z-index:30;background:#1f140c;color:#fbf2dc;border-radius:16px;padding:14px 16px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:10px;box-shadow:0 16px 30px -16px rgba(31,20,12,.6)">
+      <span style="width:8px;height:8px;border-radius:50%;background:#9bbf65;flex-shrink:0"></span>{{toast}}
+    </div>
+  </sc-if>
+
+  <!-- Area picker sheet (Home chip and Explore "Change") -->
+  <sc-if value="{{areaOpen}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;inset:0;z-index:20">
+      <button aria-label="Close" onClick="{{nav.closeArea}}" class="tab" style="position:absolute;inset:0;border:none;background:rgba(31,20,12,.45);cursor:pointer"></button>
+      <div role="dialog" aria-label="Choose your area" class="sheetup" style="position:absolute;left:0;right:0;bottom:0;background:#fbf2dc;border-radius:28px 28px 0 0;padding:12px 20px 28px;display:flex;flex-direction:column;gap:8px">
+        <span style="align-self:center;width:40px;height:5px;border-radius:3px;background:#dec69b"></span>
+        <div style="font-size:20px;font-weight:800;padding:8px 4px 4px">Where are you starting from?</div>
+        <button class="press" onClick="{{useHere}}" style="display:flex;align-items:center;gap:12px;min-height:52px;padding:0 14px;border:1.5px solid #ead7b1;border-radius:18px;background:#fffcf5;font-size:15px;font-weight:700;cursor:pointer;text-align:left">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8962e" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
+          Use my current location
+        </button>
+        <div style="display:flex;flex-direction:column;margin-top:4px">
+          <sc-for list="{{areas}}" as="a" hint-placeholder-count="6">
+            <button onClick="{{a.pick}}" aria-pressed="{{a.on}}" style="display:flex;align-items:center;justify-content:space-between;min-height:50px;padding:0 4px;border:none;border-bottom:1px solid #ead7b1;background:none;font-size:15px;font-weight:{{a.weight}};cursor:pointer;text-align:left">
+              {{a.label}}
+              <sc-if value="{{a.isOn}}" hint-placeholder-val="{{false}}"><span style="width:10px;height:10px;border-radius:50%;background:#f5c842;box-shadow:0 0 0 2px #c8962e"></span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const PLANS = [
+  { id: 'p1', title: 'Coffee, a walk and dosa', time: '3 hrs', hrs: 3, cost: 540, when: 'Tonight · 6–9 pm',
+    stops: [['6:00', 'Quiet café', 'Filter coffee · 45 min'], ['7:00', 'Race Course walk', 'Evening loop · 40 min'], ['7:55', 'Dosa place', 'Dinner · 1 hr']],
+    alt: ['7:55', 'Biryani house', 'Dinner · 1 hr'] },
+  { id: 'p2', title: 'Board games and street food', time: '2.5 hrs', hrs: 2.5, cost: 620, when: 'Sat 23 Nov · 7–9:30 pm',
+    stops: [['7:00', 'Board game café', 'Two rounds · 1 hr 30 min'], ['8:45', 'Street food lane', 'Shared plates · 45 min']],
+    alt: ['8:45', 'Dosa place', 'Dinner · 45 min'] },
+  { id: 'p3', title: 'Dinner, live music and dessert', time: '3.5 hrs', hrs: 3.5, cost: 780, when: 'Tonight · 7–10:30 pm',
+    stops: [['7:00', 'Rooftop restaurant', 'Book ahead · 1 hr 15 min'], ['8:30', 'Open mic night', 'From 8 pm · 1 hr 30 min'], ['10:05', 'Quiet café', 'Coffee · 20 min']],
+    alt: ['10:05', 'Street food lane', 'Late bites · 20 min'] }
+];
+const PLACES = {
+  'Dosa place': { cat: 'food', kind: 'South Indian', area: 'RS Puram', price: '₹150', unit: 'Per person', open: true, hours: 'Until 10:30 pm', mins: '12 min', popular: ['Ghee roast', 'Podi dosa', 'Filter coffee'], notes: ['Busiest between 8 and 9 pm', 'Cash and UPI', 'Vegetarian only'], tint: '#f5c842' },
+  'Street food lane': { cat: 'food', kind: 'Chaat and grills', area: 'Gandhipuram', price: '₹200', unit: 'Per person', open: true, hours: 'Until 10 pm', mins: '18 min', popular: ['Pani puri', 'Kothu parotta', 'Grilled corn'], notes: ['Stalls open after 5 pm', 'Cash and UPI', 'Standing only'], tint: '#c8962e' },
+  'Quiet café': { cat: 'food', kind: 'Coffee', area: 'RS Puram', price: '₹120', unit: 'Per person', open: false, hours: 'Opens 4 pm', mins: '8 min', popular: ['Filter coffee', 'Banana bread'], notes: ['Good for talking', 'Cards and UPI'], tint: '#dec69b' },
+  'Biryani house': { cat: 'food', kind: 'Biryani', area: 'Peelamedu', price: '₹300', unit: 'Per person', open: true, hours: 'Until 11 pm', mins: '22 min', popular: ['Mutton biryani', 'Chicken 65'], notes: ['Busy on weekends', 'Family seating'], tint: '#8a5a2b' },
+  'Open mic night': { cat: 'do', kind: 'Music', area: 'Race Course', price: '₹250', unit: 'Entry', open: true, hours: 'From 8 pm', mins: '15 min', popular: ['Acoustic sets', 'Stand-up'], notes: ['Seats fill by 8:15 pm', 'Food available'], tint: '#f5c842' },
+  'Board game café': { cat: 'do', kind: 'Games', area: 'Saibaba Colony', price: '₹250', unit: 'Per hour', open: true, hours: 'Until 11 pm', mins: '16 min', popular: ['Catan', 'Codenames', 'Cold coffee'], notes: ['Book a table for 4 or more', 'Staff teach the games'], tint: '#c8962e' },
+  'Race Course walk': { cat: 'do', kind: 'Outdoors', area: 'Race Course', price: 'Free', unit: 'Entry', open: true, hours: 'Open all day', mins: '10 min', popular: ['Evening loop', 'Sunset'], notes: ['Lit until 9 pm', 'Parking on the east side'], tint: '#dec69b' },
+  'Bowling alley': { cat: 'do', kind: 'Bowling', area: 'Avinashi Road', price: '₹400', unit: 'Per game', open: false, hours: 'Opens 11 am', mins: '25 min', popular: ['Bowling', 'Arcade'], notes: ['Socks needed', 'Busy on weekends'], tint: '#8a5a2b' },
+  'Rooftop restaurant': { cat: 'food', kind: 'Dinner', area: 'Race Course', price: '₹650', unit: 'Per person', open: true, hours: 'Until 11 pm', mins: '14 min', popular: ['Grills', 'Mocktails'], notes: ['Book ahead', 'Live music on Fridays'], tint: '#c8962e' }
+};
+const MOODS = ['Chill', 'Hyped', 'Low-key', 'Curious', 'Hungry'];
+const PEOPLE = [['Just me', 1], ['A date', 2], ['Family', 4], ['The gang', 3]];
+const INTERESTS = ['Coffee', 'Gaming', 'Live music', 'Street food', 'Outdoors', 'Movies'];
+const CUISINES = ['South Indian', 'Chettinad', 'North Indian', 'Chinese', 'Italian', 'Desserts'];
+const DARK = { welcome: 1, signin: 1, planning: 1, share: 1 };
+const TABS = { home: 1, explore: 1, saved: 1 };
+const WORDS = ['No plans', 'One plan', 'Two plans', 'Three plans'];
+
+// ---- Hero: the Batore site's dot star (lib/site-engine.js, DotStar), in the Bites palette ----
+const HW = 390, HH = 844;
+const HCX = HW / 2, HHY = 300, HF = Math.min(HH * 0.95, HW * 1.1);
+const HCZ = 4.6, HCY = 1.05, HWL = -0.95, HSC = 1.1;
+const STOPS = [[245, 200, 66], [251, 242, 220], [200, 150, 46], [224, 168, 74], [245, 200, 66]];
+function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function eOut3(t) { return 1 - Math.pow(1 - t, 3); }
+function rng(seed) { let s = seed >>> 0; return function () { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function palette(u, white) {
+  const x = ((u % 1) + 1) % 1 * (STOPS.length - 1);
+  const i = Math.floor(x), f = x - i, a = STOPS[i], b = STOPS[i + 1];
+  const r = lerp(a[0], b[0], f), g = lerp(a[1], b[1], f), bl = lerp(a[2], b[2], f);
+  return 'rgb(' + Math.round(lerp(r, 251, white)) + ',' + Math.round(lerp(g, 242, white)) + ',' + Math.round(lerp(bl, 220, white)) + ')';
+}
+function wave(x, z, t) { return 0.055 * Math.sin(x * 0.7 + t * 0.9 + z * 0.2) + 0.04 * Math.sin(z * 1.1 - t * 1.4) + 0.025 * Math.sin((x - z) * 1.7 + t * 1.9); }
+function buildStar() {
+  const R = rng(7), grid = 0.062, P = 0.58, SH = 0.42, pts = [];
+  for (let v = -1; v <= 1.0001; v += grid) {
+    for (let u = -1; u <= 1.0001; u += grid) {
+      const d = Math.pow(Math.pow(Math.abs(u), P) + Math.pow(Math.abs(v), P), 1 / P);
+      if (d > 1) continue;
+      const w = 1 - d, r = 0.52 * grid * Math.pow(w, 0.36);
+      if (r < 0.08 * grid) continue;
+      const th = 0.17 * Math.pow(w, 0.8), ks = th < grid * 0.6 ? [0] : [-1, 0, 1];
+      for (const k of ks) {
+        const outer = Math.abs(k) === 1 || ks.length === 1;
+        const th2 = R() * Math.PI * 2, ph = Math.acos(2 * R() - 1), rad = 2.2 + R() * 3.4;
+        const g = Math.min(1, w * 1.8), lift = Math.pow(w, 1.6) * 0.42;
+        const c0 = [lerp(lerp(214, 245, g), 251, lift), lerp(lerp(158, 200, g), 242, lift), lerp(lerp(52, 66, g), 220, lift)];
+        pts.push({ x: (u + SH * v) * 0.82, y: v, z: k * th, r: outer ? r : r * 0.72, b: outer ? 1 : 0.35, w, c0,
+          ang: Math.atan2(v, u), dl: (1 - w) * 0.6 + R() * 0.4, ph: R() * Math.PI * 2,
+          sx: Math.cos(th2) * Math.sin(ph) * rad * 1.2, sy: Math.cos(ph) * rad * 0.6 + 0.5, sz: Math.sin(th2) * Math.sin(ph) * rad * 0.5,
+          ox: 0, oy: 0, px: 0, py: 0, pr: 0, pb: 0, col: '', wx: 0, wy: 0, wz: 0 });
+      }
+    }
+  }
+  const xs = [], zs = [];
+  for (let x = -14; x <= 14; x += 0.3) xs.push(x);
+  for (let z = 2.0; z < 40; z *= 1.075) zs.push(z);
+  return { pts, xs, zs };
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.heroRef = (el) => this.startHero(el);
+    this.state = {
+      screen: 'welcome', stack: [], anim: 'tab', name: 'Karthik', area: 'RS Puram', areaOpen: false,
+      mood: 'Chill', people: 'A date', budget: 6, leave: '7 pm', hoursK: 4, budgetMode: 'person', picks: { 'Coffee': true, 'Live music': true },
+      pick: 0, planId: 'p1', locked: {}, swapped: {}, savedPlans: ['p2'], savedPlaces: ['Dosa place', 'Board game café'],
+      place: 'Dosa place', cat: 'food', query: '', savedTab: 'plans',
+      diet: 'Veg', spice: 2, likes: { 'South Indian': true, 'Chettinad': true, 'Desserts': true },
+      visits: [
+        { place: 'Dosa place', when: 'Sat 16 Nov · with 3 people', rating: 5 },
+        { place: 'Board game café', when: 'Fri 8 Nov · with 4 people', rating: 4 },
+        { place: 'Race Course walk', when: 'Sun 3 Nov · with 2 people', rating: 4 },
+        { place: 'Rooftop restaurant', when: 'Sat 26 Oct · with 2 people', rating: 3 },
+        { place: 'Street food lane', when: 'Fri 18 Oct · with 5 people', rating: 2 }
+      ],
+      dishFilter: 'all',
+      dishes: [
+        { dish: 'Ghee roast', place: 'Dosa place', rating: 5 },
+        { dish: 'Filter coffee', place: 'Quiet café', rating: 5 },
+        { dish: 'Kothu parotta', place: 'Street food lane', rating: 4 },
+        { dish: 'Podi dosa', place: 'Dosa place', rating: 4 },
+        { dish: 'Grills platter', place: 'Rooftop restaurant', rating: 3 },
+        { dish: 'Pani puri', place: 'Street food lane', rating: 2 }
+      ],
+      link: '', finds: [
+        { title: 'Reel about a dosa place', when: '1 hour ago', status: 'checking' },
+        { title: 'Reel from @coimbatorefoodie', when: 'Yesterday', status: 'added' },
+        { title: 'Post about a rooftop café', when: '3 days ago', status: 'unsure' }
+      ]
+    };
+  }
+  componentDidMount() { this.arm(); }
+  componentDidUpdate() { this.arm(); }
+  componentWillUnmount() { clearTimeout(this.timer); cancelAnimationFrame(this.raf); }
+
+  // ---- hero canvas ----
+  startHero(el) {
+    if (!el) { cancelAnimationFrame(this.raf); this.heroEl = null; return; }
+    if (this.heroEl === el) return;
+    this.heroEl = el;
+    if (!this.star) this.star = buildStar();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    el.width = HW * dpr; el.height = HH * dpr;
+    const ctx = el.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.mx = -999; this.my = -999;
+    const point = (e) => { const r = el.getBoundingClientRect(); this.mx = (e.clientX - r.left) * HW / r.width; this.my = (e.clientY - r.top) * HH / r.height; };
+    el.addEventListener('pointermove', point);
+    el.addEventListener('pointerdown', point);
+    el.addEventListener('pointerleave', () => { this.mx = -999; this.my = -999; });
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const t0 = performance.now();
+    let last = t0;
+    const loop = (now) => {
+      if (this.heroEl !== el) return;
+      const t = reduced ? 30 : (now - t0) / 1000;
+      this.drawHero(ctx, t, Math.min(0.05, (now - last) / 1000), reduced);
+      last = now;
+      if (!reduced) this.raf = requestAnimationFrame(loop);
+    };
+    this.raf = requestAnimationFrame(loop);
+  }
+  drawHero(ctx, t, dt, reduced) {
+    const { pts, xs, zs } = this.star;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#1f140c';
+    ctx.fillRect(0, 0, HW, HH);
+    ctx.globalCompositeOperation = 'lighter';
+    // sea of dots (no spotlight)
+    for (let j = 0; j < zs.length; j++) {
+      const z = zs[j], k = HF / z;
+      const rowA = clamp((z - 2.0) / 1.2) * clamp(1 - (z - 10) / 30);
+      if (rowA <= 0.004) continue;
+      const r = Math.max(0.6, 0.012 * k);
+      for (let c = 0; c < xs.length; c++) {
+        const x = xs[c], X = HCX + x * k;
+        if (X < -6 || X > HW + 6) continue;
+        const Y = HHY - (HWL + wave(x, z, t)) * k;
+        const hl = Math.exp(-(x * x) / (0.5 + z * 0.06)) * Math.exp(-((z - HCZ - 1) * (z - HCZ - 1)) / 25);
+        const sp = 0.5 + 0.5 * Math.sin(x * 3.1 + z * 2.3 + t * 2.2 + Math.sin(z * 0.9 - t) * 2);
+        let b = 0.13 + hl * (0.12 + 0.8 * sp * sp * sp);
+        const dx = X - this.mx, dy = Y - this.my, md = dx * dx + dy * dy;
+        if (md < 30000) b += 0.5 * Math.exp(-md / 6000);
+        const a = b * rowA;
+        if (a < 0.012) continue;
+        ctx.globalAlpha = a > 1 ? 1 : a;
+        ctx.fillStyle = b > 0.3 ? '#f5c842' : '#c8962e';
+        if (r < 1.4) ctx.fillRect(X - r, Y - r, r * 2, r * 2);
+        else { ctx.beginPath(); ctx.arc(X, Y, r, 0, 6.2832); ctx.fill(); }
+      }
+    }
+    // star: transform, assemble, project
+    // fixed three-quarter view; tilts a little toward the pointer (parallax) and settles back. No auto rotation.
+    const tilt = this.tilt || (this.tilt = { y: 0, p: 0.1 });
+    const has = this.mx > -900;
+    const starY = HHY - HCY * (HF / HCZ);
+    const ty = has ? (clamp(this.mx / HW) - 0.5) * 0.4 : 0;
+    const tp = 0.1 + (has ? (clamp((this.my - starY) / HH + 0.5) - 0.5) * 0.3 : 0);
+    const ease = reduced ? 1 : 1 - Math.exp(-3 * dt);
+    tilt.y += (ty - tilt.y) * ease; tilt.p += (tp - tilt.p) * ease;
+    const yaw = tilt.y, pitch = tilt.p;
+    const cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(pitch), spp = Math.sin(pitch);
+    const kk = 1 - Math.exp(-11 * dt), MR = 90;
+    const SCb = HSC, hueT = t * 0.12;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      const X = p.x * cyw + p.z * syw, Z = -p.x * syw + p.z * cyw;
+      const Y2 = p.y * cp - Z * spp, Z2 = p.y * spp + Z * cp;
+      let X0 = X * SCb, Y0 = Y2 * SCb + HCY + Math.sin(t * 1.3 + p.ph) * 0.01, Z0 = Z2 * SCb + HCZ;
+      const e = reduced ? 1 : eOut3(clamp((t - 0.2 - p.dl * 0.9) / 1.6));
+      if (e < 1) {
+        const ang = (1 - e) * 2.4 * (i & 1 ? 1 : -1), ca = Math.cos(ang), sa = Math.sin(ang);
+        const qx = p.sx + Math.sin(t * 0.35 + p.ph) * 0.35, qy = p.sy + Math.cos(t * 0.3 + p.ph * 1.3) * 0.25, qz = p.sz;
+        X0 = lerp(qx * ca + qz * sa, X0, e); Y0 = lerp(HCY + qy, Y0, e); Z0 = lerp(HCZ - qx * sa + qz * ca, Z0, e);
+      }
+      if (Z0 < 0.35) { p.px = -1e4; continue; }
+      const k = HF / Z0;
+      let Xs = HCX + X0 * k, Ys = HHY - Y0 * k, tx = 0, ty = 0;
+      const dx = Xs - this.mx, dy = Ys - this.my, d2 = dx * dx + dy * dy;
+      if (d2 < MR * MR && d2 > 0.01) { const d = Math.sqrt(d2), q = 1 - d / MR, push = q * q * 40; tx = (dx / d) * push; ty = (dy / d) * push; }
+      p.ox += (tx - p.ox) * kk; p.oy += (ty - p.oy) * kk;
+      p.px = Xs + p.ox; p.py = Ys + p.oy; p.pr = p.r * SCb * k;
+      const depthB = 0.5 + 0.5 * clamp(0.5 - Z2 / 0.6);
+      p.pb = (p.b * depthB + 0.18 * clamp(p.y)) * (0.3 + 0.7 * e) * (1 - 0.25 * p.w);
+      p.col = palette(0.5 - 0.5 * Math.cos(p.ang + hueT * 6.2832), Math.pow(p.w, 1.5) * 0.5);
+      p.wx = X0; p.wy = Y0; p.wz = Z0;
+    }
+    // reflection, mirrored about the water line and rippled
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      if (p.px < -9e3) continue;
+      const wl = HWL + wave(p.wx, p.wz, t);
+      if (p.wy < wl) continue;
+      const k = HF / p.wz, wsy = HHY - wl * k;
+      let Y = HHY - (2 * wl - p.wy) * k;
+      const depth = Y - wsy, X = p.px + Math.sin(Y * 0.085 + t * 2.4 + p.wz) * depth * 0.07;
+      Y += Math.sin(X * 0.04 + t * 1.6) * 1.6;
+      const a = p.pb * 0.3 * clamp(1 - depth / (HH * 0.14));
+      if (a < 0.01) continue;
+      ctx.globalAlpha = a; ctx.fillStyle = p.col;
+      ctx.beginPath(); ctx.arc(X, Y, Math.max(0.5, p.pr * 0.9), 0, 6.2832); ctx.fill();
+    }
+    // the star itself, far dots first so near dots overlap them (depth)
+    const order = this.order || (this.order = pts.map((_, i) => i));
+    order.sort((a, b) => pts[b].wz - pts[a].wz);
+    for (let n = 0; n < order.length; n++) {
+      const p = pts[order[n]];
+      if (p.px < -9e3) continue;
+      ctx.globalAlpha = p.pb > 1 ? 1 : p.pb;
+      ctx.fillStyle = p.col;
+      ctx.beginPath(); ctx.arc(p.px, p.py, Math.max(0.5, p.pr), 0, 6.2832); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // ---- navigation ----
+  arm() {
+    if (this.state.screen === 'planning') {
+      if (!this.timer) this.timer = setTimeout(() => { this.timer = null; if (this.state.screen === 'planning') this.replace('plans'); }, 4200);
+    } else if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+  }
+  go(screen, extra) { this.setState(Object.assign({ screen, stack: this.state.stack.concat(this.state.screen), anim: 'fwd' }, extra || {})); }
+  replace(screen) { this.setState({ screen, anim: 'fwd' }); }
+  tab(screen) { this.setState({ screen, stack: [], anim: 'tab' }); }
+  back() {
+    const st = this.state.stack.slice();
+    const prev = st.pop() || 'home';
+    this.setState({ screen: prev === 'planning' ? 'vibe' : prev, stack: st, anim: 'back' });
+  }
+  chip(on) {
+    return 'min-height:44px;padding:0 16px;border-radius:22px;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid ' +
+      (on ? '#c8962e;background:#f5c842;color:#1f140c' : '#ead7b1;background:#fffcf5;color:#4a2e18');
+  }
+  openPlace(name) { if (PLACES[name]) this.go('place', { place: name }); }
+  planStops(p) {
+    const stops = p.stops.slice();
+    if (this.state.swapped[p.id]) stops[stops.length - 1] = p.alt;
+    return stops;
+  }
+  renderVals() {
+    const s = this.state;
+    const screen = s.screen;
+    const is = {}; ['welcome', 'signin', 'home', 'vibe', 'planning', 'plans', 'plan', 'explore', 'place', 'saved', 'taste', 'visits', 'diary', 'share', 'legal'].forEach((k) => { is[k] = screen === k; });
+    const dark = !!DARK[screen];
+    const budgetVal = 200 + s.budget * 100;
+    const budgetText = budgetVal.toLocaleString('en-IN');
+    const hoursVal = 1 + s.hoursK * 0.5;
+    const hoursText = hoursVal === 1 ? '1 hr' : hoursVal + ' hrs';
+    const headCount = (PEOPLE.find((p) => p[0] === s.people) || ['', 1])[1];
+    const isTotal = s.budgetMode === 'total';
+    const money = (v) => v.toLocaleString('en-IN');
+    const budgetShown = money(isTotal ? budgetVal * headCount : budgetVal);
+    const budgetUnit = isTotal ? 'total for ' + headCount + (headCount === 1 ? ' person' : ' people') : 'per person';
+    const budgetLo = money(isTotal ? 200 * headCount : 200), budgetHi = money(isTotal ? 1300 * headCount : 1300);
+    const budgetModes = [['person', 'Per person'], ['total', 'Total']].map(([id, label]) => {
+      const on = s.budgetMode === id;
+      return { label, on: String(on), pick: () => this.setState({ budgetMode: id }), style: 'min-height:32px;padding:0 12px;border:none;border-radius:13px;font-size:12px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') };
+    });
+    const PRESETS = ['Now', '6 pm', '7 pm', '8 pm'];
+    const compact = (on) => 'flex:0 0 auto;min-height:44px;padding:0 13px;border-radius:22px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px solid ' + (on ? '#c8962e;background:#f5c842;color:#1f140c' : '#ead7b1;background:#fffcf5;color:#4a2e18');
+    const leaves = PRESETS.map((label) => {
+      const on = s.leave === label;
+      return { label, on: String(on), style: compact(on), pick: () => this.setState({ leave: label }) };
+    });
+    const customLeave = PRESETS.indexOf(s.leave) < 0;
+    const clockStyle = 'position:relative;flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;min-width:44px;border-radius:22px;cursor:pointer;box-sizing:border-box;' +
+      (customLeave ? 'padding:0 12px;border:1.5px solid #c8962e;background:#f5c842;color:#1f140c' : 'padding:0;border:1.5px solid #ead7b1;background:#fffcf5;color:#8a5a2b');
+    const onTime = (e) => {
+      const v = e.target.value; if (!v) return;
+      const [hh, mm] = v.split(':').map(Number);
+      const h12 = hh % 12 === 0 ? 12 : hh % 12, ap = hh < 12 ? 'am' : 'pm';
+      this.setState({ leave: h12 + (mm ? ':' + String(mm).padStart(2, '0') : '') + ' ' + ap, leaveTime: v });
+    };
+    const openTime = (e) => { try { if (e.target.showPicker) e.target.showPicker(); } catch (err) { /* picker opens on focus instead */ } };
+    const tdots = Array.from({ length: 11 }, (_, k) => {
+      const size = Math.min(8 + k, 18), h = 1 + k * 0.5;
+      return { label: (h === 1 ? '1 hr' : h + ' hrs'), pick: () => this.setState({ hoursK: k }),
+        style: 'display:block;border-radius:50%;width:' + size + 'px;height:' + size + 'px;background:' + (k <= s.hoursK ? (k === s.hoursK ? '#1f140c' : '#f5c842') : '#ead7b1') };
+    });
+
+    const nav = {
+      back: () => this.back(),
+      signin: () => this.go('signin'),
+      signedIn: () => this.setState({ screen: 'home', stack: [], anim: 'fwd', name: 'Karthik' }),
+      guest: () => this.setState({ screen: 'home', stack: [], anim: 'fwd', name: 'there' }),
+      vibe: () => this.go('vibe'),
+      planning: () => this.go('planning', { pick: 0 }),
+      plansNow: () => this.replace('plans'),
+      taste: () => this.go('taste'),
+      visits: () => this.go('visits'),
+      diary: () => this.go('diary'),
+      share: () => this.go('share'),
+      signOut: () => this.setState({ screen: 'welcome', stack: [], anim: 'back', name: 'Karthik' }),
+      terms: () => this.go('legal', { legalTab: 'terms' }),
+      privacy: () => this.go('legal', { legalTab: 'privacy' }),
+      askDelete: () => this.setState({ delOpen: true }),
+      cancelDelete: () => this.setState({ delOpen: false }),
+      confirmDelete: () => this.setState({ delOpen: false, screen: 'welcome', stack: [], anim: 'back', savedPlans: [], savedPlaces: [], visits: [], dishes: [], finds: [], likes: {}, picks: {} }),
+      openArea: () => this.setState({ areaOpen: true }),
+      closeArea: () => this.setState({ areaOpen: false }),
+      tabHome: () => this.tab('home'),
+      tabExplore: () => this.tab('explore'),
+      tabSaved: () => this.tab('saved'),
+      choosePlan: () => {
+        const fitsNow = PLANS.filter((p) => p.cost <= budgetVal && p.hrs <= hoursVal);
+        const p = fitsNow[Math.min(s.pick, fitsNow.length - 1)];
+        if (!p) return;
+        const saved = s.savedPlans.indexOf(p.id) >= 0 ? s.savedPlans : s.savedPlans.concat(p.id);
+        this.go('plan', { planId: p.id, savedPlans: saved });
+      }
+    };
+
+    const quick = [['Something chill', 'Chill'], ['Food first', 'Hungry'], ['Surprise me', 'Curious']].map(([label, mood]) => ({ label, go: () => this.go('planning', { mood, pick: 0 }) }));
+    const up = PLANS.find((p) => p.id === 'p2');
+    const upcoming = { has: s.savedPlans.indexOf('p2') >= 0, title: up.title, open: () => this.go('plan', { planId: 'p2' }) };
+
+    const moods = MOODS.map((label) => { const on = s.mood === label; return { label, on: String(on), style: this.chip(on), pick: () => this.setState({ mood: label }) }; });
+    const people = PEOPLE.map(([label, n]) => {
+      const on = s.people === label;
+      return { label, on: String(on), dots: Array.from({ length: n }, (_, k) => ({ k })), pick: () => this.setState({ people: label }),
+        style: 'min-height:64px;padding:8px 4px;border-radius:16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;border:1.5px solid ' + (on ? '#c8962e;background:#f5c842;color:#1f140c' : '#ead7b1;background:#fffcf5;color:#8a5a2b') };
+    });
+    const bdots = Array.from({ length: 12 }, (_, k) => {
+      const size = Math.min(8 + k, 18);
+      return { value: 200 + k * 100, pick: () => this.setState({ budget: k }),
+        style: 'display:block;border-radius:50%;width:' + size + 'px;height:' + size + 'px;background:' + (k <= s.budget ? (k === s.budget ? '#1f140c' : '#f5c842') : '#ead7b1') };
+    });
+    const interests = INTERESTS.map((label) => { const on = !!s.picks[label]; return { label, on: String(on), style: this.chip(on), pick: () => this.setState({ picks: Object.assign({}, s.picks, { [label]: !on }) }) }; });
+
+    const ticks = Array.from({ length: 24 }, (_, i) => { const a = (i / 24) * Math.PI * 2 - Math.PI / 2; return { x: (78 * Math.cos(a)).toFixed(1), y: (78 * Math.sin(a)).toFixed(1), r: i % 6 === 0 ? 5 : 3, delay: ((i / 24) * 2.4).toFixed(2) + 's' }; });
+    const hand = Array.from({ length: 6 }, (_, k) => ({ y: -(16 + k * 10), r: (4 - k * 0.4).toFixed(1) }));
+
+    const fits = PLANS.filter((p) => p.cost <= budgetVal && p.hrs <= hoursVal);
+    const pick = Math.min(s.pick, Math.max(fits.length - 1, 0));
+    const planCards = fits.map((p, k) => ({
+      title: p.title, time: p.time, cost: p.cost, active: k === pick,
+      stops: this.planStops(p).map((st, j, arr) => ({ name: st[1], note: st[2], more: j < arr.length - 1, delay: (0.12 + j * 0.08) + 's' }))
+    }));
+    const pagers = fits.map((_, k) => { const on = k === pick; return { n: k + 1, on: String(on), pick: () => this.setState({ pick: k }), style: 'display:block;height:8px;border-radius:4px;width:' + (on ? 24 : 8) + 'px;background:' + (on ? '#1f140c' : '#dec69b') }; });
+
+    const P = PLANS.find((p) => p.id === s.planId) || PLANS[0];
+    const planSaved = s.savedPlans.indexOf(P.id) >= 0;
+    const plan = {
+      title: P.title, when: P.when, cost: P.cost, time: P.time, saved: String(planSaved),
+      saveLabel: planSaved ? 'Remove from saved' : 'Save plan', saveFill: planSaved ? '#1f140c' : 'none',
+      saveStyle: 'width:44px;height:44px;border:none;border-radius:22px;display:grid;place-items:center;cursor:pointer;background:' + (planSaved ? '#f5c842' : 'transparent'),
+      toggleSave: () => this.setState({ savedPlans: planSaved ? s.savedPlans.filter((x) => x !== P.id) : s.savedPlans.concat(P.id) }),
+      swapLabel: s.swapped[P.id] ? 'Undo swap' : 'Swap last stop',
+      swap: () => this.setState({ swapped: Object.assign({}, s.swapped, { [P.id]: !s.swapped[P.id] }) }),
+      stops: this.planStops(P).map((st, k) => {
+        const key = P.id + k; const locked = !!s.locked[key]; const name = st[1];
+        return { time: st[0], name, note: st[2], delay: (0.25 + k * 0.08) + 's', locked: String(locked), open: () => this.openPlace(name),
+          lockLabel: (locked ? 'Unlock ' : 'Lock ') + name,
+          shackle: locked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2',
+          lockStyle: 'width:44px;height:44px;border-radius:22px;border:none;display:grid;place-items:center;cursor:pointer;flex-shrink:0;' + (locked ? 'background:#f5c842;color:#1f140c' : 'background:transparent;color:#8a5a2b'),
+          toggle: () => this.setState({ locked: Object.assign({}, s.locked, { [key]: !locked }) }) };
+      })
+    };
+
+    const cats = [['food', 'Food'], ['do', 'Things to do']].map(([id, label]) => {
+      const on = s.cat === id;
+      return { label, on: String(on), isFood: id === 'food', isDo: id === 'do', pick: () => this.setState({ cat: id, query: '' }),
+        style: 'position:relative;overflow:hidden;height:112px;border-radius:24px;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#1f140c;' + (on ? 'box-shadow:0 0 0 3px #f5c842' : 'opacity:.82') };
+    });
+    const q = s.query.trim().toLowerCase();
+    const results = Object.keys(PLACES).filter((n) => (q ? (n + ' ' + PLACES[n].kind + ' ' + PLACES[n].area).toLowerCase().indexOf(q) >= 0 : PLACES[n].cat === s.cat))
+      .slice(0, 5).map((name, k) => { const p = PLACES[name]; return { name, tint: p.tint, closed: !p.open, note: p.kind + ' · ' + p.price + (p.price === 'Free' ? '' : ' ' + p.unit.toLowerCase()), delay: (k * 0.05) + 's', open: () => this.openPlace(name) }; });
+
+    const PL = PLACES[s.place];
+    const placeSaved = s.savedPlaces.indexOf(s.place) >= 0;
+    const place = {
+      mapsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(s.place + ', ' + PL.area + ', Coimbatore'),
+      name: s.place, kind: PL.kind, area: PL.area, price: PL.price, priceUnit: PL.unit, mins: PL.mins, hours: PL.hours,
+      status: PL.open ? 'Open' : 'Closed', statusColor: PL.open ? '#2e6b3e' : '#8a5a2b',
+      popular: PL.popular.map((label) => ({ label })), notes: PL.notes.map((label) => ({ label })),
+      saved: String(placeSaved), saveLabel: placeSaved ? 'Remove from saved' : 'Save place', saveFill: placeSaved ? '#1f140c' : 'none',
+      saveStyle: 'width:44px;height:44px;border:none;border-radius:22px;display:grid;place-items:center;cursor:pointer;background:' + (placeSaved ? '#f5c842' : '#fffcf5'),
+      toggleSave: () => this.setState({ savedPlaces: placeSaved ? s.savedPlaces.filter((x) => x !== s.place) : s.savedPlaces.concat(s.place) })
+    };
+
+    const savedTabs = [['plans', 'Plans'], ['places', 'Places']].map(([id, label]) => {
+      const on = s.savedTab === id;
+      return { label, on: String(on), pick: () => this.setState({ savedTab: id }), style: 'min-height:44px;border:none;border-radius:20px;font-size:15px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') };
+    });
+    const savedPlanCards = s.savedPlans.map((id, k) => {
+      const p = PLANS.find((x) => x.id === id); const soon = id === 'p2';
+      return { title: p.title, soon, notSoon: !soon, when: soon ? 'Sat 23 Nov · 7 pm' : 'No date yet', meta: this.planStops(p).length + ' stops · About ₹' + p.cost + ' per person', delay: (k * 0.05) + 's', open: () => this.go('plan', { planId: id }) };
+    });
+    const savedPlaceRows = s.savedPlaces.map((name, k) => ({ name, tint: PLACES[name].tint, note: PLACES[name].kind + ' · ' + PLACES[name].area, delay: (k * 0.05) + 's', open: () => this.openPlace(name) }));
+    const showSavedPlans = s.savedTab === 'plans' && savedPlanCards.length > 0;
+    const showSavedPlaces = s.savedTab === 'places' && savedPlaceRows.length > 0;
+
+    const diets = ['Veg', 'Non-veg'].map((label) => { const on = s.diet === label; return { label, on: String(on), pick: () => this.setState({ diet: label }), style: 'min-height:36px;padding:0 14px;border:none;border-radius:17px;font-size:14px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') }; });
+    const spice = Array.from({ length: 5 }, (_, k) => ({ n: k + 1, pick: () => this.setState({ spice: k }), style: 'display:block;width:' + (10 + k * 2) + 'px;height:' + (10 + k * 2) + 'px;border-radius:50%;background:' + (k <= s.spice ? (k === s.spice ? '#1f140c' : '#f5c842') : '#ead7b1') }));
+    const cuisines = CUISINES.map((label) => { const on = !!s.likes[label]; return { label, on: String(on), style: this.chip(on).replace('min-height:44px', 'min-height:40px'), pick: () => this.setState({ likes: Object.assign({}, s.likes, { [label]: !on }) }) }; });
+
+    const rateDots = (rating, set) => Array.from({ length: 5 }, (_, k) => ({
+      n: k + 1, pick: () => set(k + 1),
+      style: 'display:block;width:10px;height:10px;border-radius:50%;background:' + (k < rating ? '#f5c842' : '#ead7b1') + (k < rating ? ';box-shadow:0 0 0 1px #c8962e' : '')
+    }));
+    const visitRows = s.visits.map((v, i) => ({
+      name: v.place, when: v.when, tint: PLACES[v.place].tint, delay: (i * 0.05) + 's',
+      open: () => this.openPlace(v.place),
+      remove: () => this.setState({ visits: s.visits.filter((_, j) => j !== i) }),
+      dots: rateDots(v.rating, (r) => this.setState({ visits: s.visits.map((x, j) => (j === i ? Object.assign({}, x, { rating: r }) : x)) }))
+    }));
+    const addVisit = () => {
+      const pool = Object.keys(PLACES).filter((n) => !s.visits.some((v) => v.place === n));
+      const name = pool[0] || 'Dosa place';
+      this.setState({ visits: [{ place: name, when: 'Today · with 2 people', rating: 0 }].concat(s.visits) });
+    };
+    const dishTabs = [['all', 'All'], ['loved', 'Loved'], ['not', 'Not for me']].map(([id, label]) => {
+      const on = s.dishFilter === id;
+      return { label, on: String(on), pick: () => this.setState({ dishFilter: id }), style: 'min-height:40px;border:none;border-radius:18px;font-size:14px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') };
+    });
+    const dishRows = s.dishes.map((d, i) => ({ d, i }))
+      .filter(({ d }) => s.dishFilter === 'all' || (s.dishFilter === 'loved' ? d.rating >= 4 : d.rating > 0 && d.rating <= 2))
+      .map(({ d, i }, k) => ({
+        dish: d.dish, where: d.place, delay: (k * 0.04) + 's',
+        dots: rateDots(d.rating, (r) => this.setState({ dishes: s.dishes.map((x, j) => (j === i ? Object.assign({}, x, { rating: r }) : x)) }))
+      }));
+    const addDish = () => {
+      const extra = [['Mutton biryani', 'Biryani house'], ['Banana bread', 'Quiet café'], ['Chicken 65', 'Biryani house'], ['Grilled corn', 'Street food lane']];
+      const next = extra.find(([dish]) => !s.dishes.some((d) => d.dish === dish));
+      if (next) this.setState({ dishFilter: 'all', dishes: [{ dish: next[0], place: next[1], rating: 0 }].concat(s.dishes) });
+    };
+
+    const showToast = (msg) => {
+      clearTimeout(this.toastTimer);
+      this.setState({ toast: msg });
+      this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 2600);
+    };
+    const downloadData = () => {
+      const data = {
+        exported: new Date().toISOString(), name: s.name, area: s.area,
+        taste: { food: s.diet, spice: ['Mild', 'Medium', 'Hot', 'Very hot', 'Fiery'][s.spice], cuisines: Object.keys(s.likes).filter((k) => s.likes[k]) },
+        savedPlans: s.savedPlans.map((id) => (PLANS.find((p) => p.id === id) || {}).title), savedPlaces: s.savedPlaces,
+        visits: s.visits, dishDiary: s.dishes, sharedLinks: s.finds
+      };
+      try {
+        const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = 'bites-my-data.json'; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        showToast('Your data was downloaded as bites-my-data.json');
+      } catch (err) { showToast('Download isn’t available in this preview'); }
+    };
+    const onVideo = (e) => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      this.setState({ finds: [{ title: 'Video: ' + f.name, when: 'Just now', status: 'checking' }].concat(s.finds).slice(0, 5) });
+      e.target.value = '';
+    };
+    const isTerms = s.legalTab === 'terms';
+    const legal = {
+      show: screen === 'legal', title: isTerms ? 'Terms' : 'Privacy',
+      tabs: [['privacy', 'Privacy'], ['terms', 'Terms']].map(([id, label]) => {
+        const on = s.legalTab === id;
+        return { label, on: String(on), pick: () => this.setState({ legalTab: id }), style: 'min-height:40px;border:none;border-radius:18px;font-size:14px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') };
+      }),
+      sections: (isTerms ? [
+        ['What Bites does', 'Bites suggests places and plans around Coimbatore from your mood, time, budget and the people you’re with.'],
+        ['Plans are suggestions', 'Hours, prices and travel times can change. Check with the place before you go, especially for bookings.'],
+        ['Links you share', 'Only share links and videos you’re allowed to. We check each one before a place appears in Bites.'],
+        ['Your account', 'You can download your data or delete your account at any time from My taste.']
+      ] : [
+        ['What we keep', 'Your email or Google sign-in, your taste settings, saved plans and places, places you’ve been, your dish diary and the links you share.'],
+        ['Why we keep it', 'To make plans that fit you and to remember what you liked. Your visits and dish diary are private to you.'],
+        ['Your control', 'Download everything as a file, or delete your account and all of it, from My taste.'],
+        ['Questions', 'Contact details will be added before launch.']
+      ]).map(([h, p]) => ({ h, p }))
+    };
+
+    const finds = s.finds.map((f) => Object.assign({}, f, { checking: f.status === 'checking', added: f.status === 'added', unsure: f.status === 'unsure' }));
+    const send = () => {
+      const t = s.link.trim();
+      this.setState({ link: '', finds: [{ title: t || 'New link', when: 'Just now', status: 'checking' }].concat(s.finds).slice(0, 5) });
+    };
+
+    const tabStyle = (on) => 'width:64px;height:56px;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;' + (on ? '' : 'opacity:.55');
+    const tabs = {
+      isHome: is.home, isExplore: is.explore, isSaved: is.saved,
+      home: is.home ? 'page' : 'false', explore: is.explore ? 'page' : 'false', saved: is.saved ? 'page' : 'false',
+      homeStyle: tabStyle(is.home), exploreStyle: tabStyle(is.explore), savedStyle: tabStyle(is.saved)
+    };
+
+    return {
+      is, roads: dark && !is.welcome, bg: dark ? '#1f140c' : '#fbf2dc', fg: dark ? '#fbf2dc' : '#1f140c', anim: s.anim, nav, heroRef: this.heroRef,
+      name: s.name === 'there' ? 'there' : s.name, initial: s.name === 'there' ? 'B' : s.name[0], quick, upcoming,
+      greeting: (() => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; })(),
+      moods, people, bdots, interests, budgetText, ticks, hand,
+      summary: s.people + ' · ' + s.leave + ' · ' + hoursText + ' · ₹' + budgetText,
+      leave: s.leave, customLeave, clockStyle, onTime, openTime, timeVal: s.leaveTime || '21:30',
+      hoursText, leaves, tdots, budgetModes, budgetShown, budgetUnit, budgetLo, budgetHi,
+      plansHeading: WORDS[Math.min(fits.length, 3)], planCards, pagers, hasPlans: fits.length > 0, noPlans: fits.length === 0,
+      plan, cats, query: s.query, onSearch: (e) => this.setState({ query: e.target.value }), results, noResults: results.length === 0,
+      place, savedTabs, savedPlanCards, savedPlaceRows, showSavedPlans, showSavedPlaces,
+      savedEmpty: (s.savedTab === 'plans' && savedPlanCards.length === 0) || (s.savedTab === 'places' && savedPlaceRows.length === 0),
+      diets, spice, cuisines, spiceLabel: ['Mild', 'Medium', 'Hot', 'Very hot', 'Fiery'][s.spice],
+      area: s.area, areaOpen: s.areaOpen,
+      downloadData, onVideo, legal, delOpen: !!s.delOpen, toast: s.toast || '', toastOn: !!s.toast,
+      useHere: () => this.setState({ area: 'RS Puram', areaOpen: false }),
+      areas: ['RS Puram', 'Gandhipuram', 'Saibaba Colony', 'Race Course', 'Peelamedu', 'Avinashi Road'].map((label) => {
+        const on = s.area === label;
+        return { label, on: String(on), isOn: on, weight: on ? 800 : 600, pick: () => this.setState({ area: label, areaOpen: false }) };
+      }),
+      visitRows, addVisit, noVisits: visitRows.length === 0, visitCount: s.visits.length,
+      dishTabs, dishRows, addDish, noDishes: dishRows.length === 0, dishCount: s.dishes.length + (s.dishes.length === 1 ? ' dish' : ' dishes'),
+      link: s.link, onLink: (e) => this.setState({ link: e.target.value }), send, finds,
+      showTabs: !!TABS[screen], tabs
+    };
+  }
+}
+</script>
+</body>
+</html>

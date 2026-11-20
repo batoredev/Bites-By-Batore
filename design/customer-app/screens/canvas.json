@@ -1,0 +1,37 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-21T10:00:00Z" },
+  "title": "Bites customer app · final",
+  "launch": { "view": "focused", "file": "App.dc.html" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · Welcome", "is_interactive": true, "radius": 44 },
+    "Vibe.dc.html": { "x": 470, "y": 0, "w": 390, "h": 844, "title": "2 · Set the vibe", "is_interactive": true, "radius": 44 },
+    "Planning.dc.html": { "x": 940, "y": 0, "w": 390, "h": 844, "title": "3 · Making your plan", "is_interactive": true, "radius": 44 },
+    "Plans.dc.html": { "x": 1410, "y": 0, "w": 390, "h": 844, "title": "4 · Your plans", "is_interactive": true, "radius": 44 },
+    "Plan.dc.html": { "x": 1880, "y": 0, "w": 390, "h": 844, "title": "5 · Plan detail", "is_interactive": true, "radius": 44 },
+    "Explore.dc.html": { "x": 2350, "y": 0, "w": 390, "h": 844, "title": "6 · Explore", "is_interactive": true, "radius": 44 },
+    "WelcomeMinimal.dc.html": { "x": 1200, "y": 964, "w": 390, "h": 844, "title": "1b · Welcome, light alternative", "is_interactive": true, "radius": 44 },
+    "Login.dc.html": { "x": 0, "y": 2200, "w": 390, "h": 844, "title": "7 · Sign in", "is_interactive": true, "radius": 44 },
+    "Home.dc.html": { "x": 470, "y": 2200, "w": 390, "h": 844, "title": "8 · Home", "is_interactive": true, "radius": 44 },
+    "Saved.dc.html": { "x": 940, "y": 2200, "w": 390, "h": 844, "title": "9 · Saved", "is_interactive": true, "radius": 44 },
+    "Place.dc.html": { "x": 1410, "y": 2200, "w": 390, "h": 844, "title": "10 · Place", "is_interactive": true, "radius": 44 },
+    "Taste.dc.html": { "x": 1880, "y": 2200, "w": 390, "h": 844, "title": "11 · My taste", "is_interactive": true, "radius": 44 },
+    "Share.dc.html": { "x": 2350, "y": 2200, "w": 390, "h": 844, "title": "12 · Share a find", "is_interactive": true, "radius": 44 },
+    "App.dc.html": { "x": -560, "y": 0, "w": 390, "h": 844, "title": "Bites app · final, connected prototype", "is_interactive": true, "radius": 44 }
+  },
+  "order": ["App.dc.html", "Main.dc.html", "Vibe.dc.html", "Planning.dc.html", "Plans.dc.html", "Plan.dc.html", "Explore.dc.html", "WelcomeMinimal.dc.html", "Login.dc.html", "Home.dc.html", "Saved.dc.html", "Place.dc.html", "Taste.dc.html", "Share.dc.html"],
+  "notes": {
+    "row2Title": { "x": 0, "y": 1900, "text": "Earlier drafts · sign in, home and the rest", "kind": "title1", "maxW": 2740 },
+    "rowTitle": { "x": 0, "y": -300, "text": "Earlier drafts · planning flow (final app on the left)", "kind": "title1", "maxW": 2740 },
+    "motion": {
+      "x": 0, "y": 964, "w": 520, "size": "m", "fill": "orange",
+      "text": "Final motion\n\n• Dots are the only moving thing: the Welcome dot star (Batore hero engine, no spotlight, no auto rotation), the dot floor and reflection, dotted roads, the dot clock loader.\n• Screens slide forward and back; tabs fade.\n• Selected = Turmeric. Sliders and ratings are rows of dots.\n• Reduce Motion: everything shows still."
+    },
+    "palette": {
+      "x": 600, "y": 964, "w": 520, "size": "m", "fill": "gray",
+      "text": "Final colour roles\n\nEspresso: dark screens (Welcome, Sign in, loading, Share a find), buttons, tab bar.\nCream: every other screen.\nTurmeric: what you picked.\nGold: dots, lines, borders.\nLeaf / Pistachio: only Open, Added, Coming up and the tagline.\nInstagram gradient: only the Instagram card on Home."
+    }
+  },
+  "designSystems": []
+}

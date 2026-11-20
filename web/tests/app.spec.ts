@@ -20,7 +20,7 @@ test("plan, save, reload, record a visit and retain a private taste profile", as
     .fill("sushi");
   await page.getByRole("button", { name: "Find my plan", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "A few good possibilities." }),
+    page.getByRole("heading", { name: /^(One plan fits\.|\d+ plans fit, best first\.)$/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "See this plan" }).first().click();
   const dialog = page.getByRole("dialog");

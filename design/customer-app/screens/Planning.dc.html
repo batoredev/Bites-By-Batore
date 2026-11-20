@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Making your plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#f5c842}a:hover{color:#fbf2dc}
+.tick{opacity:.18;animation:tick 2.4s linear infinite}
+.hand{transform-origin:0 0;animation:sweep 2.4s linear infinite}
+.say{position:absolute;inset:0;opacity:0;animation:say 7.2s ease infinite}
+.ready{animation:ready .8s ease 5s both}
+@keyframes tick{0%{opacity:1}40%,100%{opacity:.18}}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@keyframes say{0%{opacity:0;transform:translateY(8px)}6%,30%{opacity:1;transform:none}36%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes ready{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tick,.hand,.ready{animation:none;opacity:1}.say{animation:none}.say:first-child{opacity:1}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#1f140c;color:#fbf2dc;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:0 32px 44px;overflow:hidden">
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px">
+    <svg role="img" aria-label="Making your plan" width="180" height="180" viewBox="-90 -90 180 180">
+      <sc-for list="{{ticks}}" as="t" hint-placeholder-count="24">
+        <circle class="tick" cx="{{t.x}}" cy="{{t.y}}" r="{{t.r}}" fill="#c8962e" style="animation-delay:{{t.delay}}"></circle>
+      </sc-for>
+      <g class="hand">
+        <sc-for list="{{hand}}" as="h" hint-placeholder-count="6">
+          <circle cx="0" cy="{{h.y}}" r="{{h.r}}" fill="#f5c842"></circle>
+        </sc-for>
+      </g>
+      <circle cx="0" cy="0" r="6" fill="#f5c842"></circle>
+    </svg>
+    <div style="position:relative;width:100%;height:30px;text-align:center;font-size:18px;font-weight:600">
+      <div class="say">Finding places near you…</div>
+      <div class="say" style="animation-delay:2.4s">Matching your mood…</div>
+      <div class="say" style="animation-delay:4.8s">Fitting it into your time…</div>
+    </div>
+  </div>
+  <a href="Plans.dc.html" style="display:flex;align-items:center;justify-content:center;width:100%;height:56px;border-radius:28px;background:#f5c842;color:#1f140c;font-weight:800;font-size:16px;text-decoration:none">See plans</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const n = 24;
+    const ticks = Array.from({ length: n }, (_, i) => {
+      const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+      return { x: (78 * Math.cos(a)).toFixed(1), y: (78 * Math.sin(a)).toFixed(1), r: i % 6 === 0 ? 5 : 3, delay: ((i / n) * 2.4).toFixed(2) + 's' };
+    });
+    const hand = Array.from({ length: 6 }, (_, k) => ({ y: -(16 + k * 10), r: (4 - k * 0.4).toFixed(1) }));
+    return { ticks, hand };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Place</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#4a2e18}a:hover{color:#1f140c}
+.hero{background-color:#c8962e;background-image:radial-gradient(circle,#f5c842 3px,transparent 3.6px);background-size:16px 16px;animation:drift 18s linear infinite}
+.sheet{animation:up .6s cubic-bezier(.2,.8,.2,1) both}
+.save{transition:background .25s,transform .25s}
+.save:active{transform:scale(.9)}
+@keyframes drift{to{background-position:160px 80px}}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.hero,.sheet{animation:none}.save{transition:none}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#fbf2dc;color:#1f140c;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div class="hero" role="img" aria-label="Photo of Dosa place" style="height:260px;flex-shrink:0;position:relative">
+    <div style="position:absolute;left:16px;right:16px;top:24px;display:flex;justify-content:space-between">
+      <a href="Explore.dc.html" aria-label="Back" style="width:44px;height:44px;border-radius:22px;background:#fffcf5;display:grid;place-items:center">
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1f140c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+      </a>
+      <button class="save" onClick="{{toggle}}" aria-label="{{saveLabel}}" aria-pressed="{{saved}}" style="{{saveStyle}}">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="{{saveFill}}" stroke="#1f140c" stroke-width="2.2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="sheet" style="flex:1;margin-top:-28px;background:#fbf2dc;border-radius:28px 28px 0 0;position:relative;padding:26px 24px 28px;display:flex;flex-direction:column;gap:20px">
+    <div>
+      <div style="font-size:28px;font-weight:800;letter-spacing:-.8px">Dosa place</div>
+      <div style="font-size:14px;color:#6b4423;margin-top:4px">South Indian · RS Puram</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+      <div style="background:#fffcf5;border-radius:16px;padding:12px">
+        <div style="font-size:14px;font-weight:800;color:#2e6b3e">Open</div>
+        <div style="font-size:12px;color:#6b4423;margin-top:2px">Until 10:30 pm</div>
+      </div>
+      <div style="background:#fffcf5;border-radius:16px;padding:12px">
+        <div style="font-size:14px;font-weight:800">₹150</div>
+        <div style="font-size:12px;color:#6b4423;margin-top:2px">Per person</div>
+      </div>
+      <div style="background:#fffcf5;border-radius:16px;padding:12px">
+        <div style="font-size:14px;font-weight:800">12 min</div>
+        <div style="font-size:12px;color:#6b4423;margin-top:2px">By car</div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:16px;font-weight:800">Popular here</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+        <span style="padding:8px 14px;border-radius:18px;border:1.5px solid #ead7b1;font-size:14px;font-weight:600">Ghee roast</span>
+        <span style="padding:8px 14px;border-radius:18px;border:1.5px solid #ead7b1;font-size:14px;font-weight:600">Podi dosa</span>
+        <span style="padding:8px 14px;border-radius:18px;border:1.5px solid #ead7b1;font-size:14px;font-weight:600">Filter coffee</span>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:16px;font-weight:800">Good to know</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;font-size:14px;color:#4a2e18">
+        <div style="display:flex;gap:10px;align-items:center"><span style="width:6px;height:6px;border-radius:50%;background:#c8962e"></span>Busiest between 8 and 9 pm</div>
+        <div style="display:flex;gap:10px;align-items:center"><span style="width:6px;height:6px;border-radius:50%;background:#c8962e"></span>Cash and UPI</div>
+        <div style="display:flex;gap:10px;align-items:center"><span style="width:6px;height:6px;border-radius:50%;background:#c8962e"></span>Vegetarian only</div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1.4fr;gap:10px">
+      <a href="#directions" style="display:flex;align-items:center;justify-content:center;height:56px;border-radius:28px;border:1.5px solid #1f140c;color:#1f140c;font-weight:700;font-size:15px;text-decoration:none">Directions</a>
+      <a href="Plan.dc.html" style="display:flex;align-items:center;justify-content:center;height:56px;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:15px;text-decoration:none">Add to a plan</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { saved: false }; }
+  renderVals() {
+    const s = this.state.saved;
+    return {
+      saved: String(s),
+      saveLabel: s ? 'Remove from saved' : 'Save place',
+      saveFill: s ? '#1f140c' : 'none',
+      saveStyle: 'width:44px;height:44px;border-radius:22px;border:none;display:grid;place-items:center;cursor:pointer;background:' + (s ? '#f5c842' : '#fffcf5'),
+      toggle: () => this.setState({ saved: !s })
+    };
+  }
+}
+</script>
+</body>
+</html>

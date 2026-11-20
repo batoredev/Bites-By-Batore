@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Plan detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#4a2e18}a:hover{color:#1f140c}
+.route{stroke-dasharray:0 12;stroke-linecap:round;animation:draw 2.4s ease-out both,travel 5s linear 2.4s infinite}
+.stopdot{transform-box:fill-box;transform-origin:center;animation:popin .5s cubic-bezier(.2,1.5,.4,1) both}
+.row{animation:rise .5s cubic-bezier(.2,.8,.2,1) both}
+.star{background:#f5c842;-webkit-mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat}
+.tab{transition:opacity .2s}
+@keyframes draw{from{opacity:0;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(0 0 0 0)}}
+@keyframes travel{to{stroke-dashoffset:-120}}
+@keyframes popin{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.route,.stopdot,.row{animation:none}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#fbf2dc;color:#1f140c;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;position:relative;overflow:hidden">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:24px 20px 4px">
+    <a href="Plans.dc.html" aria-label="Back" style="width:44px;height:44px;border-radius:22px;display:grid;place-items:center;text-decoration:none">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <button aria-label="Save plan" style="width:44px;height:44px;border-radius:22px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;color:#1f140c">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"></path></svg>
+    </button>
+  </div>
+
+  <div style="padding:0 24px">
+    <div style="font-size:14px;font-weight:700;color:#8a5a2b">Tonight · 6–9 pm</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.8px;line-height:1.15;margin-top:6px">Coffee, a walk and dosa</div>
+  </div>
+
+  <svg aria-hidden="true" width="390" height="150" viewBox="0 0 390 150" style="margin-top:8px" fill="none">
+    <path class="route" d="M48 112C110 120 130 60 196 70S300 40 342 34" stroke="#c8962e" stroke-width="5"></path>
+    <circle class="stopdot" cx="48" cy="112" r="9" fill="#1f140c" style="animation-delay:.2s"></circle>
+    <circle class="stopdot" cx="196" cy="70" r="9" fill="#1f140c" style="animation-delay:1.1s"></circle>
+    <circle class="stopdot" cx="342" cy="34" r="11" fill="#9bbf65" style="animation-delay:2.1s"></circle>
+  </svg>
+
+  <div style="flex:1;padding:4px 24px 0;display:flex;flex-direction:column">
+    <sc-for list="{{stops}}" as="s" hint-placeholder-count="3">
+      <div class="row" style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid #ead7b1;animation-delay:{{s.delay}}">
+        <div style="width:52px;font-size:14px;font-weight:700;color:#6b4423">{{s.time}}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:700">{{s.name}}</div>
+          <div style="font-size:13px;color:#6b4423;margin-top:2px">{{s.note}}</div>
+        </div>
+        <button onClick="{{s.toggle}}" aria-label="{{s.lockLabel}}" aria-pressed="{{s.locked}}" style="{{s.lockStyle}}">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="{{s.shackle}}"></path></svg>
+        </button>
+      </div>
+    </sc-for>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:16px 0">
+      <span style="font-size:14px;color:#6b4423">About ₹540 per person · 3 hrs</span>
+      <button style="border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:#1f140c;text-decoration:underline;text-underline-offset:4px;min-height:44px;cursor:pointer">Swap a stop</button>
+    </div>
+  </div>
+
+  <nav aria-label="Main" style="position:absolute;left:20px;right:20px;bottom:24px;height:68px;border-radius:34px;background:#1f140c;display:flex;justify-content:space-around;align-items:center;box-shadow:0 16px 30px -16px rgba(31,20,12,.6)">
+    <a class="tab" href="Home.dc.html" aria-label="Home" aria-current="page" style="width:56px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-decoration:none">
+      <span class="star" style="display:block;width:28px;height:28px"></span>
+      <span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span>
+    </a>
+    <a class="tab" href="Explore.dc.html" aria-label="Explore" style="width:56px;height:56px;display:grid;place-items:center;opacity:.6">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M3 5.5 8.5 3l7 2.5L21 3v15.5L15.5 21l-7-2.5L3 21z"></path><path d="M8.5 3v15.5M15.5 5.5V21"></path><g fill="#9bbf65" stroke="none"><circle cx="5.6" cy="16.2" r=".9"></circle><circle cx="7.6" cy="14.8" r=".9"></circle><circle cx="10.2" cy="14" r=".9"></circle><circle cx="12.6" cy="12.4" r=".9"></circle><circle cx="15.2" cy="11" r=".9"></circle><circle cx="18.2" cy="8.4" r="1.6"></circle></g></svg>
+    </a>
+    <a class="tab" href="Saved.dc.html" aria-label="Saved" style="width:56px;height:56px;display:grid;place-items:center;opacity:.6">
+      <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path><circle cx="12" cy="9.5" r="1.6" fill="#9bbf65" stroke="none"></circle></svg>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { locked: { 0: true } }; }
+  renderVals() {
+    const list = [['6:00', 'Quiet café', 'Filter coffee · 45 min'], ['7:00', 'Race Course walk', 'Evening loop · 40 min'], ['7:55', 'Dosa place', 'Dinner · 1 hr']];
+    const stops = list.map(([time, name, note], k) => {
+      const locked = !!this.state.locked[k];
+      return {
+        time, name, note, delay: (0.3 + k * 0.1) + 's', locked: String(locked),
+        lockLabel: (locked ? 'Unlock ' : 'Lock ') + name,
+        shackle: locked ? 'M8 11V8a4 4 0 0 1 8 0v3' : 'M8 11V8a4 4 0 0 1 7.5-2',
+        lockStyle: 'width:44px;height:44px;border-radius:22px;border:none;display:grid;place-items:center;cursor:pointer;transition:background .25s;' + (locked ? 'background:#f5c842;color:#1f140c' : 'background:transparent;color:#8a5a2b'),
+        toggle: () => this.setState({ locked: Object.assign({}, this.state.locked, { [k]: !locked }) })
+      };
+    });
+    return { stops };
+  }
+}
+</script>
+</body>
+</html>
