@@ -61,3 +61,4 @@ Tab bar (Home, Explore, Saved) shows only on those three screens; every other pa
 ## Icons
 
 Hand-drawn style: an offset Turmeric blob under a loose line (Espresso on cream, cream on dark). Before and after: [icons-before-after.png](icons-before-after.png). The Bites star, Instagram camera, Google logo and plain back arrows and chevrons stay as they are.
+Later update: Current location (person on a ground ring), Directions (start dot, S route, pin) and a cleaner Lock, plus fixed headline highlights: [icons-update-location-directions-lock.png](icons-update-location-directions-lock.png).
