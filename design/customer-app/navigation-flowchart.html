@@ -48,6 +48,9 @@ flowchart LR
   T -->|Delete my account| DEL{{Delete account sheet}}:::sheet
   DEL -.->|Confirm| W
   PL -->|Directions| MAPS[(Google Maps)]:::ext
+  D -->|Let's go · full route| MAPS
+  D -.->|Let's go · becomes Coming up| H
+  D -->|Share| SHR[(Share sheet)]:::ext
   classDef ext fill:#eef3e0,stroke:#2e6b3e,color:#1f140c
   classDef default fill:#fffcf5,stroke:#c8962e,stroke-width:1.5px,color:#1f140c,font-weight:700
   classDef dark fill:#1f140c,stroke:#4a2e18,color:#fbf2dc,font-weight:700

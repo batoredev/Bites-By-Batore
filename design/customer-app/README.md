@@ -35,11 +35,11 @@ Tab bar (Home, Explore, Saved) shows only on those three screens; every other pa
 |---|---|
 | Welcome | Let's go out → Sign in |
 | Sign in | Google / email link / Not now → Home · Terms, Privacy → Privacy and terms |
-| Home | Area chip → Area sheet · Avatar → My taste · Plan something → Set the vibe · Quick chips → Making your plan · Coming up → Plan detail · Instagram card → Share a find |
+| Home | Area chip → Area sheet · Avatar → My taste · Plan something → Set the vibe · Quick chips → Making your plan · Coming up (the plan you last started) → Plan detail · Instagram card → Share a find |
 | Set the vibe | Mood, who's coming, leaving time (Now, 6, 7, 8 pm + clock for any time), total time (1–6 hrs), budget (per person or total), interests → Make my plan |
 | Making your plan | After about 4 s, or See plans → Your plans |
 | Your plans | Only plans within budget and time · Edit / Change filters → Set the vibe · Choose this plan → Plan detail (and saves it) |
-| Plan detail | Save · lock a stop · swap last stop · tap a stop → Place |
+| Plan detail | Save · lock a stop · swap last stop · tap a stop → Place · **Let's go** → full route in Google Maps (area → each stop), plan becomes Coming up, back to Home · **Share** → phone share sheet (or copy) |
 | Explore | Search · Food / Things to do · Change → Area sheet · row → Place |
 | Place | Save · Directions → Google Maps · Plan around this → Set the vibe |
 | Saved | Plans / Places · tap → Plan detail or Place |
