@@ -57,3 +57,7 @@ Tab bar (Home, Explore, Saved) shows only on those three screens; every other pa
 - Privacy and Terms copy is a plain-language draft: it needs legal review and contact details.
 - Replace the dotted photo placeholder on Place with real photos when available.
 - The Instagram gradient on the Home card is the one intentional exception to the palette.
+
+## Icons
+
+Hand-drawn style: an offset Turmeric blob under a loose line (Espresso on cream, cream on dark). Before and after: [icons-before-after.png](icons-before-after.png). The Bites star, Instagram camera, Google logo and plain back arrows and chevrons stay as they are.

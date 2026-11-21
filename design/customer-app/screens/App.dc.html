@@ -138,7 +138,7 @@ button{font:inherit;color:inherit}
       <div class="rise" style="display:flex;flex-direction:column;gap:14px;padding:0 4px">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <button class="press" onClick="{{nav.openArea}}" aria-label="Change area, now {{area}}" style="display:flex;align-items:center;gap:6px;min-height:40px;padding:0 14px 0 10px;border:1.5px solid #ead7b1;border-radius:20px;background:#fffcf5;font-size:13px;font-weight:700;color:#4a2e18;cursor:pointer">
-            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#c8962e"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"></path></svg>
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#1f140c"><path d="M12.8 21.5s-6.3-5.6-6.3-10.4a6.3 6.3 0 0 1 12.6 0c0 4.8-6.3 10.4-6.3 10.4z" fill="#f5c842" stroke="none"></path><path d="M17.6 7.5A6.3 6.3 0 0 0 5.2 10c0 4.8 6.3 10.4 6.3 10.4s2.7-2.4 4.4-5.4"></path><circle cx="11.5" cy="10" r="2.2"></circle></svg>
             {{area}}, Coimbatore
             <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
           </button>
@@ -225,7 +225,7 @@ button{font:inherit;color:inherit}
           <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:6px;margin-top:10px">
             <sc-for list="{{leaves}}" as="l" hint-placeholder-count="4"><button class="press" onClick="{{l.pick}}" aria-pressed="{{l.on}}" style="{{l.style}}">{{l.label}}</button></sc-for>
             <label class="press" style="{{clockStyle}}">
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg>
+              <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#1f140c"><circle cx="12.8" cy="12.8" r="7.8" fill="#f5c842" stroke="none"></circle><path d="M19.2 9.2A8 8 0 1 0 20 12"></path><path d="M12 7.5V12l3 1.8"></path></svg>
               <sc-if value="{{customLeave}}" hint-placeholder-val="{{false}}"><span style="font-size:13px;font-weight:700;white-space:nowrap">{{leave}}</span></sc-if>
               <input type="time" aria-label="Pick another time" value="{{timeVal}}" onChange="{{onTime}}" onClick="{{openTime}}" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;padding:0">
             </label>
@@ -333,10 +333,21 @@ button{font:inherit;color:inherit}
         </sc-if>
       </sc-for>
       <sc-if value="{{hasPlans}}" hint-placeholder-val="{{true}}">
-        <div style="display:flex;justify-content:center;gap:4px" aria-label="Choose a plan">
-          <sc-for list="{{pagers}}" as="g" hint-placeholder-count="3">
-            <button onClick="{{g.pick}}" aria-label="Plan {{g.n}}" aria-pressed="{{g.on}}" style="width:44px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0"><span class="press" style="{{g.style}}"></span></button>
-          </sc-for>
+        <div style="display:flex;align-items:center;gap:12px" aria-label="Choose a plan">
+          <button class="press" onClick="{{prevPlan}}" aria-label="Previous plan" style="{{prevStyle}}">
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+          </button>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div style="font-size:14px;font-weight:800">Plan {{pickN}} <span style="font-weight:600;color:#6b4423">of {{planCount}}</span></div>
+            <div style="display:flex;gap:6px;width:100%">
+              <sc-for list="{{pagers}}" as="g" hint-placeholder-count="3">
+                <button onClick="{{g.pick}}" aria-label="Plan {{g.n}}" aria-pressed="{{g.on}}" style="flex:1;height:22px;border:none;background:transparent;padding:0;cursor:pointer;display:flex;align-items:center"><span style="{{g.style}}"></span></button>
+              </sc-for>
+            </div>
+          </div>
+          <button class="press" onClick="{{nextPlan}}" aria-label="Next plan" style="{{nextStyle}}">
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
         </div>
         <button class="press" onClick="{{nav.choosePlan}}" style="height:56px;border:none;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:16px;cursor:pointer">Choose this plan</button>
       </sc-if>
@@ -373,7 +384,7 @@ button{font:inherit;color:inherit}
               <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">{{s.note}}</span>
             </button>
             <button class="press" onClick="{{s.toggle}}" aria-label="{{s.lockLabel}}" aria-pressed="{{s.locked}}" style="{{s.lockStyle}}">
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="{{s.shackle}}"></path></svg>
+              <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#1f140c"><rect x="5.8" y="10.8" width="13.5" height="10" rx="2.6" fill="#f5c842" stroke="none"></rect><path d="{{s.shackle}}"></path><path d="M15 19.5H6.6c-1 0-1.8-.8-1.8-1.8v-6.1c0-.9.8-1.6 1.7-1.6h10.8c1 0 1.7.7 1.7 1.7V16"></path><path d="M12 13.6v2.2"></path></svg>
             </button>
           </div>
         </sc-for>
@@ -384,7 +395,7 @@ button{font:inherit;color:inherit}
       </div>
       <div style="display:flex;gap:10px;padding:0 24px 28px">
         <button class="press" onClick="{{plan.share}}" aria-label="Share this plan" style="width:56px;height:56px;flex-shrink:0;border:1.5px solid #1f140c;border-radius:28px;background:transparent;display:grid;place-items:center;cursor:pointer">
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>
+          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#1f140c"><path d="M6 11.5h12.5v7.3c0 1-.8 1.7-1.7 1.7H7.7c-1 0-1.7-.8-1.7-1.7z" fill="#f5c842" stroke="none"></path><path d="M8.5 10H5.8v8.3c0 1 .8 1.7 1.7 1.7h9c1 0 1.7-.8 1.7-1.7V13"></path><path d="M12 14.5V3.5M8.3 6.8 12 3.2l3.7 3.6"></path></svg>
         </button>
         <a class="press" href="{{plan.mapsUrl}}" target="_blank" rel="noopener" onClick="{{plan.go}}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:800;font-size:16px;text-decoration:none">Let’s go
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
@@ -398,7 +409,7 @@ button{font:inherit;color:inherit}
     <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:28px 20px 0;gap:18px">
       <div style="font-size:30px;font-weight:800;letter-spacing:-1px;padding:0 4px">Explore</div>
       <label class="field" style="display:flex;align-items:center;gap:10px;height:52px;border-radius:26px;background:#fffcf5;border:1.5px solid #ead7b1;padding:0 18px">
-        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#1f140c"><circle cx="11.6" cy="11.6" r="6.3" fill="#f5c842" stroke="none"></circle><path d="M15.6 7a6 6 0 1 0 .4 7.5"></path><path d="M15 15l5 5"></path></svg>
         <input aria-label="Search" value="{{query}}" onChange="{{onSearch}}" placeholder="Search dishes, places or areas" style="flex:1;border:none;background:transparent;font:inherit;font-size:15px;color:#1f140c;outline:none;min-width:0">
       </label>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
@@ -406,10 +417,10 @@ button{font:inherit;color:inherit}
           <button class="press" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">
             <span style="display:grid;place-items:center;height:52px;position:relative;z-index:1">
               <sc-if value="{{c.isFood}}" hint-placeholder-val="{{true}}">
-                <svg aria-hidden="true" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.8" stroke-linecap="round"><path d="M4.5 15.5a7.5 7.5 0 0 1 15 0"></path><path d="M2.5 15.5h19M6 18.8h12"></path><circle cx="12" cy="6.3" r="1.5" fill="#9bbf65" stroke="none"></circle></svg>
+                <svg aria-hidden="true" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fbf2dc"><path d="M4.5 12.5h16c0 4.4-3.6 8-8 8s-8-3.6-8-8z" fill="#f5c842" stroke="none"></path><path d="M3 11.5h17.5c-.3 3.2-2.3 6.3-5.6 7.6"></path><path d="M8.5 19.1c-2.6-1.2-4.6-3.7-5.2-6.6"></path><path d="M8 3.5c-.8 1 .8 2 0 3.2M12 3c-.8 1.1.8 2.1 0 3.4M16 3.5c-.8 1 .8 2 0 3.2"></path></svg>
               </sc-if>
               <sc-if value="{{c.isDo}}" hint-placeholder-val="{{false}}">
-                <svg aria-hidden="true" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M6 4.6Q12 1 18 4.6M6 19.4Q12 23 18 19.4" stroke="#f5c842"></path><path d="M8.6 6.9Q12 5.2 15.4 6.9M8.6 17.1Q12 18.8 15.4 17.1" stroke="#9bbf65"></path><path d="M10.3 9h3.6M12.3 9v5.6" stroke="#f5c842"></path><ellipse cx="11" cy="14.6" rx="1.6" ry="1.2" fill="#f5c842"></ellipse></svg>
+                <svg aria-hidden="true" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fbf2dc"><path d="M5.5 9.2c0-1 .8-1.7 1.7-1.7h12.6c1 0 1.7.8 1.7 1.7v1.6a2.4 2.4 0 0 0 0 4.4v1.6c0 1-.8 1.7-1.7 1.7H7.2c-1 0-1.7-.8-1.7-1.7v-1.6a2.4 2.4 0 0 0 0-4.4z" fill="#f5c842" stroke="none"></path><path d="M14 6.5H5.2c-1 0-1.7.8-1.7 1.7v1.6a2.4 2.4 0 0 1 0 4.4v1.6c0 1 .8 1.7 1.7 1.7h12.6c1 0 1.7-.8 1.7-1.7v-1.6a2.4 2.4 0 0 1 0-4.4V8.2"></path><path d="M14.5 9.5v1.2M14.5 13v1.2"></path></svg>
               </sc-if>
             </span>
             <span style="position:relative;z-index:1;font-size:14px;font-weight:700;color:#fbf2dc">{{c.label}}</span>
@@ -476,7 +487,7 @@ button{font:inherit;color:inherit}
         </div>
         <div style="margin-top:auto;display:grid;grid-template-columns:1fr 1.4fr;gap:10px">
           <a class="press" href="{{place.mapsUrl}}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;height:56px;border-radius:28px;border:1.5px solid #1f140c;box-sizing:border-box;font-weight:700;font-size:15px;text-decoration:none;color:#1f140c">
-            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"></path></svg>
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#1f140c"><path d="M5 11.5 20 5l-6.3 15-2.2-6.4z" fill="#f5c842" stroke="none"></path><path d="M3.6 10.6 19 4l-3.3 8"></path><path d="M14.4 15.2 12.6 19l-2.2-6.4-6.8-2"></path></svg>
             Directions
           </a>
           <button class="press" onClick="{{nav.vibe}}" style="height:56px;border:none;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:15px;cursor:pointer">Plan around this</button>
@@ -527,7 +538,7 @@ button{font:inherit;color:inherit}
 
   <!-- 11 · My taste -->
   <sc-if value="{{is.taste}}" hint-placeholder-val="{{false}}">
-    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 28px;gap:14px">
+    <div class="{{anim}}" style="position:absolute;inset:0;display:flex;flex-direction:column;padding:24px 20px 28px;gap:14px;overflow-y:auto">
       <div style="display:flex;align-items:center;gap:12px">
         <button onClick="{{nav.back}}" aria-label="Back" style="width:44px;height:44px;border:none;border-radius:22px;background:transparent;display:grid;place-items:center;margin-left:-10px;cursor:pointer">
           <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
@@ -545,6 +556,17 @@ button{font:inherit;color:inherit}
           <div><div style="font-size:15px;font-weight:700">Spice</div><div style="font-size:13px;color:#6b4423">{{spiceLabel}}</div></div>
           <div style="display:flex;gap:2px">
             <sc-for list="{{spice}}" as="s" hint-placeholder-count="5"><button onClick="{{s.pick}}" aria-label="Spice level {{s.n}}" style="width:30px;height:44px;border:none;background:transparent;display:grid;place-items:center;cursor:pointer;padding:0"><span class="press" style="{{s.style}}"></span></button></sc-for>
+          </div>
+        </div>
+        <div style="height:1px;background:#ead7b1"></div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div style="font-size:15px;font-weight:700">Allergies</div>
+            <div style="font-size:13px;color:#6b4423">{{allergyCount}}</div>
+          </div>
+          <div style="font-size:13px;color:#6b4423;margin-top:2px">We’ll avoid dishes with these.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+            <sc-for list="{{allergyChips}}" as="a" hint-placeholder-count="8"><button class="press" onClick="{{a.pick}}" aria-pressed="{{a.on}}" style="{{a.style}}">{{a.label}}</button></sc-for>
           </div>
         </div>
       </div>
@@ -712,11 +734,11 @@ button{font:inherit;color:inherit}
         <sc-if value="{{tabs.isHome}}" hint-placeholder-val="{{true}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
       </button>
       <button onClick="{{nav.tabExplore}}" aria-label="Explore" aria-current="{{tabs.explore}}" style="{{tabs.exploreStyle}}">
-        <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M3 5.5 8.5 3l7 2.5L21 3v15.5L15.5 21l-7-2.5L3 21z"></path><path d="M8.5 3v15.5M15.5 5.5V21"></path><g fill="#9bbf65" stroke="none"><circle cx="5.6" cy="16.2" r=".9"></circle><circle cx="7.6" cy="14.8" r=".9"></circle><circle cx="10.2" cy="14" r=".9"></circle><circle cx="12.6" cy="12.4" r=".9"></circle><circle cx="15.2" cy="11" r=".9"></circle><circle cx="18.2" cy="8.4" r="1.6"></circle></g></svg>
+        <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fbf2dc"><path d="M5 6.5c0-1.2 1-1.9 2-1.6l3.6 1 4.8-1.6c.7-.2 1.4-.2 2 .1l2.2.9c.9.4 1.4 1.2 1.4 2.2v9.4c0 1.2-1.1 2-2.2 1.6l-3.6-1.2-4.8 1.6c-.6.2-1.3.2-1.9-.1l-2.2-.9C5.5 17.6 5 16.8 5 15.8z" fill="#f5c842" stroke="none"></path><path d="M3.5 9V18.9l5.5-1.8 6 2 5.5-1.8V4.6L15 6.5 9 4.5 3.5 6.3"></path><path d="M9 4.8v12.2M15 6.8v6.5"></path></svg>
         <sc-if value="{{tabs.isExplore}}" hint-placeholder-val="{{false}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
       </button>
       <button onClick="{{nav.tabSaved}}" aria-label="Saved" aria-current="{{tabs.saved}}" style="{{tabs.savedStyle}}">
-        <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path><circle cx="12" cy="9.5" r="1.6" fill="#9bbf65" stroke="none"></circle></svg>
+        <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fbf2dc"><path d="M7.5 5.5c0-1 .8-1.8 1.8-1.8h7.4c1 0 1.8.8 1.8 1.8v14.2c0 .7-.8 1.1-1.4.7L13 18l-4.1 2.4c-.6.4-1.4-.1-1.4-.8z" fill="#f5c842" stroke="none"></path><path d="M6 13V4.8C6 3.8 6.8 3 7.8 3h7.4c1 0 1.8.8 1.8 1.8v14.5l-5.5-3.5L6 19.4V16.5"></path></svg>
         <sc-if value="{{tabs.isSaved}}" hint-placeholder-val="{{false}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
       </button>
     </nav>
@@ -752,7 +774,7 @@ button{font:inherit;color:inherit}
         <span style="align-self:center;width:40px;height:5px;border-radius:3px;background:#dec69b"></span>
         <div style="font-size:20px;font-weight:800;padding:8px 4px 4px">Where are you starting from?</div>
         <button class="press" onClick="{{useHere}}" style="display:flex;align-items:center;gap:12px;min-height:52px;padding:0 14px;border:1.5px solid #ead7b1;border-radius:18px;background:#fffcf5;font-size:15px;font-weight:700;cursor:pointer;text-align:left">
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8962e" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg>
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#1f140c"><circle cx="12.8" cy="12.8" r="5.5" fill="#f5c842" stroke="none"></circle><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3"></path></svg>
           Use my current location
         </button>
         <div style="display:flex;flex-direction:column;margin-top:4px">
@@ -1135,7 +1157,11 @@ class Component extends DCLogic {
       title: p.title, time: p.time, cost: p.cost, active: k === pick,
       stops: this.planStops(p).map((st, j, arr) => ({ name: st[1], note: st[2], more: j < arr.length - 1, delay: (0.12 + j * 0.08) + 's' }))
     }));
-    const pagers = fits.map((_, k) => { const on = k === pick; return { n: k + 1, on: String(on), pick: () => this.setState({ pick: k }), style: 'display:block;height:8px;border-radius:4px;width:' + (on ? 24 : 8) + 'px;background:' + (on ? '#1f140c' : '#dec69b') }; });
+    const pagers = fits.map((_, k) => { const on = k === pick; return { n: k + 1, on: String(on), pick: () => this.setState({ pick: k }), style: 'display:block;width:100%;height:' + (on ? 10 : 8) + 'px;border-radius:5px;transition:background .3s,height .3s;background:' + (on ? '#1f140c' : '#e6d3ac') }; });
+    const arrowStyle = (enabled) => 'width:48px;height:48px;flex-shrink:0;border-radius:24px;display:grid;place-items:center;cursor:pointer;border:1.5px solid ' +
+      (enabled ? '#1f140c;background:#fffcf5;color:#1f140c' : '#ead7b1;background:transparent;color:#cdaf7f;pointer-events:none');
+    const prevPlan = () => this.setState({ pick: Math.max(0, pick - 1) });
+    const nextPlan = () => this.setState({ pick: Math.min(fits.length - 1, pick + 1) });
 
     const P = PLANS.find((p) => p.id === s.planId) || PLANS[0];
     const planSaved = s.savedPlans.indexOf(P.id) >= 0;
@@ -1207,6 +1233,14 @@ class Component extends DCLogic {
 
     const diets = ['Veg', 'Non-veg'].map((label) => { const on = s.diet === label; return { label, on: String(on), pick: () => this.setState({ diet: label }), style: 'min-height:36px;padding:0 14px;border:none;border-radius:17px;font-size:14px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') }; });
     const spice = Array.from({ length: 5 }, (_, k) => ({ n: k + 1, pick: () => this.setState({ spice: k }), style: 'display:block;width:' + (10 + k * 2) + 'px;height:' + (10 + k * 2) + 'px;border-radius:50%;background:' + (k <= s.spice ? (k === s.spice ? '#1f140c' : '#f5c842') : '#ead7b1') }));
+    const allergies = s.allergies || {};
+    const allergyChips = ['Nuts', 'Peanuts', 'Dairy', 'Gluten', 'Egg', 'Shellfish', 'Soy', 'Sesame'].map((label) => {
+      const on = !!allergies[label];
+      return { label, on: String(on), pick: () => this.setState({ allergies: Object.assign({}, allergies, { [label]: !on }) }),
+        style: 'min-height:40px;padding:0 14px;border-radius:20px;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid ' + (on ? '#1f140c;background:#1f140c;color:#fbf2dc' : '#ead7b1;background:#fffcf5;color:#4a2e18') };
+    });
+    const allergyN = Object.keys(allergies).filter((k) => allergies[k]).length;
+    const allergyCount = allergyN ? allergyN + ' selected' : 'None';
     const cuisines = CUISINES.map((label) => { const on = !!s.likes[label]; return { label, on: String(on), style: this.chip(on).replace('min-height:44px', 'min-height:40px'), pick: () => this.setState({ likes: Object.assign({}, s.likes, { [label]: !on }) }) }; });
 
     const rateDots = (rating, set) => Array.from({ length: 5 }, (_, k) => ({
@@ -1248,7 +1282,7 @@ class Component extends DCLogic {
     const downloadData = () => {
       const data = {
         exported: new Date().toISOString(), name: s.name, area: s.area,
-        taste: { food: s.diet, spice: ['Mild', 'Medium', 'Hot', 'Very hot', 'Fiery'][s.spice], cuisines: Object.keys(s.likes).filter((k) => s.likes[k]) },
+        taste: { food: s.diet, spice: ['Mild', 'Medium', 'Hot', 'Very hot', 'Fiery'][s.spice], cuisines: Object.keys(s.likes).filter((k) => s.likes[k]), allergies: Object.keys(s.allergies || {}).filter((k) => s.allergies[k]) },
         savedPlans: s.savedPlans.map((id) => (PLANS.find((p) => p.id === id) || {}).title), savedPlaces: s.savedPlaces,
         visits: s.visits, dishDiary: s.dishes, sharedLinks: s.finds
       };
@@ -1306,10 +1340,12 @@ class Component extends DCLogic {
       summary: s.people + ' · ' + s.leave + ' · ' + hoursText + ' · ₹' + budgetText,
       leave: s.leave, customLeave, clockStyle, onTime, openTime, timeVal: s.leaveTime || '21:30',
       hoursText, leaves, tdots, budgetModes, budgetShown, budgetUnit, budgetLo, budgetHi,
-      plansHeading: WORDS[Math.min(fits.length, 3)], planCards, pagers, hasPlans: fits.length > 0, noPlans: fits.length === 0,
+      plansHeading: WORDS[Math.min(fits.length, 3)], planCards, pagers, prevPlan, nextPlan, pickN: pick + 1, planCount: fits.length,
+      prevStyle: arrowStyle(pick > 0), nextStyle: arrowStyle(pick < fits.length - 1), hasPlans: fits.length > 0, noPlans: fits.length === 0,
       plan, cats, query: s.query, onSearch: (e) => this.setState({ query: e.target.value }), results, noResults: results.length === 0,
       place, savedTabs, savedPlanCards, savedPlaceRows, showSavedPlans, showSavedPlaces,
       savedEmpty: (s.savedTab === 'plans' && savedPlanCards.length === 0) || (s.savedTab === 'places' && savedPlaceRows.length === 0),
+      allergyChips, allergyCount,
       diets, spice, cuisines, spiceLabel: ['Mild', 'Medium', 'Hot', 'Very hot', 'Fiery'][s.spice],
       area: s.area, areaOpen: s.areaOpen,
       downloadData, onVideo, legal, delOpen: !!s.delOpen, toast: s.toast || '', toastOn: !!s.toast,
