@@ -170,11 +170,11 @@ button{font:inherit;color:inherit}
           <div style="font-size:16px;font-weight:800;padding:0 4px">Coming up</div>
           <button class="press" onClick="{{upcoming.open}}" style="display:flex;align-items:center;gap:14px;background:#fffcf5;border:none;border-radius:22px;padding:16px;text-align:left;cursor:pointer">
             <span style="width:52px;height:52px;border-radius:16px;background:#9bbf65;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;line-height:1;color:#1f140c">
-              <span style="font-size:11px;font-weight:700">Sat</span><span style="font-size:20px;font-weight:800">23</span>
+              <span style="font-size:11px;font-weight:700">{{upcoming.day}}</span><span style="font-size:20px;font-weight:800">{{upcoming.date}}</span>
             </span>
             <span style="flex:1;min-width:0">
               <span style="display:block;font-size:16px;font-weight:700">{{upcoming.title}}</span>
-              <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">7 pm · 4 people</span>
+              <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">{{upcoming.meta}}</span>
             </span>
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
           </button>
@@ -377,10 +377,18 @@ button{font:inherit;color:inherit}
             </button>
           </div>
         </sc-for>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 28px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 8px">
           <span style="font-size:14px;color:#6b4423">About ₹{{plan.cost}} per person · {{plan.time}}</span>
           <button onClick="{{plan.swap}}" style="border:none;background:none;font-size:14px;font-weight:700;text-decoration:underline;text-underline-offset:4px;min-height:44px;cursor:pointer">{{plan.swapLabel}}</button>
         </div>
+      </div>
+      <div style="display:flex;gap:10px;padding:0 24px 28px">
+        <button class="press" onClick="{{plan.share}}" aria-label="Share this plan" style="width:56px;height:56px;flex-shrink:0;border:1.5px solid #1f140c;border-radius:28px;background:transparent;display:grid;place-items:center;cursor:pointer">
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5"></path><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"></path></svg>
+        </button>
+        <a class="press" href="{{plan.mapsUrl}}" target="_blank" rel="noopener" onClick="{{plan.go}}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:800;font-size:16px;text-decoration:none">Let’s go
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        </a>
       </div>
     </div>
   </sc-if>
@@ -496,7 +504,7 @@ button{font:inherit;color:inherit}
                 <sc-if value="{{s.soon}}" hint-placeholder-val="{{false}}"><span style="font-size:12px;font-weight:700;background:#9bbf65;color:#1f140c;border-radius:12px;padding:4px 10px">Coming up</span></sc-if>
               </span>
               <span style="font-size:18px;font-weight:800">{{s.title}}</span>
-              <sc-if value="{{s.soon}}" hint-placeholder-val="{{false}}">
+              <sc-if value="{{s.hasNote}}" hint-placeholder-val="{{false}}">
                 <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6b4423"><span class="blink" style="width:8px;height:8px;border-radius:50%;background:#c8962e;flex-shrink:0"></span>Street food lane now closes at 10 pm. Your plan still fits.</span>
               </sc-if>
               <sc-if value="{{s.notSoon}}" hint-placeholder-val="{{true}}"><span style="font-size:13px;color:#6b4423">{{s.meta}}</span></sc-if>
@@ -839,7 +847,7 @@ class Component extends DCLogic {
     super(props);
     this.heroRef = (el) => this.startHero(el);
     this.state = {
-      screen: 'welcome', stack: [], anim: 'tab', name: 'Karthik', area: 'RS Puram', areaOpen: false,
+      screen: 'welcome', stack: [], anim: 'tab', name: 'Karthik', area: 'RS Puram', areaOpen: false, upcoming: 'p2',
       mood: 'Chill', people: 'A date', budget: 6, leave: '7 pm', hoursK: 4, budgetMode: 'person', picks: { 'Coffee': true, 'Live music': true },
       pick: 0, planId: 'p1', locked: {}, swapped: {}, savedPlans: ['p2'], savedPlaces: ['Dosa place', 'Board game café'],
       place: 'Dosa place', cat: 'food', query: '', savedTab: 'plans',
@@ -1012,6 +1020,11 @@ class Component extends DCLogic {
       (on ? '#c8962e;background:#f5c842;color:#1f140c' : '#ead7b1;background:#fffcf5;color:#4a2e18');
   }
   openPlace(name) { if (PLACES[name]) this.go('place', { place: name }); }
+  flash(msg) {
+    clearTimeout(this.toastTimer);
+    this.setState({ toast: msg });
+    this.toastTimer = setTimeout(() => this.setState({ toast: '' }), 2800);
+  }
   planStops(p) {
     const stops = p.stops.slice();
     if (this.state.swapped[p.id]) stops[stops.length - 1] = p.alt;
@@ -1091,8 +1104,14 @@ class Component extends DCLogic {
     };
 
     const quick = [['Something chill', 'Chill'], ['Food first', 'Hungry'], ['Surprise me', 'Curious']].map(([label, mood]) => ({ label, go: () => this.go('planning', { mood, pick: 0 }) }));
-    const up = PLANS.find((p) => p.id === 'p2');
-    const upcoming = { has: s.savedPlans.indexOf('p2') >= 0, title: up.title, open: () => this.go('plan', { planId: 'p2' }) };
+    const up = PLANS.find((p) => p.id === s.upcoming) || PLANS[1];
+    const upTonight = up.when.indexOf('Tonight') === 0;
+    const upcoming = {
+      has: !!s.upcoming && s.savedPlans.indexOf(up.id) >= 0, title: up.title,
+      day: upTonight ? 'Today' : 'Sat', date: upTonight ? String(new Date().getDate()) : '23',
+      meta: up.when.split(' · ')[1] + ' · ' + up.time,
+      open: () => this.go('plan', { planId: up.id })
+    };
 
     const moods = MOODS.map((label) => { const on = s.mood === label; return { label, on: String(on), style: this.chip(on), pick: () => this.setState({ mood: label }) }; });
     const people = PEOPLE.map(([label, n]) => {
@@ -1125,6 +1144,22 @@ class Component extends DCLogic {
       saveLabel: planSaved ? 'Remove from saved' : 'Save plan', saveFill: planSaved ? '#1f140c' : 'none',
       saveStyle: 'width:44px;height:44px;border:none;border-radius:22px;display:grid;place-items:center;cursor:pointer;background:' + (planSaved ? '#f5c842' : 'transparent'),
       toggleSave: () => this.setState({ savedPlans: planSaved ? s.savedPlans.filter((x) => x !== P.id) : s.savedPlans.concat(P.id) }),
+      mapsUrl: (() => {
+        const st = this.planStops(P).map((x) => x[1] + ', Coimbatore');
+        return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' + encodeURIComponent(s.area + ', Coimbatore') +
+          '&destination=' + encodeURIComponent(st[st.length - 1]) + (st.length > 1 ? '&waypoints=' + encodeURIComponent(st.slice(0, -1).join('|')) : '');
+      })(),
+      go: () => {
+        const saved = s.savedPlans.indexOf(P.id) >= 0 ? s.savedPlans : s.savedPlans.concat(P.id);
+        this.setState({ upcoming: P.id, savedPlans: saved, screen: 'home', stack: [], anim: 'back' });
+        this.flash('Route opened in Google Maps. Have a good time!');
+      },
+      share: () => {
+        const text = P.title + ' · ' + P.when + '\n' + this.planStops(P).map((x) => x[0] + '  ' + x[1]).join('\n') + '\nAbout ₹' + P.cost + ' per person · made with Bites';
+        if (navigator.share) { navigator.share({ title: P.title, text }).catch(() => {}); return; }
+        try { navigator.clipboard.writeText(text); this.flash('Plan copied. Paste it to your friends.'); }
+        catch (err) { this.flash('Sharing isn’t available in this preview'); }
+      },
       swapLabel: s.swapped[P.id] ? 'Undo swap' : 'Swap last stop',
       swap: () => this.setState({ swapped: Object.assign({}, s.swapped, { [P.id]: !s.swapped[P.id] }) }),
       stops: this.planStops(P).map((st, k) => {
@@ -1163,8 +1198,8 @@ class Component extends DCLogic {
       return { label, on: String(on), pick: () => this.setState({ savedTab: id }), style: 'min-height:44px;border:none;border-radius:20px;font-size:15px;font-weight:700;cursor:pointer;' + (on ? 'background:#1f140c;color:#fbf2dc' : 'background:transparent;color:#6b4423') };
     });
     const savedPlanCards = s.savedPlans.map((id, k) => {
-      const p = PLANS.find((x) => x.id === id); const soon = id === 'p2';
-      return { title: p.title, soon, notSoon: !soon, when: soon ? 'Sat 23 Nov · 7 pm' : 'No date yet', meta: this.planStops(p).length + ' stops · About ₹' + p.cost + ' per person', delay: (k * 0.05) + 's', open: () => this.go('plan', { planId: id }) };
+      const p = PLANS.find((x) => x.id === id); const soon = id === s.upcoming; const hasNote = soon && id === 'p2';
+      return { title: p.title, soon, hasNote, notSoon: !hasNote, when: soon ? p.when : 'No date yet', meta: this.planStops(p).length + ' stops · About ₹' + p.cost + ' per person', delay: (k * 0.05) + 's', open: () => this.go('plan', { planId: id }) };
     });
     const savedPlaceRows = s.savedPlaces.map((name, k) => ({ name, tint: PLACES[name].tint, note: PLACES[name].kind + ' · ' + PLACES[name].area, delay: (k * 0.05) + 's', open: () => this.openPlace(name) }));
     const showSavedPlans = s.savedTab === 'plans' && savedPlanCards.length > 0;
