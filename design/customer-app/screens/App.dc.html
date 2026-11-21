@@ -729,18 +729,18 @@ button{font:inherit;color:inherit}
 
   <!-- Tab bar: Home, Explore, Saved only -->
   <sc-if value="{{showTabs}}" hint-placeholder-val="{{false}}">
-    <nav aria-label="Main" style="position:absolute;left:20px;right:20px;bottom:24px;height:68px;border-radius:34px;background:#1f140c;display:flex;justify-content:space-around;align-items:center;box-shadow:0 16px 30px -16px rgba(31,20,12,.6);z-index:5">
+    <nav aria-label="Main" style="position:absolute;left:20px;right:20px;bottom:24px;height:70px;border-radius:35px;background:linear-gradient(180deg,rgba(58,38,22,.78),rgba(31,20,12,.86));-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);border:1px solid rgba(251,242,220,.14);display:flex;justify-content:space-around;align-items:center;box-shadow:inset 0 1px 0 rgba(255,247,225,.18),inset 0 -1px 0 rgba(0,0,0,.25),0 18px 34px -16px rgba(31,20,12,.55);z-index:5">
       <button onClick="{{nav.tabHome}}" aria-label="Home" aria-current="{{tabs.home}}" style="{{tabs.homeStyle}}">
         <span class="star" style="display:block;width:28px;height:28px;background:#f5c842"></span>
-        <sc-if value="{{tabs.isHome}}" hint-placeholder-val="{{true}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
+        <sc-if value="{{tabs.isHome}}" hint-placeholder-val="{{true}}"></sc-if>
       </button>
       <button onClick="{{nav.tabExplore}}" aria-label="Explore" aria-current="{{tabs.explore}}" style="{{tabs.exploreStyle}}">
         <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fbf2dc"><path d="M5 6.5c0-1.2 1-1.9 2-1.6l3.6 1 4.8-1.6c.7-.2 1.4-.2 2 .1l2.2.9c.9.4 1.4 1.2 1.4 2.2v9.4c0 1.2-1.1 2-2.2 1.6l-3.6-1.2-4.8 1.6c-.6.2-1.3.2-1.9-.1l-2.2-.9C5.5 17.6 5 16.8 5 15.8z" fill="#f5c842" stroke="none"></path><path d="M3.5 9V18.9l5.5-1.8 6 2 5.5-1.8V4.6L15 6.5 9 4.5 3.5 6.3"></path><path d="M9 4.8v12.2M15 6.8v6.5"></path></svg>
-        <sc-if value="{{tabs.isExplore}}" hint-placeholder-val="{{false}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
+        <sc-if value="{{tabs.isExplore}}" hint-placeholder-val="{{false}}"></sc-if>
       </button>
       <button onClick="{{nav.tabSaved}}" aria-label="Saved" aria-current="{{tabs.saved}}" style="{{tabs.savedStyle}}">
         <svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:#fbf2dc"><path d="M7.5 5.5c0-1 .8-1.8 1.8-1.8h7.4c1 0 1.8.8 1.8 1.8v14.2c0 .7-.8 1.1-1.4.7L13 18l-4.1 2.4c-.6.4-1.4-.1-1.4-.8z" fill="#f5c842" stroke="none"></path><path d="M6 13V4.8C6 3.8 6.8 3 7.8 3h7.4c1 0 1.8.8 1.8 1.8v14.5l-5.5-3.5L6 19.4V16.5"></path></svg>
-        <sc-if value="{{tabs.isSaved}}" hint-placeholder-val="{{false}}"><span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span></sc-if>
+        <sc-if value="{{tabs.isSaved}}" hint-placeholder-val="{{false}}"></sc-if>
       </button>
     </nav>
   </sc-if>
@@ -1326,7 +1326,7 @@ class Component extends DCLogic {
       this.setState({ link: '', finds: [{ title: t || 'New link', when: 'Just now', status: 'checking' }].concat(s.finds).slice(0, 5) });
     };
 
-    const tabStyle = (on) => 'width:64px;height:56px;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;' + (on ? '' : 'opacity:.55');
+    const tabStyle = (on) => 'width:76px;height:52px;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .3s,box-shadow .3s,opacity .3s;' + (on ? 'border:none;background:rgba(245,200,66,.16);box-shadow:inset 0 0 0 1px rgba(245,200,66,.38),inset 0 1px 0 rgba(255,247,225,.2)' : 'border:none;background:transparent;opacity:.7');
     const tabs = {
       isHome: is.home, isExplore: is.explore, isSaved: is.saved,
       home: is.home ? 'page' : 'false', explore: is.explore ? 'page' : 'false', saved: is.saved ? 'page' : 'false',
