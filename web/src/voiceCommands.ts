@@ -3,7 +3,9 @@
 export type Command =
   | { kind: "answer"; value: "yes" | "no" | "closed" }
   | {
-      kind: "next" | "back" | "undo" | "repeat" | "why" | "sources" | "where" | "map" | "progress" | "jump" | "stop" | "help";
+      kind:
+        | "next" | "back" | "undo" | "repeat" | "why" | "sources" | "where" | "map" | "progress" | "jump" | "stop" | "help"
+        | "openSource" | "nextSource";
     };
 
 const WORDS: [RegExp, Command][] = [
@@ -13,6 +15,8 @@ const WORDS: [RegExp, Command][] = [
   [/\b(no|nope|reject|wrong|disagree|incorrect|not right)\b/, { kind: "answer", value: "no" }],
   [/\b(yes|yeah|yep|approve|approved|correct|right|agree|looks good|confirm)\b/, { kind: "answer", value: "yes" }],
   [/\b(open (the )?map|show (the )?map|google maps)\b/, { kind: "map" }],
+  [/\b(next|other|another|switch) (source|post|page|link)\b/, { kind: "nextSource" }],
+  [/\b(open|show) (the |this )?(source|post|page|link|website)\b/, { kind: "openSource" }],
   [/\b(sources?|evidence|proof|details|tell me more)\b/, { kind: "sources" }],
   [/\b(where|address|location|area)\b/, { kind: "where" }],
   [/\b(why|explain|what did you do|reason)\b/, { kind: "why" }],

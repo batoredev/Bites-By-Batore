@@ -1977,6 +1977,116 @@ pre {
   border-radius: 16px;
   background: var(--desk-panel);
 }
+.desk-source {
+  background: var(--desk-panel);
+  border: 1px solid var(--desk-line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.desk-source-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--desk-line);
+}
+.desk-source-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+.desk-source-tabs button {
+  padding: 0.3rem 0.7rem;
+  border-radius: 99px;
+  border: 1px solid var(--desk-line);
+  background: none;
+  color: var(--cream);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.desk-source-tabs button.on {
+  background: var(--turmeric);
+  border-color: var(--turmeric);
+  color: var(--espresso);
+  font-weight: 700;
+}
+.desk-source-open {
+  flex: none;
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+  border: 1px solid var(--gold);
+  color: var(--cream);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.desk-frame {
+  display: block;
+  width: 100%;
+  height: 560px;
+  border: 0;
+  background: #fff;
+}
+.desk-source-empty,
+.desk-source-wait {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.88rem;
+  color: var(--gold);
+}
+.desk-source-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.desk-source-card p {
+  margin: 0;
+}
+.desk-source-card strong {
+  color: var(--cream);
+  font-size: 1.02rem;
+}
+.desk-source-site {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.desk-source-why {
+  color: var(--gold);
+}
+.desk-source-card + .desk-shot,
+.desk-source-card + .desk-source-wait {
+  border-top: 1px solid var(--desk-line);
+}
+.desk-shot {
+  display: block;
+  position: relative;
+  max-height: 560px;
+  overflow: hidden;
+  color: var(--cream);
+  text-decoration: none;
+}
+.desk-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.desk-shot span {
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  background: var(--espresso);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
 .desk-talk {
   padding: 0.85rem 1rem;
   display: flex;
@@ -2030,6 +2140,9 @@ pre {
   }
   .desk-map {
     aspect-ratio: 16 / 10;
+  }
+  .desk-frame {
+    height: 480px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

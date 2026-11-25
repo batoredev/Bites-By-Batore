@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, post, safeLink } from "./api";
+import { api, apiBlob, post, safeLink } from "./api";
 import { ErrorBox, Loading } from "./components";
 import { parseCommand, type Command } from "./voiceCommands";
 
@@ -18,7 +18,27 @@ interface Match {
   taught: boolean;
 }
 
+interface SourceLink {
+  kind: string;
+  label: string;
+  url: string;
+  embed: string;
+}
+
+interface Preview {
+  url: string;
+  embed: string;
+  frameable: boolean;
+  status: number;
+  title: string;
+  description: string;
+  site: string;
+  error?: string;
+  requested?: string;
+}
+
 interface DeskItem {
+  links: SourceLink[];
   sheet: "decisions" | "overture";
   row: number;
   title: string;
@@ -85,6 +105,107 @@ function whereLine(item: DeskItem) {
     .join(" ");
 }
 
+function blockedReason(p: Preview) {
+  if (p.error) return p.error;
+  if (p.status && p.status !== 200) return `The site answered ${p.status} when I checked it, so open it in a new tab.`;
+  return "This site doesn't allow being shown inside other pages. Open it in a new tab.";
+}
+
+function SourceBox({ links, pick, onPick, place }: { links: SourceLink[]; pick: number; onPick: (n: number) => void; place: string }) {
+  const link = links[pick];
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [shot, setShot] = useState<{ url: string; src: string; failed: boolean } | null>(null);
+  const needsShot = !!preview && !preview.frameable && !preview.error && preview.requested === link?.url;
+
+  useEffect(() => {
+    if (!needsShot || !link) return;
+    const ctrl = new AbortController();
+    let src = "";
+    setShot(null);
+    apiBlob(`/admin/review-desk/shot?url=${encodeURIComponent(link.url)}`, ctrl.signal)
+      .then((s) => {
+        src = s;
+        setShot({ url: link.url, src: s, failed: false });
+      })
+      .catch(() => !ctrl.signal.aborted && setShot({ url: link.url, src: "", failed: true }));
+    return () => {
+      ctrl.abort();
+      if (src) URL.revokeObjectURL(src);
+    };
+  }, [needsShot, link?.url]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setPreview(null);
+    setShot(null);
+    if (!link || link.embed) return;
+    let live = true;
+    api<Preview>(`/admin/review-desk/preview?url=${encodeURIComponent(link.url)}`)
+      .then((p) => live && setPreview({ ...p, requested: link.url }))
+      .catch((e) => live && setPreview({ url: link.url, embed: "", frameable: false, status: 0, title: "", description: "", site: "", error: (e as Error).message, requested: link.url }));
+    return () => {
+      live = false;
+    };
+  }, [link?.url]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!link)
+    return (
+      <section className="desk-source" aria-label="Source">
+        <p className="desk-source-empty">No source links are stored for this place yet.</p>
+      </section>
+    );
+
+  const open = safeLink(link.url);
+  const frame = link.embed || (preview?.frameable ? preview.url : "");
+  return (
+    <section className="desk-source" aria-label="Source">
+      <div className="desk-source-bar">
+        <div className="desk-source-tabs" role="tablist" aria-label="Source links">
+          {links.map((l, k) => (
+            <button key={l.url} role="tab" aria-selected={k === pick} className={k === pick ? "on" : ""} onClick={() => onPick(k)} title={l.url}>
+              {l.label}
+            </button>
+          ))}
+        </div>
+        {open && (
+          <a className="desk-source-open" href={open} target="_blank" rel="noreferrer">
+            Open <kbd>O</kbd>
+          </a>
+        )}
+      </div>
+      {frame ? (
+        <iframe
+          key={frame}
+          className="desk-frame"
+          title={`${link.label} for ${place}`}
+          src={frame}
+          referrerPolicy="no-referrer"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        />
+      ) : !preview ? (
+        <p className="desk-source-wait">Checking whether this page can open here…</p>
+      ) : (
+        <>
+          <div className="desk-source-card">
+            <span className="desk-source-site">{preview.site || link.label}</span>
+            {preview.title && <strong>{preview.title}</strong>}
+            {preview.description && <p>{preview.description}</p>}
+            {(preview.error || (preview.status && preview.status !== 200) || shot?.failed) && (
+              <p className="desk-source-why">{shot?.failed ? "This site won't show its page to my browser. Open it in a new tab to see it." : blockedReason(preview)}</p>
+            )}
+          </div>
+          {needsShot && !shot && <p className="desk-source-wait">Opening the page in my own browser…</p>}
+          {shot?.src && shot.url === link.url && open && (
+            <a className="desk-shot" href={open} target="_blank" rel="noreferrer" title="Open the live page">
+              <img src={shot.src} alt={`How ${preview.site || "the page"} looks right now`} />
+              <span>This site won't open inside other pages, so this is a snapshot from my browser. Click to open it live.</span>
+            </a>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 const nextOpen = (from: number, list: DeskItem[]) => {
   for (let k = 1; k <= list.length; k++) {
     const j = (from + k) % list.length;
@@ -102,6 +223,7 @@ export default function ReviewDesk() {
   const [heard, setHeard] = useState("");
   const [log, setLog] = useState<Line[]>([]);
   const [history, setHistory] = useState<{ index: number; previous: string }[]>([]);
+  const [sourcePick, setSourcePick] = useState(0);
   const recognition = useRef<Recognition | null>(null);
   const speaking = useRef(false);
   const voiceOn = useRef(false);
@@ -148,6 +270,8 @@ export default function ReviewDesk() {
 
   const brief = (i: DeskItem, n: number, total: number) =>
     `Row ${n + 1} of ${total}. ${i.title}. ${i.claim} ${i.question}` + (i.answer ? ` You already said ${i.answer}.` : "");
+
+  useEffect(() => setSourcePick(0), [index]);
 
   // Read each row aloud when it comes up, while voice is on.
   useEffect(() => {
@@ -234,6 +358,18 @@ export default function ReviewDesk() {
         window.open(link, "_blank", "noopener");
         return say("Opened it in Google Maps.");
       }
+      case "openSource": {
+        const link = safeLink(item.links[sourcePick]?.url ?? "");
+        if (!link) return say("This place has no source link stored.");
+        window.open(link, "_blank", "noopener");
+        return say(`Opened the ${item.links[sourcePick].label.split(" · ")[0].toLowerCase()} in a new tab.`);
+      }
+      case "nextSource": {
+        if (item.links.length < 2) return say(item.links.length ? "That's the only source." : "There are no source links here.");
+        const n = (sourcePick + 1) % item.links.length;
+        setSourcePick(n);
+        return say(`Showing ${item.links[n].label.replace(" · ", " from ")}.`);
+      }
       case "progress":
         return say(`${done} of ${items.length} answered, ${items.length - done} to go.`);
       case "jump": {
@@ -243,7 +379,7 @@ export default function ReviewDesk() {
       case "help":
         return say(
           `Say yes, no${item.options.includes("closed") ? ", closed" : ""}, skip, back or undo. ` +
-            "Ask why, sources, where, or how many left. Say open map, or stop listening.",
+            "Ask why, sources, where, or how many left. Say open map, open source, next source, or stop listening.",
         );
       case "stop":
         say("Going quiet. Press V or the mic to wake me.");
@@ -314,6 +450,8 @@ export default function ReviewDesk() {
       u: { kind: "undo" },
       r: { kind: "repeat" },
       m: { kind: "map" },
+      o: { kind: "openSource" },
+      l: { kind: "nextSource" },
     };
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement;
@@ -458,11 +596,12 @@ export default function ReviewDesk() {
             src={item.embed}
             referrerPolicy="no-referrer"
           />
+          <SourceBox links={item.links ?? []} pick={sourcePick} onPick={setSourcePick} place={item.title} />
           <div className="desk-talk" aria-label="Conversation with the desk">
             {log.length === 0 ? (
               <p className="desk-tip">
                 Press the mic or <kbd>V</kbd> and just talk: “yes”, “no”, “skip”, “why?”, “sources?”, “where is it?”, “how many
-                left?”, “undo”.
+                left?”, “open the post”, “next source”, “undo”.
                 {!Recognizer && " This browser can't listen, so I'll only read rows aloud. Use Chrome or Edge to talk back."}
               </p>
             ) : (

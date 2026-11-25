@@ -17,6 +17,11 @@ test("desk voice phrases map to the right command", () => {
     ["how many left", { kind: "progress" }],
     ["open the map", { kind: "map" }],
     ["stop listening", { kind: "stop" }],
+    ["open the post", { kind: "openSource" }],
+    ["show this source", { kind: "openSource" }],
+    ["next source", { kind: "nextSource" }],
+    ["show me another post", { kind: "nextSource" }],
+    ["next", { kind: "next" }],
     ["banana", null],
   ];
   for (const [said, expected] of cases) expect(parseCommand(said), said).toEqual(expected);

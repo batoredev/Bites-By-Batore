@@ -7,12 +7,23 @@ written straight back into the sheet's last column; nothing else in the sheet ch
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
+import ipaddress
 import json
+import re
+import socket
+import subprocess
+import sys
+import threading
+from html import unescape
+from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urljoin, urlparse
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import func, select
 
@@ -95,15 +106,16 @@ def _coords(data: dict, venue) -> list[float] | None:
     return None
 
 
-def _evidence(db, name: str) -> list[dict]:
-    """Every stored place with this exact name (case-insensitive), with what we know about it."""
+def _evidence(db, name: str) -> tuple[list[dict], list[dict]]:
+    """Every stored place with this exact name (case-insensitive), what we know about it, and its source links."""
     key = (name or "").strip().lower()
     if not key:
-        return []
-    out = []
+        return [], []
+    out, raw = [], []
     spots = db.execute(select(IdentifiedSpot).where(func.lower(IdentifiedSpot.name) == key).limit(4)).scalars().all()
     for spot in spots:
         data = spot.data if isinstance(spot.data, dict) else json.loads(spot.data or "{}")
+        raw.append(data)
         venue = db.get(Venue, spot.venue_id) if spot.venue_id else None
         corr = data.get("corroboration")
         out.append({
@@ -123,7 +135,45 @@ def _evidence(db, name: str) -> list[dict]:
                         "coords": [float(venue.lat), float(venue.lng)] if venue.lat and venue.lng else None,
                         "address": venue.address or "", "sources": [], "corroboration": "", "websites": [],
                         "search": [], "notes": [], "taught": False})
-    return out
+    return out, _links(raw)
+
+
+SOURCE_LABELS = {
+    "instagram": "Instagram post", "overture": "Overture listing", "openstreetmap": "OpenStreetMap",
+    "monitored_page": "Watched page", "web_candidate": "Web page", "web": "Web page", "website": "Website",
+}
+INSTAGRAM_POST = re.compile(r"^https://(?:www\.)?instagram\.com/(?:[\w.]+/)?(p|reel|tv)/([\w-]+)")
+
+
+def _host(url: str) -> str:
+    host = urlparse(url).hostname or ""
+    return host[4:] if host.startswith("www.") else host
+
+
+def source_embed(url: str) -> str:
+    """A frame URL the source's own site allows, when one is known without fetching anything."""
+    post = INSTAGRAM_POST.match(url)
+    if post:
+        return f"https://www.instagram.com/{post.group(1)}/{post.group(2)}/embed/"
+    if _host(url) in {"facebook.com", "m.facebook.com"}:
+        return f"https://www.facebook.com/plugins/page.php?href={quote_plus(url)}&tabs=timeline&width=500&height=600"
+    return ""
+
+
+def _links(spot_data: list[dict]) -> list[dict]:
+    """Every distinct https source link behind the matching places, Instagram first."""
+    seen, out = set(), []
+    for data in spot_data:
+        entries = [(s.get("type") or "web", s.get("url")) for s in data.get("sources") or [] if isinstance(s, dict)]
+        entries += [("website", w) for w in data.get("website_candidates") or [] if isinstance(w, str)]
+        for kind, url in entries:
+            if not isinstance(url, str) or not url.startswith("https://") or url in seen:
+                continue
+            seen.add(url)
+            out.append({"kind": kind, "label": f"{SOURCE_LABELS.get(kind, 'Source')} · {_host(url)}",
+                        "url": url, "embed": source_embed(url)})
+    out.sort(key=lambda link: link["kind"] != "instagram")
+    return out[:8]
 
 
 def _embed(name: str, coords) -> str:
@@ -137,20 +187,20 @@ def _decision_item(db, row: list[str], index: int) -> dict:
     answer = row[5].strip().lower() if len(row) > 5 else ""
     claim = (DECISION_WORDS.get((decision, detail)) or DECISION_WORDS.get((decision, None))
              or OTHER_DECISIONS.get(decision, "{d}").format(d=detail or decision))
-    matches = _evidence(db, name)
+    matches, links = _evidence(db, name)
     coords = next((m["coords"] for m in matches if m["coords"]), None)
     hints = [f"{len(matches)} stored places share this name."] if len(matches) > 1 else []
     if note:
         hints.append(note)
     return {"sheet": "decisions", "row": index, "title": name, "question": "Was I right?",
             "claim": claim, "answer": answer, "options": ["yes", "no"], "maps_link": link,
-            "embed": _embed(name, coords), "matches": matches, "hints": hints}
+            "embed": _embed(name, coords), "matches": matches, "links": links, "hints": hints}
 
 
 def _overture_item(db, row: list[str], index: int) -> dict:
     name, category, area, confidence, link = (row + [""] * 6)[:5]
     answer = row[5].strip().lower() if len(row) > 5 else ""
-    matches = _evidence(db, name)
+    matches, links = _evidence(db, name)
     coords = next((m["coords"] for m in matches if m["coords"]), None)
     hints = []
     try:
@@ -164,7 +214,7 @@ def _overture_item(db, row: list[str], index: int) -> dict:
     return {"sheet": "overture", "row": index, "title": name, "question": "Does this place exist, and is it right?",
             "claim": f"A {category or 'place'} in {area or 'Coimbatore'}, from Overture Maps.", "answer": answer,
             "options": ["yes", "no", "closed"], "maps_link": link, "embed": _embed(name, coords),
-            "matches": matches, "hints": hints}
+            "matches": matches, "links": links, "hints": hints}
 
 
 @router.get("/items")
@@ -174,6 +224,141 @@ def items(user=Depends(admin_user), db=Depends(get_db)):
         _, rows = _read(sheet)
         out.extend(build(db, row, i) for i, row in enumerate(rows) if any(cell.strip() for cell in row))
     return {"items": out, "total": len(out), "done": sum(1 for i in out if i["answer"])}
+
+
+class _PageMeta(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.meta: dict[str, str] = {}
+        self._in_title = False
+        self.title = ""
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "title":
+            self._in_title = True
+        elif tag == "meta":
+            key = (a.get("property") or a.get("name") or "").lower()
+            if key in {"og:title", "og:description", "description", "og:site_name"} and a.get("content"):
+                self.meta.setdefault(key, a["content"])
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self._in_title = False
+
+    def handle_data(self, data):
+        if self._in_title and len(self.title) < 200:
+            self.title += data
+
+
+def _frame_blocked(headers) -> bool:
+    if headers.get("x-frame-options"):
+        return True
+    for directive in headers.get("content-security-policy", "").split(";"):
+        parts = directive.split()
+        if parts and parts[0].lower() == "frame-ancestors":
+            return "*" not in parts[1:]
+    return False
+
+
+def _public_https(url: str) -> bool:
+    p = urlparse(url)
+    if p.scheme != "https" or not p.hostname or p.username or p.password or p.port not in (None, 443):
+        return False
+    try:
+        addresses = socket.getaddrinfo(p.hostname, 443, type=socket.SOCK_STREAM)
+    except OSError:
+        return False
+    return bool(addresses) and all(ipaddress.ip_address(a[4][0]).is_global for a in addresses)
+
+
+PREVIEW_CACHE: dict[str, dict] = {}
+
+
+def page_preview(url: str, fetch=None) -> dict:
+    """Whether a source page can be shown in a frame here, plus its title and summary for when it can't."""
+    if url in PREVIEW_CACHE:
+        return PREVIEW_CACHE[url]
+    embed = source_embed(url)
+    result = {"url": url, "embed": embed, "frameable": bool(embed), "status": 0, "title": "", "description": "", "site": _host(url)}
+    current = url
+    try:
+        with (fetch or httpx.Client(timeout=6, follow_redirects=False, trust_env=False)) as client:
+            for _ in range(4):
+                if not _public_https(current):
+                    result["error"] = "The page isn't on a public https address."
+                    break
+                with client.stream("GET", current, headers={
+                    "User-Agent": "Mozilla/5.0 (compatible; BatoreReviewDesk/1.0)", "Accept": "text/html"}) as r:
+                    if r.is_redirect and r.headers.get("location"):
+                        current = urljoin(current, r.headers["location"])
+                        continue
+                    result["status"] = r.status_code
+                    result["url"] = current
+                    if not embed:
+                        result["frameable"] = r.status_code == 200 and not _frame_blocked(r.headers)
+                    if "html" in r.headers.get("content-type", ""):
+                        raw = bytearray()
+                        for chunk in r.iter_bytes():
+                            raw.extend(chunk)
+                            if len(raw) > 512 * 1024:
+                                break
+                        parser = _PageMeta()
+                        parser.feed(raw.decode("utf-8", errors="replace"))
+                        m = parser.meta
+                        result["title"] = unescape((m.get("og:title") or parser.title).strip())[:160]
+                        result["description"] = unescape((m.get("og:description") or m.get("description") or "").strip())[:300]
+                        result["site"] = m.get("og:site_name") or result["site"]
+                    break
+    except httpx.HTTPError:
+        result["error"] = "The page didn't answer."
+    if len(PREVIEW_CACHE) > 500:
+        PREVIEW_CACHE.clear()
+    PREVIEW_CACHE[url] = result
+    return result
+
+
+@router.get("/preview")
+def preview(url: str, user=Depends(admin_user)):
+    if not url.startswith("https://"):
+        raise HTTPException(400, "Only https source links can be previewed")
+    return page_preview(url)
+
+
+SHOT_DIR = ROOT / "data" / "review-desk-shots"
+_SHOT_LOCK = threading.Lock()
+
+
+def page_shot_path(url: str, run=subprocess.run) -> Path | None:
+    """A cached JPEG of the page as a browser renders it, for sites that refuse to be framed."""
+    path = SHOT_DIR / (hashlib.sha1(url.encode("utf-8")).hexdigest() + ".jpg")
+    failed = path.with_suffix(".failed")  # sites that show automated browsers nothing aren't retried
+    if path.exists():
+        return path
+    if failed.exists() or not _public_https(url):
+        return None
+    SHOT_DIR.mkdir(parents=True, exist_ok=True)
+    with _SHOT_LOCK:  # one browser at a time
+        if not path.exists():
+            try:
+                run([sys.executable, "-m", "app.page_shot", url, str(path)], cwd=str(ROOT / "backend"),
+                    timeout=40, capture_output=True, check=False)
+            except subprocess.TimeoutExpired:
+                pass
+    if path.exists() and path.stat().st_size > 0:
+        return path
+    failed.write_text(url, encoding="utf-8")
+    return None
+
+
+@router.get("/shot")
+def shot(url: str, user=Depends(admin_user)):
+    if not url.startswith("https://"):
+        raise HTTPException(400, "Only https source links can be shown")
+    path = page_shot_path(url)
+    if path is None:
+        raise HTTPException(404, "The page couldn't be rendered")
+    return FileResponse(path, media_type="image/jpeg")
 
 
 class Answer(BaseModel):

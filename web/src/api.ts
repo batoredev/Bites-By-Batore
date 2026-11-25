@@ -9,6 +9,15 @@ export async function setupAuth(config: Config) {
   return supabase;
 }
 export const authClient = () => supabase;
+/** An authenticated binary GET (images) as an object URL; the caller revokes it. */
+export async function apiBlob(path: string, signal?: AbortSignal): Promise<string> {
+  let token = localStorage.getItem("batore-demo-session");
+  if (supabase) token = (await supabase.auth.getSession()).data.session?.access_token || null;
+  const response = await fetch(`/api${path}`, { signal, headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!response.ok) throw new Error(response.status === 404 ? "The page couldn't be rendered." : "Request failed.");
+  return URL.createObjectURL(await response.blob());
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   let token = localStorage.getItem("batore-demo-session");
   if (supabase)
