@@ -9,10 +9,8 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
-import ipaddress
 import json
 import re
-import socket
 import subprocess
 import sys
 import threading
@@ -30,6 +28,7 @@ from sqlalchemy import func, select
 from .auth import admin_user
 from .config import ROOT
 from .db import Audit, IdentifiedSpot, Venue, get_db
+from .page_shot import public_ip
 
 router = APIRouter(prefix="/api/admin/review-desk")
 
@@ -261,15 +260,17 @@ def _frame_blocked(headers) -> bool:
     return False
 
 
-def _public_https(url: str) -> bool:
+def _pinned_ip(url: str) -> str | None:
+    """The checked public address to connect to for an https URL, or None. Callers connect to this
+    exact address so a second DNS answer (rebinding) can't send them somewhere private."""
     p = urlparse(url)
     if p.scheme != "https" or not p.hostname or p.username or p.password or p.port not in (None, 443):
-        return False
-    try:
-        addresses = socket.getaddrinfo(p.hostname, 443, type=socket.SOCK_STREAM)
-    except OSError:
-        return False
-    return bool(addresses) and all(ipaddress.ip_address(a[4][0]).is_global for a in addresses)
+        return None
+    return public_ip(p.hostname)
+
+
+def _public_https(url: str) -> bool:
+    return _pinned_ip(url) is not None
 
 
 PREVIEW_CACHE: dict[str, dict] = {}
@@ -284,12 +285,16 @@ def page_preview(url: str, fetch=None) -> dict:
     current = url
     try:
         with (fetch or httpx.Client(timeout=6, follow_redirects=False, trust_env=False)) as client:
-            for _ in range(4):
-                if not _public_https(current):
+            for _ in range(4):  # every redirect hop is checked and pinned again
+                ip = _pinned_ip(current)
+                if ip is None:
                     result["error"] = "The page isn't on a public https address."
                     break
-                with client.stream("GET", current, headers={
-                    "User-Agent": "Mozilla/5.0 (compatible; BatoreReviewDesk/1.0)", "Accept": "text/html"}) as r:
+                p = urlparse(current)
+                pinned = p._replace(netloc=f"[{ip}]" if ":" in ip else ip).geturl()
+                with client.stream("GET", pinned, headers={
+                    "Host": p.hostname, "User-Agent": "Mozilla/5.0 (compatible; BatoreReviewDesk/1.0)",
+                    "Accept": "text/html"}, extensions={"sni_hostname": p.hostname}) as r:
                     if r.is_redirect and r.headers.get("location"):
                         current = urljoin(current, r.headers["location"])
                         continue

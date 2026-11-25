@@ -104,11 +104,14 @@ def _mock(handler):
 
 def test_preview_reads_frame_rules_and_page_summary(monkeypatch):
     import httpx
-    monkeypatch.setattr(review_desk, "_public_https", lambda url: url.startswith("https://"))
+    monkeypatch.setattr(review_desk, "_pinned_ip", lambda url: "93.184.216.34" if url.startswith("https://") else None)
     review_desk.PREVIEW_CACHE.clear()
     page = '<html><head><title>Raw</title><meta property="og:title" content="Test &amp; Cafe"><meta name="description" content="Coffee in RS Puram"></head></html>'
 
+    seen = []
+
     def handler(request):
+        seen.append((request.url.host, request.headers["host"], request.extensions.get("sni_hostname")))
         if request.url.path == "/blocked":
             return httpx.Response(200, headers={"content-type": "text/html", "x-frame-options": "SAMEORIGIN"}, text=page)
         if request.url.path == "/csp":
@@ -122,6 +125,7 @@ def test_preview_reads_frame_rules_and_page_summary(monkeypatch):
     blocked = review_desk.page_preview("https://a.example/blocked", fetch=_mock(handler))
     assert blocked["frameable"] is False and blocked["title"] == "Test & Cafe" and blocked["description"] == "Coffee in RS Puram"
     assert review_desk.page_preview("https://a.example/csp", fetch=_mock(handler))["frameable"] is False
+    assert seen[0] == ("93.184.216.34", "a.example", "a.example")  # connects to the checked IP, verifies the real name
     hop = review_desk.page_preview("https://a.example/hop", fetch=_mock(handler))
     assert hop["frameable"] is True and hop["url"] == "https://a.example/open"
     down = review_desk.page_preview("https://a.example/downgrade", fetch=_mock(handler))
@@ -162,3 +166,29 @@ def test_page_shot_remembers_pages_that_render_nothing(monkeypatch, tmp_path):
     assert review_desk.page_shot_path("https://blank.example/", run=lambda cmd, **kw: calls.append(cmd)) is None
     assert review_desk.page_shot_path("https://blank.example/", run=lambda cmd, **kw: calls.append(cmd)) is None
     assert len(calls) == 1
+
+
+def test_public_ip_refuses_any_private_answer(monkeypatch):
+    from app import page_shot
+    answer = lambda *ips: (lambda *a, **k: [(2, 1, 6, "", (ip, 443)) for ip in ips])
+    monkeypatch.setattr(page_shot.socket, "getaddrinfo", answer("93.184.216.34"))
+    assert page_shot.public_ip("a.example") == "93.184.216.34"
+    for ips in (("127.0.0.1",), ("93.184.216.34", "10.0.0.5"), ("169.254.169.254",), ()):
+        monkeypatch.setattr(page_shot.socket, "getaddrinfo", answer(*ips))
+        assert page_shot.public_ip("a.example") is None
+
+
+def test_shot_proxy_refuses_private_and_non_tls_targets():
+    import socket as so
+    from app import page_shot
+    proxy, port = page_shot.start_proxy()
+    try:
+        for target in ("127.0.0.1:443", "localhost:443", "169.254.169.254:443", "example.com:80"):
+            with so.create_connection(("127.0.0.1", port), timeout=5) as c:
+                c.sendall(f"CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n\r\n".encode())
+                assert c.recv(64).startswith(b"HTTP/1.1 403"), target
+        with so.create_connection(("127.0.0.1", port), timeout=5) as c:
+            c.sendall(b"GET http://127.0.0.1:8000/ HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+            assert c.recv(64).startswith(b"HTTP/1.1 403")
+    finally:
+        proxy.shutdown()
