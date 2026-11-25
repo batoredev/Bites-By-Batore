@@ -65,6 +65,7 @@ from .research import erase_cases, public_case
 from .db import Investigation, ResearchCorrection, IdentifiedSpot
 from .learning_api import router as learning_router, correction_dict
 from .spots_api import router as spots_router
+from .review_desk import router as review_desk_router
 from .evaluation import router as evaluation_router
 from .maintenance_api import router as maintenance_router
 from .spots import spot_dict
@@ -125,6 +126,7 @@ app.include_router(ingest_router)
 app.include_router(research_router)
 app.include_router(learning_router)
 app.include_router(spots_router)
+app.include_router(review_desk_router)
 app.include_router(evaluation_router)
 app.include_router(maintenance_router)
 

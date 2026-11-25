@@ -20,6 +20,7 @@ import Research from "./Research";
 import Quality from "./Quality";
 import IdentifiedSpots from "./IdentifiedSpots";
 import Unpublished from "./Unpublished";
+import ReviewDesk from "./ReviewDesk";
 
 function OperationsEditor({
   venue,
@@ -441,6 +442,7 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
         aria-label="Operations sections"
       >
         {[
+          "desk",
           "review",
           "research",
           "spots",
@@ -457,7 +459,9 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
             aria-pressed={tab === t}
             onClick={() => setTab(t)}
           >
-            {t === "review"
+            {t === "desk"
+              ? "Quick review"
+              : t === "review"
               ? "Review queue"
               : t === "research"
                 ? "Investigations"
@@ -478,6 +482,7 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
         ))}
       </div>
       <ErrorBox message={error} />
+      {tab === "desk" && <ReviewDesk />}
       {tab === "research" && <Research admin venues={data.venues} />}
       {tab === "spots" && <IdentifiedSpots onChanged={load} />}
       {tab === "unpublished" && <Unpublished onChanged={load} />}

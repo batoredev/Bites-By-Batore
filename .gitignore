@@ -16,3 +16,4 @@ web/test-results/
 .env.*
 !.env.example
 .claude-flow/
+graphify-out/
