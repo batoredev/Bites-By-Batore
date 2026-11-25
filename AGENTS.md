@@ -1,5 +1,11 @@
 # Project continuity
 
+Latest continuation (25 November): read the 25 November section of PROJECT_MASTER.md.
+Quick review desk with sources, voice and custom answers (owner's words become verdicts and
+Place-manager edits after confirmation). Refresh jobs now rotate in bulk mode; stale queue
+cleared. Run browser tests only with scripts/e2e.ps1 (throwaway DB); port 8000 is the
+owner's real app. 479 backend tests pass. Launch target ~16 December, Coimbatore only.
+
 Latest continuation (16 November): Ollama cloud key is in .env (OLLAMA_API_KEY) but the
 account has no credits, so every cloud model returns 402. Cloud routing for chosen roles
 exists (OLLAMA_CLOUD_TEXT_MODEL / OLLAMA_CLOUD_VISION_MODEL, empty = local) with automatic

@@ -1,6 +1,30 @@
 # Bites by Batore — master project record and completion tracker
 
-Last consolidated: **13 November 2026 (Asia/Calcutta)**.
+Last consolidated: **25 November 2026 (Asia/Calcutta)**.
+
+## Review desk, custom answers, refresh queue fix and readiness audit — 25 November 2026
+
+Launch target: Coimbatore-only, around 16 December 2026, accuracy first.
+
+- [x] Quick review desk (Operations → Quick review): one spot-check row at a time with
+  evidence, map, source box (Instagram embeds; snapshots for sites that refuse framing,
+  public addresses enforced at connect time), keys and voice.
+- [x] Custom answers: the owner's own typed or spoken words are read into a verdict and
+  corrections (rules first; local model only as a fallback and only for words the owner
+  actually used), shown for confirmation, written to the sheet (`owner_note` column) and
+  applied through the Place manager edit path so `learned.py` rules pick them up. Undo
+  restores records and the row.
+- [x] Data agent defect fixed: in bulk mode `refresh` was missing from the job rotation, so
+  no published-place refresh ever ran while 1,512 were added daily (10,428 waiting, all
+  no-ops for test inventory). Refresh now rotates, uncheckable test places are not
+  scheduled, newer refreshes supersede older ones. Live queue cleared on restart.
+- [x] `scripts/e2e.ps1` runs browser tests on a throwaway DB with its own API and worker.
+  479 backend tests; 56 demo + 12 local-mode browser checks pass.
+- [ ] Owner has answered 3 of 100 spot-check rows; accuracy remains unmeasured.
+- [ ] Live audit: 1,512 published places are agent-approved test inventory (prices
+  estimated, open status assumed, 1,363 single-source, zero owner Maps reviews); 1,203
+  identified drafts, 842 without coordinates. Backlog: 2,728 enrich, 1,061 page checks,
+  467 quality upgrades overdue; throughput about 190 jobs/day on one laptop.
 
 ## Owner edits, learning, relevance gate and wider directory — 13 November 2026
 
