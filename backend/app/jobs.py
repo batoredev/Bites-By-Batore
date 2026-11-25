@@ -498,16 +498,21 @@ def schedule():
                 select(Venue).where(Venue.status == "published", Venue.is_demo == (cfg.app_mode == "demo"))
             )
         )
+        current = set()
         for venue in venues:
+            details = venue.details or {}
+            if details.get("test_inventory") and not details.get("google_place_id"):
+                continue  # nothing a refresh could check; it would only pile up in the queue
             urgent = venue.id in active_venues
             interval_bucket = int(time.time() // 3600) if urgent else bucket
-            enqueue(
-                db,
-                "refresh",
-                {"venue_id": venue.id},
-                f"refresh:{venue.id}:{interval_bucket}:{'active' if urgent else 'regular'}",
-                priority=80 if urgent else 20,
-            )
+            key = f"refresh:{venue.id}:{interval_bucket}:{'active' if urgent else 'regular'}"
+            current.add(key)
+            enqueue(db, "refresh", {"venue_id": venue.id}, key, priority=80 if urgent else 20)
+        # A newer refresh supersedes any older one still waiting for the same place.
+        for stale in db.scalars(select(Job).where(Job.kind == "refresh", Job.state == "queued", Job.key.like("refresh:%"))):
+            if stale.key not in current:
+                stale.state, stale.error = "cancelled", "Superseded by a newer refresh or no longer checkable"
+        db.commit()
         if cfg.app_mode == "local" and cfg.autonomous_discovery:
             from .frontier import start_next
             from .db import User

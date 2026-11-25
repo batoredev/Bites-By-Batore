@@ -124,6 +124,7 @@ def fair_kind(db, eligible):
         "source_watch",
         "city_directory",
         "spot_deduplicate",
+        "refresh",  # without a turn here, published-place checks never ran in bulk mode
     ]
     eligible = set(eligible)
     if not eligible.intersection(cycle):
