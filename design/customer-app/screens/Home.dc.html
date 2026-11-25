@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#4a2e18}a:hover{color:#1f140c}
+.star{-webkit-mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat}
+.spin{animation:turn 14s linear infinite}
+.rise{animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
+.road{stroke-dasharray:0 10;stroke-linecap:round;animation:travel 6s linear infinite}
+.chip{transition:background .2s,transform .2s}
+.chip:active{transform:scale(.95)}
+@keyframes turn{to{transform:rotate(360deg)}}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes travel{to{stroke-dashoffset:-100}}
+@media (prefers-reduced-motion:reduce){.spin,.rise,.road{animation:none}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#fbf2dc;color:#1f140c;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;position:relative;overflow:hidden;padding:28px 20px 0;gap:22px">
+  <div class="rise" style="display:flex;align-items:center;justify-content:space-between;padding:0 4px">
+    <div>
+      <div style="font-size:14px;font-weight:600;color:#6b4423">Good evening</div>
+      <div style="font-size:28px;font-weight:800;letter-spacing:-.8px">Karthik</div>
+    </div>
+    <a href="Taste.dc.html" aria-label="My taste and account" style="width:48px;height:48px;border-radius:24px;background:#1f140c;color:#f5c842;display:grid;place-items:center;font-weight:800;font-size:18px;text-decoration:none">K</a>
+  </div>
+
+  <div class="rise" style="position:relative;overflow:hidden;background:#1f140c;color:#fbf2dc;border-radius:28px;padding:24px;display:flex;flex-direction:column;gap:18px;animation-delay:.08s">
+    <svg aria-hidden="true" width="350" height="220" viewBox="0 0 350 220" fill="none" style="position:absolute;right:-20px;bottom:-10px">
+      <path class="road" d="M10 210C120 180 200 120 340 40" stroke="#c8962e" stroke-opacity=".5" stroke-width="4"></path>
+    </svg>
+    <div class="star spin" aria-hidden="true" style="position:absolute;right:22px;top:20px;width:56px;height:56px;background:#f5c842"></div>
+    <div style="position:relative;font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.15">Where to<br>today?</div>
+    <div style="position:relative;display:flex;flex-wrap:wrap;gap:8px">
+      <a class="chip" href="Planning.dc.html" style="min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:20px;background:#4a2e18;color:#fbf2dc;font-size:14px;font-weight:700;text-decoration:none">Something chill</a>
+      <a class="chip" href="Planning.dc.html" style="min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:20px;background:#4a2e18;color:#fbf2dc;font-size:14px;font-weight:700;text-decoration:none">Food first</a>
+      <a class="chip" href="Planning.dc.html" style="min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:20px;background:#4a2e18;color:#fbf2dc;font-size:14px;font-weight:700;text-decoration:none">Surprise me</a>
+    </div>
+    <a href="Vibe.dc.html" style="position:relative;display:flex;align-items:center;justify-content:center;height:54px;border-radius:27px;background:#f5c842;color:#1f140c;font-weight:800;font-size:16px;text-decoration:none">Plan something</a>
+  </div>
+
+  <div class="rise" style="display:flex;flex-direction:column;gap:10px;animation-delay:.16s">
+    <div style="font-size:16px;font-weight:800;padding:0 4px">Coming up</div>
+    <a href="Plan.dc.html" style="display:flex;align-items:center;gap:14px;background:#fffcf5;border-radius:22px;padding:16px;text-decoration:none;color:#1f140c">
+      <span style="width:52px;height:52px;border-radius:16px;background:#9bbf65;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;line-height:1">
+        <span style="font-size:11px;font-weight:700">Sat</span><span style="font-size:20px;font-weight:800">23</span>
+      </span>
+      <span style="flex:1;min-width:0">
+        <span style="display:block;font-size:16px;font-weight:700">Board games and street food</span>
+        <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">7 pm · 4 people</span>
+      </span>
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+    </a>
+  </div>
+
+  <a class="rise" href="Share.dc.html" style="display:flex;align-items:center;gap:14px;border:1.5px dashed #dec69b;border-radius:22px;padding:16px;text-decoration:none;color:#1f140c;animation-delay:.24s">
+    <span style="width:44px;height:44px;border-radius:22px;background:#f5c842;display:grid;place-items:center;flex-shrink:0">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f140c" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+    </span>
+    <span>
+      <span style="display:block;font-size:15px;font-weight:700">Saw a place on Instagram?</span>
+      <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">Share the link and we’ll find it.</span>
+    </span>
+  </a>
+
+  <nav aria-label="Main" style="position:absolute;left:20px;right:20px;bottom:24px;height:68px;border-radius:34px;background:#1f140c;display:flex;justify-content:space-around;align-items:center;box-shadow:0 16px 30px -16px rgba(31,20,12,.6)">
+    <a href="Home.dc.html" aria-label="Home" aria-current="page" style="width:56px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-decoration:none">
+      <span class="star" style="display:block;width:28px;height:28px;background:#f5c842"></span>
+      <span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span>
+    </a>
+    <a href="Explore.dc.html" aria-label="Explore" style="width:56px;height:56px;display:grid;place-items:center;opacity:.6">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M3 5.5 8.5 3l7 2.5L21 3v15.5L15.5 21l-7-2.5L3 21z"></path><path d="M8.5 3v15.5M15.5 5.5V21"></path><g fill="#9bbf65" stroke="none"><circle cx="5.6" cy="16.2" r=".9"></circle><circle cx="7.6" cy="14.8" r=".9"></circle><circle cx="10.2" cy="14" r=".9"></circle><circle cx="12.6" cy="12.4" r=".9"></circle><circle cx="15.2" cy="11" r=".9"></circle><circle cx="18.2" cy="8.4" r="1.6"></circle></g></svg>
+    </a>
+    <a href="Saved.dc.html" aria-label="Saved" style="width:56px;height:56px;display:grid;place-items:center;opacity:.6">
+      <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path><circle cx="12" cy="9.5" r="1.6" fill="#9bbf65" stroke="none"></circle></svg>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Sign in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#4a2e18}a:hover{color:#1f140c}
+.star{background:#1f140c;-webkit-mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;animation:assemble 1.2s cubic-bezier(.2,.8,.2,1) both}
+.rise{animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+.field{transition:border-color .2s,box-shadow .2s}
+.field:focus-within{border-color:#c8962e;box-shadow:0 0 0 4px rgba(245,200,66,.35)}
+@keyframes assemble{from{opacity:0;transform:scale(.6);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.star,.rise{animation:none}.field{transition:none}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#fbf2dc;color:#1f140c;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;padding:28px 24px 36px;overflow:hidden">
+  <a href="Main.dc.html" aria-label="Back" style="width:44px;height:44px;border-radius:22px;display:grid;place-items:center;margin-left:-10px">
+    <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+  </a>
+
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:28px">
+    <div class="star" role="img" aria-label="Bites" style="width:64px;height:64px"></div>
+    <div class="rise" style="animation-delay:.2s">
+      <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.15">Sign in to save<br>your plans</div>
+      <div style="font-size:15px;color:#6b4423;margin-top:10px;line-height:1.5">Your taste and saved places stay with your account.</div>
+    </div>
+
+    <div class="rise" style="display:flex;flex-direction:column;gap:12px;animation-delay:.35s">
+      <button style="display:flex;align-items:center;justify-content:center;gap:12px;height:56px;border-radius:28px;border:1.5px solid #ead7b1;background:#fffcf5;font:inherit;font-size:16px;font-weight:700;color:#1f140c;cursor:pointer">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.3H12v4.3h5.9a5 5 0 0 1-2.2 3.3v2.8h3.6c2.1-1.9 3.3-4.8 3.3-8.1z"></path><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.9A11 11 0 0 0 12 23z"></path><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10l3.7-2.9z"></path><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"></path></svg>
+        Continue with Google
+      </button>
+
+      <div style="display:flex;align-items:center;gap:12px;color:#8a5a2b;font-size:13px;font-weight:600;margin:4px 0">
+        <span style="flex:1;height:0;border-top:2px dotted #dec69b"></span>or<span style="flex:1;height:0;border-top:2px dotted #dec69b"></span>
+      </div>
+
+      <label class="field" style="display:flex;flex-direction:column;gap:4px;border:1.5px solid #ead7b1;border-radius:18px;background:#fffcf5;padding:10px 18px">
+        <span style="font-size:12px;font-weight:700;color:#6b4423">Email</span>
+        <input type="email" placeholder="you@example.com" style="border:none;background:transparent;font:inherit;font-size:16px;color:#1f140c;outline:none;padding:0">
+      </label>
+      <a href="Home.dc.html" style="display:flex;align-items:center;justify-content:center;height:56px;border-radius:28px;background:#1f140c;color:#fbf2dc;font-weight:700;font-size:16px;text-decoration:none">Email me a sign-in link</a>
+    </div>
+  </div>
+
+  <div class="rise" style="text-align:center;font-size:13px;color:#6b4423;line-height:1.5;animation-delay:.5s">
+    <a href="Home.dc.html" style="font-weight:700;display:inline-block;min-height:44px;line-height:44px">Not now, just look around</a>
+    <div>By continuing you agree to the <a href="#terms">Terms</a> and <a href="#privacy">Privacy policy</a>.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

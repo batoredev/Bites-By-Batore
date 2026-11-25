@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Welcome</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Fraunces:ital,opsz,wght@1,9..144,600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#f5c842}a:hover{color:#fbf2dc}
+.star{background:#f5c842;-webkit-mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;animation:assemble 1.4s cubic-bezier(.2,.8,.2,1) both}
+.wordmark{background:#1f140c;-webkit-mask:url(/_blob/dfc862a98dc33be0dc5c89cb0c10efb2) center/contain no-repeat;mask:url(/_blob/dfc862a98dc33be0dc5c89cb0c10efb2) center/contain no-repeat}
+.halo{background-image:radial-gradient(circle,#c8962e 1.4px,transparent 1.8px);background-size:14px 14px;-webkit-mask:radial-gradient(circle,#000 0,#000 30%,transparent 68%);mask:radial-gradient(circle,#000 0,#000 30%,transparent 68%);animation:breathe 4s ease-in-out infinite}
+.road{stroke-dasharray:0 11;stroke-linecap:round;animation:travel 6s linear infinite}
+.ping{transform-box:fill-box;transform-origin:center;animation:ping 3.2s ease-out infinite}
+.rise{animation:rise .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes assemble{0%{opacity:0;transform:scale(.4) rotate(-25deg);filter:blur(6px)}60%{opacity:1;filter:blur(0)}100%{transform:scale(1) rotate(0)}}
+@keyframes breathe{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:.6;transform:scale(1.06)}}
+@keyframes travel{to{stroke-dashoffset:-110}}
+@keyframes ping{0%{transform:scale(1);opacity:.7}80%,100%{transform:scale(3.4);opacity:0}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.star,.halo,.road,.rise{animation:none}.ping{animation:none;opacity:0}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#1f140c;color:#fbf2dc;font-family:'Plus Jakarta Sans',system-ui,sans-serif;position:relative;overflow:hidden;display:flex;flex-direction:column">
+  <svg aria-hidden="true" width="390" height="844" viewBox="0 0 390 844" style="position:absolute;inset:0" fill="none">
+    <g stroke="#c8962e" stroke-opacity=".14" stroke-width="1.2">
+      <path d="M-10 150C120 130 260 190 400 160"></path>
+      <path d="M70-10C90 260 50 560 110 860"></path>
+      <path d="M310-10C280 300 350 600 300 860"></path>
+      <path d="M-10 610C140 570 260 650 400 590"></path>
+    </g>
+    <path class="road" d="M-20 800C110 700 250 600 410 420" stroke="#c8962e" stroke-opacity=".55" stroke-width="4"></path>
+    <path class="road" d="M200 860C215 720 180 640 210 520" stroke="#c8962e" stroke-opacity=".45" stroke-width="4" style="animation-duration:8s"></path>
+    <circle class="ping" cx="295" cy="168" r="6" stroke="#f5c842" stroke-width="1.5"></circle>
+    <circle cx="295" cy="168" r="4.5" fill="#f5c842"></circle>
+    <circle class="ping" cx="76" cy="240" r="6" stroke="#9bbf65" stroke-width="1.5" style="animation-delay:1.6s"></circle>
+    <circle cx="76" cy="240" r="3.5" fill="#9bbf65"></circle>
+  </svg>
+
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;position:relative;padding:0 32px">
+    <div style="position:relative;width:220px;height:220px;display:grid;place-items:center">
+      <div class="halo" style="position:absolute;inset:-40px;border-radius:50%"></div>
+      <div class="star" role="img" aria-label="Bites star" style="width:170px;height:170px"></div>
+    </div>
+    <div class="rise" style="display:flex;flex-direction:column;align-items:center;gap:10px;animation-delay:.5s">
+      <div style="font-size:64px;font-weight:800;letter-spacing:-3px;line-height:.9">Bites</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#dec69b">by
+        <span style="display:inline-flex;background:#fbf2dc;border-radius:4px;padding:4px 7px"><span class="wordmark" role="img" aria-label="Batore" style="display:block;width:66px;height:15px"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rise" style="position:relative;padding:48px 28px 40px;margin-top:-48px;display:flex;flex-direction:column;gap:18px;animation-delay:.8s;background:linear-gradient(to bottom,rgba(31,20,12,0),rgba(31,20,12,.55) 48px)">
+    <div style="font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1.1">Your personal <span style="background:#f5c842;color:#1f140c;border-radius:8px;padding:0 6px;white-space:nowrap">plan‑maker.</span></div>
+    <div style="font-size:15px;line-height:1.5;color:#dec69b">For the days you want to go out <span style="color:#fbf2dc;font-weight:700">but have no clue where.</span></div>
+    <a href="Login.dc.html" style="display:flex;align-items:center;justify-content:center;gap:10px;height:58px;border-radius:18px;background:#f5c842;color:#1f140c;font-weight:800;font-size:17px;text-decoration:none">Let’s go out
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+    </a>
+    <a href="Explore.dc.html" style="text-align:center;font-size:14px;font-weight:600;text-decoration:none">I already have a craving</a>
+    <div style="text-align:center;font-family:Fraunces,serif;font-style:italic;font-size:15px;color:#9bbf65">Different people. Different plan.</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

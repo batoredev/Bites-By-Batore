@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bites · Explore</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}html,body,*{scrollbar-width:none}::-webkit-scrollbar{display:none}
+a{color:#4a2e18}a:hover{color:#1f140c}
+.tile{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
+.tile:active{transform:scale(.96)}
+.band{background-image:radial-gradient(circle,#4a2e18 2px,transparent 2.5px);background-size:11px 11px;-webkit-mask:linear-gradient(to bottom,transparent,#000);mask:linear-gradient(to bottom,transparent,#000)}
+.icon{transition:transform .4s cubic-bezier(.2,1.5,.4,1)}
+.lift .icon{transform:translateY(-4px) scale(1.08)}
+.item{animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.star{background:#f5c842;-webkit-mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat;mask:url(/_blob/98a5385507d3c5e2bcc8a282f933aad7) center/contain no-repeat}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tile,.icon{transition:none}.item{animation:none}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#fbf2dc;color:#1f140c;font-family:'Plus Jakarta Sans',system-ui,sans-serif;display:flex;flex-direction:column;position:relative;overflow:hidden;padding:28px 20px 0;gap:18px">
+  <div style="font-size:30px;font-weight:800;letter-spacing:-1px;padding:0 4px">Explore</div>
+
+  <label style="display:flex;align-items:center;gap:10px;height:52px;border-radius:26px;background:#fffcf5;border:1.5px solid #ead7b1;padding:0 18px">
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a5a2b" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg>
+    <span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Search</span>
+    <input placeholder="Search dishes, places or areas" style="flex:1;border:none;background:transparent;font:inherit;font-size:15px;color:#1f140c;outline:none;min-width:0">
+  </label>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+    <sc-for list="{{cats}}" as="c" hint-placeholder-count="3">
+      <button class="tile {{c.cls}}" onClick="{{c.pick}}" aria-pressed="{{c.on}}" style="{{c.style}}">
+        <span class="icon" style="display:grid;place-items:center;height:56px;position:relative;z-index:1">
+          <sc-if value="{{c.isFood}}" hint-placeholder-val="{{true}}">
+            <svg aria-hidden="true" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.8" stroke-linecap="round"><path d="M4.5 15.5a7.5 7.5 0 0 1 15 0"></path><path d="M2.5 15.5h19M6 18.8h12"></path><circle cx="12" cy="6.3" r="1.5" fill="#9bbf65" stroke="none"></circle></svg>
+          </sc-if>
+          <sc-if value="{{c.isDo}}" hint-placeholder-val="{{false}}">
+            <svg aria-hidden="true" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M6 4.6Q12 1 18 4.6M6 19.4Q12 23 18 19.4" stroke="#f5c842"></path><path d="M8.6 6.9Q12 5.2 15.4 6.9M8.6 17.1Q12 18.8 15.4 17.1" stroke="#9bbf65"></path><path d="M10.3 9h3.6M12.3 9v5.6" stroke="#f5c842"></path><ellipse cx="11" cy="14.6" rx="1.6" ry="1.2" fill="#f5c842"></ellipse></svg>
+          </sc-if>
+        </span>
+        <span style="position:relative;z-index:1;font-size:13px;font-weight:700;color:#fbf2dc">{{c.label}}</span>
+        <span class="band" style="position:absolute;left:0;right:0;bottom:0;height:46px"></span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:baseline;padding:4px 4px 0">
+    <div style="font-size:18px;font-weight:800">Near RS Puram</div>
+    <button style="border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:#4a2e18;text-decoration:underline;text-underline-offset:4px;min-height:44px;cursor:pointer;padding:0">Change</button>
+  </div>
+
+  <div style="display:flex;flex-direction:column">
+    <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+      <a class="item" href="Place.dc.html" style="display:flex;align-items:center;gap:14px;padding:14px 4px;border-bottom:1px solid #ead7b1;text-decoration:none;color:#1f140c;animation-delay:{{it.delay}}">
+        <span style="width:46px;height:46px;border-radius:16px;background:{{it.tint}};flex-shrink:0"></span>
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font-size:16px;font-weight:700">{{it.name}}</span>
+          <span style="display:block;font-size:13px;color:#6b4423;margin-top:2px">{{it.note}}</span>
+        </span>
+        <sc-if value="{{it.closed}}" hint-placeholder-val="{{false}}">
+          <span style="font-size:12px;font-weight:700;color:#8a5a2b">Closed</span>
+        </sc-if>
+      </a>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Main" style="position:absolute;left:20px;right:20px;bottom:24px;height:68px;border-radius:34px;background:#1f140c;display:flex;justify-content:space-around;align-items:center;box-shadow:0 16px 30px -16px rgba(31,20,12,.6)">
+    <a href="Home.dc.html" aria-label="Home" style="width:56px;height:56px;display:grid;place-items:center;opacity:.6">
+      <span class="star" style="display:block;width:28px;height:28px"></span>
+    </a>
+    <a href="Explore.dc.html" aria-label="Explore" aria-current="page" style="width:56px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-decoration:none">
+      <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M3 5.5 8.5 3l7 2.5L21 3v15.5L15.5 21l-7-2.5L3 21z"></path><path d="M8.5 3v15.5M15.5 5.5V21"></path><g fill="#9bbf65" stroke="none"><circle cx="5.6" cy="16.2" r=".9"></circle><circle cx="7.6" cy="14.8" r=".9"></circle><circle cx="10.2" cy="14" r=".9"></circle><circle cx="12.6" cy="12.4" r=".9"></circle><circle cx="15.2" cy="11" r=".9"></circle><circle cx="18.2" cy="8.4" r="1.6"></circle></g></svg>
+      <span style="width:5px;height:5px;border-radius:50%;background:#f5c842"></span>
+    </a>
+    <a href="Saved.dc.html" aria-label="Saved" style="width:56px;height:56px;display:grid;place-items:center;opacity:.6">
+      <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"></path><circle cx="12" cy="9.5" r="1.6" fill="#9bbf65" stroke="none"></circle></svg>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { cat: 'food' }; }
+  renderVals() {
+    const defs = [['food', 'Food'], ['do', 'Things to do']];
+    const cats = defs.map(([id, label]) => {
+      const on = this.state.cat === id;
+      return {
+        label, on: String(on), cls: on ? 'lift' : '', isFood: id === 'food', isDo: id === 'do',
+        style: 'position:relative;overflow:hidden;height:118px;border-radius:24px;border:none;cursor:pointer;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#1f140c;' +
+          (on ? 'box-shadow:0 0 0 3px #f5c842' : 'box-shadow:none;opacity:.85'),
+        pick: () => this.setState({ cat: id })
+      };
+    });
+    const lists = {
+      food: [['Dosa place', 'South Indian · ₹150 per person', true], ['Street food lane', 'Chaat and grills · ₹200 per person', true], ['Quiet café', 'Coffee · ₹120 per person', false], ['Biryani house', 'Biryani · ₹300 per person', true]],
+      do: [['Open mic night', 'Music · From 8 pm', true], ['Board game café', 'Games · ₹250 per hour', true], ['Race Course walk', 'Outdoors · Free', true], ['Bowling alley', 'Bowling · ₹400 per game', false]]
+    };
+    const tints = ['#f5c842', '#c8962e', '#dec69b', '#8a5a2b'];
+    const items = lists[this.state.cat].map(([name, note, open], k) => ({ name, note, closed: !open, tint: tints[k % 4], delay: (k * 0.06) + 's' }));
+    return { cats, items };
+  }
+}
+</script>
+</body>
+</html>

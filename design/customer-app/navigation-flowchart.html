@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#fbf2dc;font-family:'Plus Jakarta Sans',sans-serif;color:#1f140c}
+#wrap{display:inline-block;padding:40px 48px 36px}
+h1{margin:0 0 4px;font-size:30px;letter-spacing:-.8px}
+p{margin:0 0 18px;color:#6b4423;font-size:15px}
+.legend{display:flex;gap:22px;font-size:13px;font-weight:700;color:#4a2e18;margin-top:14px}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.sw{width:18px;height:14px;border-radius:4px;display:inline-block}
+</style></head>
+<body><div id="wrap">
+<h1>Bites · app navigation</h1>
+<p>Every page and where each tap leads. Tab bar shows on Home, Explore and Saved only.</p>
+<pre class="mermaid">
+flowchart LR
+  W([Welcome]):::dark -->|Let's go out| S([Sign in]):::dark
+  S -->|Google · email link · Not now| H
+  subgraph TABS[" Tab bar "]
+    direction TB
+    H[Home]:::tab
+    E[Explore]:::tab
+    SV[Saved]:::tab
+  end
+  H -->|Plan something| V[Set the vibe]
+  H -->|Quick chips| M
+  V -->|Make my plan| M([Making your plan]):::dark
+  M -->|after 4 s · See plans| P[Your plans]
+  P -->|Choose this plan| D[Plan detail]
+  P -.->|Edit · Change filters| V
+  D -->|Tap a stop| PL[Place]
+  PL -.->|Plan around this| V
+  H -->|Coming up| D
+  H -->|Avatar| T[My taste]
+  T --> VI[Places you've been]
+  T --> DI[Dish diary]
+  VI -->|Tap a visit| PL
+  T -.->|Sign out| W
+  H -->|Instagram card| SH([Share a find]):::dark
+  H -->|Area chip| A{{Area sheet}}:::sheet
+  E -->|Change| A
+  E -->|Tap a row| PL
+  SV -->|Plan card| D
+  SV -->|Place row| PL
+  S -.->|Terms · Privacy| LG[Privacy and terms]
+  T -->|Privacy and terms| LG
+  T -->|Delete my account| DEL{{Delete account sheet}}:::sheet
+  DEL -.->|Confirm| W
+  PL -->|Directions| MAPS[(Google Maps)]:::ext
+  D -->|Let's go · full route| MAPS
+  D -.->|Let's go · becomes Coming up| H
+  D -->|Share| SHR[(Share sheet)]:::ext
+  classDef ext fill:#eef3e0,stroke:#2e6b3e,color:#1f140c
+  classDef default fill:#fffcf5,stroke:#c8962e,stroke-width:1.5px,color:#1f140c,font-weight:700
+  classDef dark fill:#1f140c,stroke:#4a2e18,color:#fbf2dc,font-weight:700
+  classDef tab fill:#f5c842,stroke:#c8962e,color:#1f140c,font-weight:800
+  classDef sheet fill:#fbf2dc,stroke:#8a5a2b,stroke-dasharray:4 3,color:#1f140c
+  style TABS fill:#f6e9cc,stroke:#dec69b,color:#6b4423
+</pre>
+<div class="legend">
+  <span><i class="sw" style="background:#1f140c"></i>Dark screens</span>
+  <span><i class="sw" style="background:#f5c842"></i>Tabs</span>
+  <span><i class="sw" style="background:#fffcf5;border:1.5px solid #c8962e"></i>Light screens</span>
+  <span><i class="sw" style="background:#fbf2dc;border:1.5px dashed #8a5a2b"></i>Pop-up sheet</span>
+  <span>- - → goes back to change something</span>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({ startOnLoad: false, theme: 'base', flowchart: { curve: 'basis', nodeSpacing: 36, rankSpacing: 70, padding: 14 },
+  themeVariables: { fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '16px', lineColor: '#8a5a2b', edgeLabelBackground: '#fbf2dc', textColor: '#4a2e18' } });
+mermaid.run().then(() => { document.body.dataset.ready = '1'; });
+</script>
+</body></html>
