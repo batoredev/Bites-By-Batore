@@ -483,3 +483,14 @@ def test_planner_returns_as_many_distinct_plans_as_requested(local, request_data
     assert len(sets) == len(set(sets))
     scores = [o["result"]["score"] for o in many["options"]]
     assert scores == sorted(scores, reverse=True)
+
+
+def test_publish_can_be_limited_to_chosen_places(local):
+    with Session() as db:
+        chosen = spot(db, "Garnet Cafe", "cafe", {"coordinates": {"lat": 11.01, "lng": 76.96}})
+        spot(db, "Onyx Mess", "street_food", {"coordinates": {"lat": 11.03, "lng": 76.98}})
+        result = test_inventory.publish(db, OWNER, ids={chosen.id})
+        db.commit()
+        assert result["published"] == 1
+        live = {v.name for v in db.scalars(select(Venue))}
+        assert "Garnet Cafe" in live and "Onyx Mess" not in live

@@ -531,7 +531,7 @@ def custom_undo(body: Undo, user=Depends(admin_user), db=Depends(get_db)):
     """Put the row and every record its custom answer touched back exactly as they were."""
     from . import teacher, test_inventory
 
-    restored = 0
+    restored, restored_ids = 0, set()
     for log_id in reversed(body.logs):
         log = db.get(Audit, log_id)
         if not log or log.actor != user.id or not log.action.startswith("desk.teach."):
@@ -547,6 +547,7 @@ def custom_undo(body: Undo, user=Depends(admin_user), db=Depends(get_db)):
             if snap["venue_id"] and not kept and row.status == "approved":
                 row.status = "identified"
             restored += 1
+            restored_ids.add(row.id)
         for saved in log.detail["before"]["venues"]:
             venue = db.get(Venue, saved["id"])
             if venue:
@@ -555,7 +556,7 @@ def custom_undo(body: Undo, user=Depends(admin_user), db=Depends(get_db)):
         log.action = "undone." + log.action
     db.flush()
     if restored:
-        test_inventory.publish(db, user.id)
+        test_inventory.publish(db, user.id, ids=restored_ids)  # only what this undo touched
     if body.answer not in SHEETS.get(body.sheet, ("", set()))[1]:
         raise HTTPException(400, "Unsupported answer")
     _store(body.sheet, body.row, answer=body.answer, note=body.note)

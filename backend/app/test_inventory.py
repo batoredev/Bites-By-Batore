@@ -259,7 +259,8 @@ def _tags(row):
     return list(dict.fromkeys(name_key(w) for w in words if name_key(w)))[:20]
 
 
-def publish(db, owner):
+def publish(db, owner, ids=None):
+    """Publish eligible identified places. `ids` limits it to those records (None = all)."""
     stamp = now()
     expires = (datetime.now(timezone.utc) + timedelta(days=90)).isoformat()
     rows = list(
@@ -279,6 +280,8 @@ def publish(db, owner):
         "duplicate nearby": 0,
         "low-confidence Overture only": 0,
     }
+    if ids is not None:
+        rows = [r for r in rows if r.id in set(ids)]
     published, estimated = [], {"price": 0, "hours": 0}
     # Venues published earlier count too, so a repeat run cannot add their duplicates.
     chosen = [(v.name, (v.lat, v.lng)) for v in db.scalars(select(Venue).where(Venue.is_demo.is_(False)))]
