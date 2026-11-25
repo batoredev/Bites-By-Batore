@@ -1964,6 +1964,122 @@ pre {
   opacity: 0.4;
   cursor: default;
 }
+.desk-said {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  background: var(--cocoa);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.desk-said span {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.desk-words {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.desk-words label {
+  font-size: 0.85rem;
+  color: var(--gold);
+}
+.desk-words > div {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.desk-words textarea {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--desk-line);
+  background: var(--espresso);
+  color: var(--cream);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  scrollbar-width: none;
+}
+.desk-words textarea::-webkit-scrollbar {
+  display: none;
+}
+.desk-words textarea:focus {
+  outline: 2px solid var(--turmeric);
+  outline-offset: 1px;
+}
+.desk-words button {
+  flex: none;
+  padding: 0 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--gold);
+  background: none;
+  color: var(--cream);
+  font-weight: 700;
+  cursor: pointer;
+}
+.desk-words button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.desk-words small {
+  font-size: 0.75rem;
+  color: var(--gold);
+}
+.desk-reading {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--turmeric);
+  background: var(--espresso);
+}
+.desk-reading p {
+  margin: 0;
+}
+.desk-reading-head {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.desk-reading-verdict {
+  margin-top: 0.2rem !important;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--cream);
+}
+.desk-reading ul {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.desk-reading li {
+  padding: 0.25rem 0.65rem;
+  border-radius: 99px;
+  background: var(--cocoa);
+  font-size: 0.85rem;
+}
+.desk-reading-note {
+  margin-top: 0.6rem !important;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--gold);
+}
+.desk-reading-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
 .desk-side {
   display: flex;
   flex-direction: column;

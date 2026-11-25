@@ -50,6 +50,23 @@ interface DeskItem {
   embed: string;
   matches: Match[];
   hints: string[];
+  note?: string;
+  other?: string;
+}
+
+interface Reading {
+  verdict: "yes" | "no" | "closed" | "";
+  edits: { action: string; value: string; label: string }[];
+  note: string;
+  summary: string;
+  used_model: boolean;
+  place: boolean;
+}
+
+interface CustomUndo {
+  logs: string[];
+  answer: string;
+  note: string;
 }
 
 interface Line {
@@ -222,8 +239,14 @@ export default function ReviewDesk() {
   const [voice, setVoice] = useState(false);
   const [heard, setHeard] = useState("");
   const [log, setLog] = useState<Line[]>([]);
-  const [history, setHistory] = useState<{ index: number; previous: string }[]>([]);
+  const [history, setHistory] = useState<{ index: number; previous: string; custom?: CustomUndo }[]>([]);
   const [sourcePick, setSourcePick] = useState(0);
+  const [words, setWords] = useState("");
+  const [reading, setReading] = useState<Reading | null>(null);
+  const [thinking, setThinking] = useState(false);
+  const wordsBox = useRef<HTMLTextAreaElement | null>(null);
+  const pending = useRef<Reading | null>(null);
+  pending.current = reading;
   const recognition = useRef<Recognition | null>(null);
   const speaking = useRef(false);
   const voiceOn = useRef(false);
@@ -271,7 +294,61 @@ export default function ReviewDesk() {
   const brief = (i: DeskItem, n: number, total: number) =>
     `Row ${n + 1} of ${total}. ${i.title}. ${i.claim} ${i.question}` + (i.answer ? ` You already said ${i.answer}.` : "");
 
-  useEffect(() => setSourcePick(0), [index]);
+  useEffect(() => {
+    setSourcePick(0);
+    setReading(null);
+    setWords("");
+  }, [index]);
+
+  // The owner's own words: show what was understood first, change nothing until confirmed.
+  const understand = async (text: string) => {
+    if (!item || thinking || text.trim().length < 2) return;
+    setThinking(true);
+    setError("");
+    try {
+      const r = await post<Reading>("/admin/review-desk/custom/preview", { sheet: item.sheet, row: item.row, text });
+      setReading(r);
+      setWords(text);
+      say(`I understood: ${r.summary}${r.edits.length && !r.place ? " There's no stored place to teach, so I'll keep it as a note." : ""} Say confirm or cancel.`);
+    } catch (e) {
+      setError((e as Error).message);
+      say("I couldn't read that. The error is on screen.");
+    } finally {
+      setThinking(false);
+    }
+  };
+
+  const confirm = async () => {
+    if (!items || !item || !reading || busy) return;
+    setBusy(true);
+    try {
+      const r = await post<{ answer: string; note: string; applied: string[]; skipped: { label: string; reason: string }[]; undo: CustomUndo }>(
+        "/admin/review-desk/custom/apply",
+        { sheet: item.sheet, row: item.row, text: reading.note, reading },
+      );
+      const list = items.map((x, k) => (k === index ? { ...x, answer: r.answer, note: r.note } : x));
+      setItems(list);
+      setHistory((h) => [...h, { index, previous: item.answer, custom: r.undo }]);
+      setReading(null);
+      setWords("");
+      const taught = r.applied.length ? ` Taught: ${r.applied.join("; ")}.` : "";
+      const missed = r.skipped.length ? ` Not applied: ${r.skipped.map((s) => `${s.label} (${s.reason})`).join("; ")}` : "";
+      say(`Saved your words for ${item.title}.${taught}${missed}`);
+      const next = nextOpen(index, list);
+      if (next >= 0 && !r.skipped.length) setIndex(next);
+    } catch (e) {
+      setError((e as Error).message);
+      say("I couldn't save that. The error is on screen.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cancelReading = () => {
+    if (!pending.current) return;
+    setReading(null);
+    say("Cancelled. Nothing was changed.");
+  };
 
   // Read each row aloud when it comes up, while voice is on.
   useEffect(() => {
@@ -311,8 +388,13 @@ export default function ReviewDesk() {
     const target = items[last.index];
     setBusy(true);
     try {
-      await post("/admin/review-desk/answer", { sheet: target.sheet, row: target.row, answer: last.previous });
-      setItems(items.map((x, k) => (k === last.index ? { ...x, answer: last.previous } : x)));
+      if (last.custom) {
+        await post("/admin/review-desk/custom/undo", { sheet: target.sheet, row: target.row, ...last.custom });
+      } else {
+        await post("/admin/review-desk/answer", { sheet: target.sheet, row: target.row, answer: last.previous });
+      }
+      const note = last.custom ? last.custom.note : target.note;
+      setItems(items.map((x, k) => (k === last.index ? { ...x, answer: last.previous, note } : x)));
       setHistory((h) => h.slice(0, -1));
       setIndex(last.index);
       say(`Undone. ${target.title} is back to ${last.previous || "unanswered"}.`);
@@ -387,6 +469,30 @@ export default function ReviewDesk() {
     }
   };
 
+  // Short phrases are commands; a sentence (or an answer with more to it) is the owner's own words.
+  const spoken = useRef<(text: string) => void>(() => {});
+  spoken.current = (raw: string) => {
+    const text = raw.trim();
+    if (!text) return;
+    const count = text.split(/\s+/).length;
+    if (pending.current) {
+      note("you", text);
+      if (/^(confirm|yes|yeah|do it|save( it)?|go ahead|correct|that'?s right)\b/i.test(text)) return void confirm();
+      if (/^(cancel|no|nope|wrong|never ?mind|stop)\b/i.test(text)) return cancelReading();
+      return void understand(text);
+    }
+    const command = parseCommand(text);
+    if (command && count <= 5 && !(command.kind === "answer" && count > 2)) return handle.current(command, text);
+    if (count >= 3 || command) {
+      note("you", text);
+      return void understand(text);
+    }
+    note("you", text);
+    say("I didn't catch that. Say help for the options, or just tell me in your own words.");
+  };
+  const latest = useRef({ confirm, cancelReading });
+  latest.current = { confirm, cancelReading };
+
   const startVoice = useCallback(() => {
     voiceOn.current = true;
     setVoice(true);
@@ -403,12 +509,7 @@ export default function ReviewDesk() {
           setHeard(text);
           if (!e.results[k].isFinal) continue;
           setHeard("");
-          const command = parseCommand(text);
-          if (command) handle.current(command, text.trim());
-          else {
-            note("you", text.trim());
-            say("I didn't catch a command. Say help to hear the options.");
-          }
+          spoken.current(text);
         }
       };
       r.onend = () => {
@@ -457,6 +558,14 @@ export default function ReviewDesk() {
       const el = e.target as HTMLElement;
       if (el.closest?.("input, textarea, select, [contenteditable]") || e.metaKey || e.ctrlKey || e.altKey) return;
       const key = e.key.toLowerCase();
+      if (pending.current && (key === "enter" || key === "escape")) {
+        e.preventDefault();
+        return void (key === "enter" ? latest.current.confirm() : latest.current.cancelReading());
+      }
+      if (key === "t" || key === "/") {
+        e.preventDefault();
+        return wordsBox.current?.focus();
+      }
       if (key === "v") {
         e.preventDefault();
         return voiceOn.current ? stopVoice() : startVoice();
@@ -572,6 +681,77 @@ export default function ReviewDesk() {
               </button>
             ))}
           </div>
+
+          {item.note && !reading && (
+            <p className="desk-said">
+              <span>You said</span> {item.note}
+            </p>
+          )}
+          {reading ? (
+            <div className="desk-reading" role="dialog" aria-label="What I understood">
+              <p className="desk-reading-head">I understood</p>
+              <p className="desk-reading-verdict">
+                {reading.verdict ? ANSWER_LABEL[reading.verdict] : "No yes/no in what you said"}
+              </p>
+              {reading.edits.length > 0 && (
+                <ul>
+                  {reading.edits.map((e) => (
+                    <li key={e.action}>{e.label}</li>
+                  ))}
+                </ul>
+              )}
+              <p className="desk-reading-note">
+                {reading.edits.length && !reading.place
+                  ? "There's no stored place under this name, so your words are kept as a note only."
+                  : reading.edits.length
+                    ? "I'll teach these to the agents the same way your Place manager edits do. Undo puts everything back."
+                    : "Nothing to change on the place. Your words are saved as a note."}
+                {reading.used_model && " Read with the local model; anything you didn't say was dropped."}
+              </p>
+              <div className="desk-reading-actions">
+                <button className="desk-answer desk-yes" disabled={busy} onClick={confirm}>
+                  Confirm <kbd>Enter</kbd>
+                </button>
+                <button className="desk-answer" disabled={busy} onClick={cancelReading}>
+                  Cancel <kbd>Esc</kbd>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="desk-words"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void understand(words);
+              }}
+            >
+              <label htmlFor="desk-words">Or tell me in your own words</label>
+              <div>
+                <textarea
+                  id="desk-words"
+                  ref={wordsBox}
+                  rows={2}
+                  value={words}
+                  maxLength={600}
+                  placeholder="e.g. No, it's a bakery in Peelamedu called Sri Krishna Sweets"
+                  onChange={(e) => setWords(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void understand(words);
+                    }
+                    if (e.key === "Escape") (e.target as HTMLTextAreaElement).blur();
+                  }}
+                />
+                <button type="submit" disabled={thinking || words.trim().length < 2}>
+                  {thinking ? "Reading…" : "Read it"}
+                </button>
+              </div>
+              <small>
+                <kbd>T</kbd> to type · I'll show what I understood before anything changes.
+              </small>
+            </form>
+          )}
           <div className="desk-nav">
             <button onClick={() => move(-1)}>← Back</button>
             <button onClick={() => move(1)}>
@@ -601,7 +781,8 @@ export default function ReviewDesk() {
             {log.length === 0 ? (
               <p className="desk-tip">
                 Press the mic or <kbd>V</kbd> and just talk: “yes”, “no”, “skip”, “why?”, “sources?”, “where is it?”, “how many
-                left?”, “open the post”, “next source”, “undo”.
+                left?”, “open the post”, “next source”, “undo”. Or say it fully, like “no, it's a bakery in Peelamedu”, and
+                I'll show what I understood first.
                 {!Recognizer && " This browser can't listen, so I'll only read rows aloud. Use Chrome or Edge to talk back."}
               </p>
             ) : (

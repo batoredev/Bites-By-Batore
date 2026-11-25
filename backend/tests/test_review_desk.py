@@ -1,5 +1,6 @@
 """Quick review desk: shows spot-check rows with gathered evidence and writes answers back."""
 
+import csv
 from types import SimpleNamespace
 
 import pytest
@@ -192,3 +193,100 @@ def test_shot_proxy_refuses_private_and_non_tls_targets():
             assert c.recv(64).startswith(b"HTTP/1.1 403")
     finally:
         proxy.shutdown()
+
+
+# ---- custom answers -------------------------------------------------------------------
+
+from app import review_answers  # noqa: E402
+
+ROW = {"title": "Test Cafe", "options": ["yes", "no", "closed"], "matches": [{"category": "cafe", "area": "RS Puram"}], "other": ""}
+
+
+@pytest.mark.parametrize("said, verdict, edits", [
+    ("no it's actually a bakery in Peelamedu", "no", [("category", "dessert"), ("area", "Peelamedu")]),
+    ("it's closed now", "closed", []),
+    ("not a real place, just a dish name", "no", [("reject", "not_a_venue")]),
+    ("this is in Palakkad, not Coimbatore", "no", [("reject", "wrong_city")]),
+    ("wrong, it is called Sree Annapoorna in Gandhipuram", "no", [("rename", "Sree Annapoorna"), ("area", "Gandhipuram")]),
+    ("not a cafe, it's a restaurant", "no", [("category", "food")]),
+    ("looks fine to me", "yes", []),
+    ("yes", "yes", []),
+])
+def test_custom_answers_are_read_from_the_owners_words(said, verdict, edits):
+    reading = review_answers.interpret(said, ROW)
+    assert reading["verdict"] == verdict
+    assert [(e["action"], e["value"]) for e in reading["edits"]] == edits
+    assert reading["note"] == said
+
+
+def test_model_readings_keep_only_what_was_said():
+    said = "the owner told me they mostly sell sweets these days"
+    invented = {"verdict": "no", "edits": [
+        {"action": "rename", "value": "Krishna Sweets"},      # never said
+        {"action": "area", "value": "Peelamedu"},            # never said
+        {"action": "category", "value": "dessert"},          # "sweets" was said
+        {"action": "reject", "value": "not_a_venue"},        # never said
+    ]}
+    kept = review_answers.validate(invented, said, ROW)
+    assert [(e["action"], e["value"]) for e in kept["edits"]] == [("category", "dessert")]
+    model_used = review_answers.interpret(said, ROW, ask_model=lambda t, i: invented)
+    assert model_used["used_model"] and [e["action"] for e in model_used["edits"]] == ["category"]
+
+
+def test_closed_is_not_offered_where_the_sheet_has_no_closed():
+    row = {**ROW, "options": ["yes", "no"]}
+    assert review_answers.interpret("it's closed now", row)["verdict"] == ""
+
+
+def test_custom_answer_teaches_the_place_records_the_note_and_undoes(desk, monkeypatch):
+    from app import learned
+    monkeypatch.setattr(review_desk, "ask_model", lambda t, i: None)
+    with Session() as db:
+        spot = IdentifiedSpot(user_id=desk.owner, identity_key="k:test-cafe", name="Test Cafe", category="cafe", area="RS Puram")
+        spot.data = {"sources": []}
+        db.add(spot)
+        db.commit()
+        spot_id = spot.id
+    post = lambda path, **kw: desk.client.post("/api/admin/review-desk/" + path, json=kw, headers=desk.auth)
+    said = "no it's actually a bakery in Peelamedu"
+    reading = post("custom/preview", sheet="overture", row=0, text=said).json()
+    assert reading["verdict"] == "no" and reading["place"] is True
+    # A client can't slip in something the owner didn't say.
+    reading["edits"].append({"action": "rename", "value": "Evil Name"})
+    done = post("custom/apply", sheet="overture", row=0, text=said, reading=reading).json()
+    assert done["answer"] == "no" and len(done["applied"]) == 2 and not done["skipped"]
+    with Session() as db:
+        row = db.get(IdentifiedSpot, spot_id)
+        assert (row.name, row.category, row.area) == ("Test Cafe", "dessert", "Peelamedu")
+        assert learned.category_for(learned.load(db, desk.owner), "Test Cafe") == "dessert"
+    sheet = (desk.dir / "spotcheck-overture-50.csv").read_text(encoding="utf-8-sig").splitlines()
+    assert sheet[0].endswith(",owner_note")
+    cells = next(csv.reader([sheet[1]]))
+    assert cells[5] == "no" and cells[6] == said
+    item = desk.client.get("/api/admin/review-desk/items", headers=desk.auth).json()["items"][2]
+    assert item["answer"] == "no" and item["note"] == said
+    assert post("custom/undo", sheet="overture", row=0, **done["undo"]).json()["records_restored"] >= 1
+    with Session() as db:
+        row = db.get(IdentifiedSpot, spot_id)
+        assert (row.category, row.area) == ("cafe", "RS Puram")
+    cells = next(csv.reader([(desk.dir / "spotcheck-overture-50.csv").read_text(encoding="utf-8-sig").splitlines()[1]]))
+    assert cells[5] == "" and cells[6] == ""
+
+
+def test_custom_answer_without_a_stored_place_keeps_the_note(desk, monkeypatch):
+    monkeypatch.setattr(review_desk, "ask_model", lambda t, i: None)
+    said = "no, it is a bakery"
+    post = lambda path, **kw: desk.client.post("/api/admin/review-desk/" + path, json=kw, headers=desk.auth)
+    reading = post("custom/preview", sheet="decisions", row=0, text=said).json()
+    done = post("custom/apply", sheet="decisions", row=0, text=said, reading=reading).json()
+    assert done["applied"] == [] and done["skipped"][0]["reason"].startswith("No stored place")
+    cells = next(csv.reader([(desk.dir / "spotcheck-claude-decisions-50.csv").read_text(encoding="utf-8-sig").splitlines()[1]]))
+    assert cells[5] == "no" and cells[6] == said
+
+
+def test_a_model_yes_with_a_correction_becomes_no_unless_the_owner_said_yes():
+    said = "the owner told me they mostly sell sweets these days"
+    guess = {"verdict": "yes", "edits": [{"action": "category", "value": "dessert"}]}
+    assert review_answers.validate(guess, said, ROW)["verdict"] == "no"
+    assert review_answers.validate(guess, "yes, they mostly sell sweets now", ROW)["verdict"] == "yes"
+    assert review_answers.interpret("it shut during covid I think", ROW, ask_model=lambda t, i: 1 / 0)["verdict"] == "closed"

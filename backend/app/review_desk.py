@@ -22,17 +22,19 @@ from urllib.parse import quote_plus, urljoin, urlparse
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from .auth import admin_user
 from .config import ROOT
 from .db import Audit, IdentifiedSpot, Venue, get_db
+from . import review_answers
 from .page_shot import public_ip
 
 router = APIRouter(prefix="/api/admin/review-desk")
 
 SHEET_DIR = ROOT / "data" / "city-collection"
+ANSWER_COL, NOTE_COL, NOTE_HEADER = 5, 6, "owner_note"
 SHEETS = {
     "decisions": ("spotcheck-claude-decisions-50.csv", {"yes", "no", ""}),
     "overture": ("spotcheck-overture-50.csv", {"yes", "no", "closed", ""}),
@@ -118,7 +120,7 @@ def _evidence(db, name: str) -> tuple[list[dict], list[dict]]:
         venue = db.get(Venue, spot.venue_id) if spot.venue_id else None
         corr = data.get("corroboration")
         out.append({
-            "name": spot.name, "area": spot.area or (venue.area if venue else ""), "category": spot.category,
+            "id": spot.id, "name": spot.name, "area": spot.area or (venue.area if venue else ""), "category": spot.category,
             "status": spot.status, "coords": _coords(data, venue),
             "address": (venue.address if venue and venue.address else ", ".join(_list(data.get("address_clues"), 2))),
             "sources": _list(data.get("sources")),
@@ -130,7 +132,7 @@ def _evidence(db, name: str) -> tuple[list[dict], list[dict]]:
         })
     if not out:
         for venue in db.execute(select(Venue).where(func.lower(Venue.name) == key).limit(4)).scalars().all():
-            out.append({"name": venue.name, "area": venue.area, "category": venue.category, "status": venue.status,
+            out.append({"id": "", "name": venue.name, "area": venue.area, "category": venue.category, "status": venue.status,
                         "coords": [float(venue.lat), float(venue.lng)] if venue.lat and venue.lng else None,
                         "address": venue.address or "", "sources": [], "corroboration": "", "websites": [],
                         "search": [], "notes": [], "taught": False})
@@ -181,9 +183,13 @@ def _embed(name: str, coords) -> str:
     return f"https://maps.google.com/maps?q={quote_plus(name + ' Coimbatore')}&z=14&output=embed"
 
 
+def _owner_note(row: list[str]) -> str:
+    return row[NOTE_COL].strip() if len(row) > NOTE_COL else ""
+
+
 def _decision_item(db, row: list[str], index: int) -> dict:
     decision, name, detail, note, link = (row + [""] * 6)[:5]
-    answer = row[5].strip().lower() if len(row) > 5 else ""
+    answer = row[ANSWER_COL].strip().lower() if len(row) > ANSWER_COL else ""
     claim = (DECISION_WORDS.get((decision, detail)) or DECISION_WORDS.get((decision, None))
              or OTHER_DECISIONS.get(decision, "{d}").format(d=detail or decision))
     matches, links = _evidence(db, name)
@@ -192,13 +198,14 @@ def _decision_item(db, row: list[str], index: int) -> dict:
     if note:
         hints.append(note)
     return {"sheet": "decisions", "row": index, "title": name, "question": "Was I right?",
-            "claim": claim, "answer": answer, "options": ["yes", "no"], "maps_link": link,
+            "claim": claim, "answer": answer, "note": _owner_note(row), "options": ["yes", "no"], "maps_link": link,
+            "other": detail if decision in {"same_as", "distinct"} else "",
             "embed": _embed(name, coords), "matches": matches, "links": links, "hints": hints}
 
 
 def _overture_item(db, row: list[str], index: int) -> dict:
     name, category, area, confidence, link = (row + [""] * 6)[:5]
-    answer = row[5].strip().lower() if len(row) > 5 else ""
+    answer = row[ANSWER_COL].strip().lower() if len(row) > ANSWER_COL else ""
     matches, links = _evidence(db, name)
     coords = next((m["coords"] for m in matches if m["coords"]), None)
     hints = []
@@ -212,6 +219,7 @@ def _overture_item(db, row: list[str], index: int) -> dict:
         hints.append(f"{len(matches)} branches share this name; the map shows the first one.")
     return {"sheet": "overture", "row": index, "title": name, "question": "Does this place exist, and is it right?",
             "claim": f"A {category or 'place'} in {area or 'Coimbatore'}, from Overture Maps.", "answer": answer,
+            "note": _owner_note(row), "other": "",
             "options": ["yes", "no", "closed"], "maps_link": link, "embed": _embed(name, coords),
             "matches": matches, "links": links, "hints": hints}
 
@@ -372,21 +380,186 @@ class Answer(BaseModel):
     answer: str
 
 
+def _store(sheet: str, index: int, answer: str | None = None, note: str | None = None) -> list[str]:
+    """Write the answer and/or the owner's note into their fixed columns; other cells stay as they were."""
+    header, rows = _read(sheet)
+    if not 0 <= index < len(rows):
+        raise HTTPException(404, "No such row")
+    if note is not None and len(header) <= NOTE_COL:
+        header.extend([""] * (NOTE_COL - len(header)) + [NOTE_HEADER])
+    row = rows[index]
+    width = max(len(header), ANSWER_COL + 1)
+    row.extend([""] * (width - len(row)))
+    if answer is not None:
+        row[ANSWER_COL] = answer
+    if note is not None:
+        row[NOTE_COL] = note
+    _write(sheet, header, rows)
+    return row
+
+
 @router.post("/answer")
 def answer(body: Answer, user=Depends(admin_user), db=Depends(get_db)):
     value = body.answer.strip().lower()
     if body.sheet not in SHEETS or value not in SHEETS[body.sheet][1]:
         raise HTTPException(400, "Unsupported answer")
-    header, rows = _read(body.sheet)
-    if not 0 <= body.row < len(rows):
-        raise HTTPException(404, "No such row")
-    row = rows[body.row]
-    width = max(len(header), 6)
-    row.extend([""] * (width - len(row)))
-    row[width - 1] = value
-    _write(body.sheet, header, rows)
+    row = _store(body.sheet, body.row, answer=value)
     name = row[1] if body.sheet == "decisions" else row[0]
     db.add(Audit(actor=str(getattr(user, "id", None) or user), action="review_desk.answer",
                  target=f"{body.sheet}:{body.row}", detail={"answer": value, "name": name}))
     db.commit()
     return {"ok": True, "sheet": body.sheet, "row": body.row, "answer": value}
+
+
+# ---- The owner's own words: interpret, confirm, record and teach -------------------------
+
+ask_model = review_answers.model_reading  # replaced in tests
+
+
+def _item(db, sheet: str, index: int) -> dict:
+    if sheet not in SHEETS:
+        raise HTTPException(400, "Unknown sheet")
+    _, rows = _read(sheet)
+    if not 0 <= index < len(rows):
+        raise HTTPException(404, "No such row")
+    return (_decision_item if sheet == "decisions" else _overture_item)(db, rows[index], index)
+
+
+class Said(BaseModel):
+    sheet: str
+    row: int
+    text: str = Field(min_length=2, max_length=600)
+
+
+class SaidApply(Said):
+    reading: dict
+
+
+@router.post("/custom/preview")
+def custom_preview(body: Said, user=Depends(admin_user), db=Depends(get_db)):
+    """What the desk understood. Changes nothing."""
+    item = _item(db, body.sheet, body.row)
+    reading = review_answers.interpret(body.text, item, ask_model)
+    reading["place"] = bool(item["matches"] and item["matches"][0].get("id"))
+    return reading
+
+
+def _other_id(db, owner: str, name: str) -> str | None:
+    key = (name or "").strip().lower()
+    row = db.scalars(select(IdentifiedSpot).where(
+        IdentifiedSpot.user_id == owner, func.lower(IdentifiedSpot.name) == key,
+        IdentifiedSpot.status.notin_(["rejected"]))).first()
+    return row.id if row else None
+
+
+def _decision(db, owner, spot_id, edit, text):
+    action, value = edit["action"], edit["value"]
+    if action == "category":
+        return {"id": spot_id, "action": "category", "category": value}
+    if action == "area":
+        return {"id": spot_id, "action": "area", "area": value}
+    if action == "rename":
+        return {"id": spot_id, "action": "rename", "name": value}
+    if action == "maps":
+        return {"id": spot_id, "action": "maps", "maps_url": value}
+    if action == "reject":
+        return {"id": spot_id, "action": "reject", "kind": value, "note": text}
+    other = _other_id(db, owner, value)
+    if not other:
+        return None
+    return {"id": spot_id, "action": action, **({"target": other} if action == "same_as" else {"other": other})}
+
+
+@router.post("/custom/apply")
+def custom_apply(body: SaidApply, user=Depends(admin_user), db=Depends(get_db)):
+    """Record the owner's words on the sheet and teach the place through the owner's own edit path.
+
+    The reading sent back is re-checked against the words, so only what the owner said is applied.
+    Every edit keeps a before-snapshot so the desk's Undo restores it exactly.
+    """
+    from . import teacher
+
+    item = _item(db, body.sheet, body.row)
+    reading = review_answers.validate(body.reading, body.text, item)
+    owner = user.id
+    previous = {"answer": item["answer"], "note": item.get("note", "")}
+    _store(body.sheet, body.row, answer=reading["verdict"] or None, note=reading["note"])
+    spot_id = item["matches"][0].get("id") if item["matches"] else ""
+    applied, skipped, logs = [], [], []
+    for edit in reading["edits"]:
+        decision = _decision(db, owner, spot_id, edit, reading["note"]) if spot_id else None
+        if not decision:
+            skipped.append({"label": edit["label"], "reason": "No stored place to teach this on; your note keeps it."})
+            continue
+        before = teacher._touched(db, owner, decision)
+        venues = [db.get(Venue, r.venue_id) for r in before if r.venue_id]
+        snapshot = json.loads(json.dumps({
+            "rows": [teacher._snap(r) for r in before],
+            "venues": [{"id": v.id, **{k: getattr(v, k) for k in teacher.VENUE_FIELDS}} for v in venues if v],
+        }, default=str))
+        try:
+            teacher._apply(db, owner, decision)  # the same path the Place manager uses; the owner is the actor
+        except (HTTPException, ValueError) as exc:
+            db.rollback()
+            skipped.append({"label": edit["label"], "reason": str(getattr(exc, "detail", exc))})
+            continue
+        log = Audit(actor=owner, action="desk.teach." + edit["action"], target=spot_id,
+                    detail={"decision": decision, "before": snapshot, "sheet": body.sheet, "row": body.row,
+                            "said": reading["note"]})
+        db.add(log)
+        db.flush()
+        logs.append(log.id)
+        applied.append(edit["label"])
+    db.add(Audit(actor=owner, action="review_desk.custom", target=f"{body.sheet}:{body.row}",
+                 detail={"said": reading["note"], "verdict": reading["verdict"], "applied": applied,
+                         "skipped": skipped, "teach_logs": logs, "previous": previous}))
+    db.commit()
+    return {"answer": reading["verdict"] or item["answer"], "note": reading["note"], "applied": applied,
+            "skipped": skipped, "undo": {"logs": logs, **previous}}
+
+
+class Undo(BaseModel):
+    sheet: str
+    row: int
+    logs: list[str] = []
+    answer: str = ""
+    note: str = ""
+
+
+@router.post("/custom/undo")
+def custom_undo(body: Undo, user=Depends(admin_user), db=Depends(get_db)):
+    """Put the row and every record its custom answer touched back exactly as they were."""
+    from . import teacher, test_inventory
+
+    restored = 0
+    for log_id in reversed(body.logs):
+        log = db.get(Audit, log_id)
+        if not log or log.actor != user.id or not log.action.startswith("desk.teach."):
+            continue
+        for snap in log.detail["before"]["rows"]:
+            row = db.get(IdentifiedSpot, snap["id"])
+            if not row or row.user_id != user.id:
+                continue
+            row.name, row.category, row.area = snap["name"], snap["category"], snap["area"]
+            row.status, row.data = snap["status"], snap["data"]
+            kept = snap["venue_id"] and db.get(Venue, snap["venue_id"])
+            row.venue_id = snap["venue_id"] if kept else ""
+            if snap["venue_id"] and not kept and row.status == "approved":
+                row.status = "identified"
+            restored += 1
+        for saved in log.detail["before"]["venues"]:
+            venue = db.get(Venue, saved["id"])
+            if venue:
+                for key in teacher.VENUE_FIELDS:
+                    setattr(venue, key, saved[key])
+        log.action = "undone." + log.action
+    db.flush()
+    if restored:
+        test_inventory.publish(db, user.id)
+    if body.answer not in SHEETS.get(body.sheet, ("", set()))[1]:
+        raise HTTPException(400, "Unsupported answer")
+    _store(body.sheet, body.row, answer=body.answer, note=body.note)
+    db.add(Audit(actor=user.id, action="review_desk.custom_undo", target=f"{body.sheet}:{body.row}",
+                 detail={"logs": body.logs, "records_restored": restored}))
+    db.commit()
+    return {"records_restored": restored}
