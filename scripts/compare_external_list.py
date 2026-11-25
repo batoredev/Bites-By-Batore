@@ -40,7 +40,7 @@ def names_from_html(path: Path) -> list[str]:
     # Restaurant cards link to a restaurant page; take the card heading (or link text) as the name.
     for a in tree.xpath("//a[@href]"):
         href = a.get("href", "")
-        if re.search(r"/(restaurant|restaurants|place|places|venue)/[^/?#]+", href) and "/city/" not in href:
+        if re.search(r"/(restaurant|restaurants|place|places|venue)/[^/?#]+/?$", href):
             heading = a.xpath(".//h1|.//h2|.//h3|.//h4|.//strong")
             name = " ".join((heading[0] if heading else a).text_content().split())
             if 2 <= len(name) <= 90:
@@ -88,13 +88,21 @@ def ours():
 RANK = {"venue:published": 0, "approved": 1, "identified": 2, "quarantined": 3, "merged": 4, "rejected": 5}
 
 
-def best(name: str, rows, by_key, by_core):
-    key, c = name_key(name), core(name)
-    for kind, pool in (("exact", by_key.get(key)), ("same name, different branch words", by_core.get(c))):
-        if pool:
-            hit = min(pool, key=lambda r: RANK.get(r["status"], 9))
-            return kind, hit, 1.0
-    scored = max(((difflib.SequenceMatcher(None, c, core(r["said"])).ratio(), r) for r in rows), key=lambda t: t[0])
+def variants(name: str) -> list[str]:
+    """The listed name, and the name without tails like "| Pure Veg Homemade Food", "@ Kovai" or "(...)"."""
+    short = re.split(r"\s+[|@–-]\s+|\s*\|\s*", name)[0]
+    bare = re.sub(r"\s*\([^)]*\)", "", short).strip()
+    return list(dict.fromkeys(v for v in (name, short, bare) if v))
+
+
+def best(name: str, rows, by_key, by_core, cores):
+    for v in variants(name):
+        for kind, pool in (("exact", by_key.get(name_key(v))), ("same name, different branch words", by_core.get(core(v)))):
+            if pool:
+                hit = min(pool, key=lambda r: RANK.get(r["status"], 9))
+                return kind, hit, 1.0
+    c = core(variants(name)[-1])
+    scored = max(((difflib.SequenceMatcher(None, c, rc).ratio(), r) for rc, r in cores), key=lambda t: t[0])
     if scored[0] >= 0.86:
         return "likely (check)", scored[1], scored[0]
     return "missing", scored[1] if scored[0] >= 0.7 else None, scored[0]
@@ -112,6 +120,7 @@ def main(argv):
     for r in rows:
         by_key.setdefault(name_key(r["said"]), []).append(r)
         by_core.setdefault(core(r["said"]), []).append(r)
+    cores = [(core(r["said"]), r) for r in rows]
     out = ROOT / "data" / paths[0].parent.name / "comparison.csv"
     out.parent.mkdir(parents=True, exist_ok=True)
     tally = {}
@@ -119,7 +128,7 @@ def main(argv):
         w = csv.writer(f)
         w.writerow(["their_name", "match", "our_name", "our_status", "our_area", "score"])
         for name in theirs:
-            kind, hit, score = best(name, rows, by_key, by_core)
+            kind, hit, score = best(name, rows, by_key, by_core, cores)
             state = hit["status"] if hit and kind != "missing" else ""
             if kind in {"missing", "likely (check)"}:
                 bucket = kind
