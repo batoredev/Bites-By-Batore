@@ -196,7 +196,14 @@ export default function DuplicateDesk({
     setBusy(true);
     setError("");
     try {
-      setReport(await api<DuplicateReport>("/admin/spots/duplicates"));
+      const next = await api<DuplicateReport>("/admin/spots/duplicates");
+      // A malformed reply must not take the whole Identified spots page down with it.
+      if (!next?.agent || !Array.isArray(next.candidates)) {
+        setReport(null);
+        setError("The duplicate report came back incomplete. Refresh to try again.");
+        return;
+      }
+      setReport(next);
     } catch (e) {
       setError((e as Error).message);
     } finally {

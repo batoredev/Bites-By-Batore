@@ -238,6 +238,14 @@ test("identity review requires a Maps place and exposes held records without wri
           candidates: [],
         },
       });
+    } else if (url.includes("/admin/spots/duplicates")) {
+      await route.fulfill({
+        json: {
+          agent: { state: "idle", job_id: "", last_completed_at: null },
+          pending_count: 0,
+          candidates: [],
+        },
+      });
     } else if (route.request().method() === "GET") {
       heldRequested = url.includes("include_held=true");
       await route.fulfill({
