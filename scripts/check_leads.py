@@ -93,56 +93,76 @@ def overture_match(name, index):
     return (best, score) if score >= 0.9 else (None, score)
 
 
-def search(query: str, recent: bool):
-    from ddgs import DDGS
+RECENT_TEXT = re.compile(r"\b(2025|2026)\b|\b\d{1,2} (days?|weeks?|months?) ago\b")
 
-    for attempt in range(4):
+
+def search(query: str):
+    """(rows, dated). DuckDuckGo honours the past-year filter; Yahoo is the fallback and ignores it."""
+    from ddgs import DDGS
+    from ddgs.exceptions import DDGSException
+
+    errors = 0
+    for backend, dated in (("duckduckgo", True), ("yahoo", False), ("duckduckgo", True), ("yahoo", False)):
         try:
-            return DDGS(timeout=12).text(query, max_results=10, timelimit="y" if recent else None) or []
+            rows = DDGS(timeout=12).text(query, max_results=10, backend=backend, timelimit="y" if dated else None)
+            if rows:
+                return rows, dated
+        except DDGSException as exc:
+            if "no results" not in str(exc).lower():
+                errors += 1  # a refusal or timeout, not an empty answer
         except Exception:
-            time.sleep(20 * (attempt + 1))  # public search rate-limits; wait it out rather than guess
-    return None  # search unavailable; the lead stays unsure rather than guessed
+            errors += 1
+        time.sleep(3)
+    return (None, False) if errors >= 3 else ([], False)
 
 
 def web_evidence(name):
     words = tokens(name)
     need = min(2, len(words))
-    out = {"recent": [], "older": [], "closed": [], "search_failed": False}
-    for recent in (True, False):
-        rows = search(f'"{short(name)}" Coimbatore', recent)
-        if rows is None:
-            out["search_failed"] = True
-            break
-        for r in rows:
-            url = r.get("href", "")
-            host = (urlparse(url).hostname or "").removeprefix("www.")
-            if not url.startswith("https://") or host.endswith(SOURCE_SITE):
-                continue
-            text = f"{r.get('title', '')} {r.get('body', '')}".casefold()
-            if sum(w in text for w in words) < need or not (CITY.search(text) or CITY.search(url.casefold())):
-                continue
-            hit = {"url": url, "host": host, "title": r.get("title", "")[:200]}
-            if CLOSED.search(text):
-                out["closed"].append(hit)
-            (out["recent"] if recent else out["older"]).append(hit)
-        if out["recent"]:
-            break  # past-year evidence found; no need for the all-time search
-        time.sleep(2)
+    out = {"recent": [], "older": [], "closed": [], "search_failed": False, "dated": False, "recent_text": False}
+    rows, dated = search(f'"{short(name)}" Coimbatore')
+    if rows is None:
+        out["search_failed"] = True
+        return out
+    out["dated"] = dated
+    for r in rows:
+        url = r.get("href", "")
+        host = (urlparse(url).hostname or "").removeprefix("www.")
+        if not url.startswith("https://") or host.endswith(SOURCE_SITE):
+            continue
+        text = f"{r.get('title', '')} {r.get('body', '')}".casefold()
+        if sum(w in text for w in words) < need or not (CITY.search(text) or CITY.search(url.casefold())):
+            continue
+        hit = {"url": url, "host": host, "title": r.get("title", "")[:200]}
+        if CLOSED.search(text):
+            out["closed"].append(hit)
+        out["recent_text"] = out["recent_text"] or bool(RECENT_TEXT.search(text))
+        (out["recent"] if dated else out["older"]).append(hit)
     return out
 
 
-def verdict(ev):
-    hosts = {h["host"] for h in ev["recent"]}
+def verdict(ev, overture_updated=""):
+    pages = ev["recent"] or ev["older"]
+    hosts = {h["host"] for h in pages}
     if ev["closed"]:
         return "closed", "a matching page says it closed: " + ev["closed"][0]["url"]
-    if len(hosts) >= 2:
-        return "active", f"{len(hosts)} independent pages from the past year"
     if ev["search_failed"]:
         return "unsure", "web search was unavailable"
+    recent = [
+        reason
+        for reason, ok in (
+            ("pages dated in the past year", bool(ev["recent"])),
+            ("a 2025/2026 date on a matching page", ev.get("recent_text")),
+            ("Overture updated it in the past year", overture_updated >= "2025-11"),
+        )
+        if ok
+    ]
+    if len(hosts) >= 2 and recent:
+        return "active", f"{len(hosts)} independent pages; recent because of {recent[0]}"
+    if len(hosts) >= 2:
+        return "unsure", f"{len(hosts)} independent pages, but nothing shows it is still open this year"
     if hosts:
-        return "unsure", "only one recent page"
-    if ev["older"]:
-        return "unsure", "only older pages; no evidence from the past year"
+        return "unsure", "only one independent page"
     return "unsure", "no independent page found"
 
 
@@ -163,9 +183,9 @@ def check(path: Path):
                 ev = again["evidence"]
             else:
                 ev = web_evidence(name)
-                time.sleep(6)
+                time.sleep(2)
             match, _ = overture_match(name, index)
-            kind, why = verdict(ev)
+            kind, why = verdict(ev, match["updated"] if match else "")
             results.append({"name": name, "verdict": kind, "why": why, "evidence": ev, "overture": match})
             pages = ev["recent"] or ev["older"]
             w.writerow([name, kind, why, len(ev["recent"]), " ".join(sorted({h["host"] for h in pages})),
@@ -188,8 +208,17 @@ def apply(path: Path):
     from app.learned import TEACHER, TEACHER_ACTOR
     from app.spots import upsert_spot
 
+    from app.config import settings
+
     results = json.loads((path.parent / "lead-check.json").read_text(encoding="utf-8"))
-    db_file = ROOT / "data" / "local-research.db"
+    url = settings().database_url
+    if not url.startswith("sqlite:///"):
+        sys.exit("Back up this database yourself first; automatic backup handles SQLite only.")
+    db_file = Path(url.removeprefix("sqlite:///"))
+    if not db_file.is_absolute():
+        db_file = ROOT / db_file  # same rule as app/db.py: relative SQLite paths are from the project root
+    if not db_file.exists():
+        sys.exit(f"Database file not found: {db_file}")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     backup = ROOT / "data" / "backups" / f"local-research-{stamp}-pre-favhiker-leads.db"
     backup.parent.mkdir(parents=True, exist_ok=True)
@@ -218,6 +247,20 @@ def apply(path: Path):
                     feature = r["overture"]["feature"]
                     # Our own confidence gate was applied when deciding; read the place fields regardless.
                     item = overture.place({**feature, "properties": {**feature["properties"], "confidence": 1}})
+                    if item is None:  # an Overture type our importer doesn't map; keep its point and evidence
+                        props = feature.get("properties") or {}
+                        address = next(iter(props.get("addresses") or []), {}) or {}
+                        item = {
+                            "id": feature.get("id"), "name": r["overture"]["name"], "category": None,
+                            "type": (props.get("taxonomy") or {}).get("primary") or "",
+                            "lat": r["overture"]["lat"], "lng": r["overture"]["lng"], "confidence": r["overture"]["confidence"],
+                            "address": ", ".join(x for x in [address.get("freeform"), address.get("locality"), address.get("postcode")] if x),
+                            "locality": address.get("locality") or "",
+                            "websites": [w for w in props.get("websites") or [] if str(w).startswith("https://")][:3],
+                            "socials": [w for w in props.get("socials") or [] if str(w).startswith("https://")][:3],
+                            "phones": [str(p) for p in props.get("phones") or []][:2],
+                            "datasets": r["overture"]["datasets"],
+                        }
                     if item:
                         evidence = overture._evidence(item)
                         evidence["overture"]["confidence"] = r["overture"]["confidence"]
