@@ -201,7 +201,7 @@ export default function PublishApproval() {
             <small>/{page.total_places}</small>
           </span>
           <span className="desk-meter">
-            <span style={{ width: pct + "%" }} />
+            <span style={{ transform: `scaleX(${pct / 100})` }} />
           </span>
         </div>
         <span className="desk-sheet">{page.counts.approved} approved · customers see only places you approve</span>

@@ -598,7 +598,7 @@ export default function ReviewDesk() {
             <small>/{items.length}</small>
           </span>
           <span className="desk-meter">
-            <span style={{ width: pct + "%" }} />
+            <span style={{ transform: `scaleX(${pct / 100})` }} />
           </span>
         </div>
         <span className="desk-sheet">
