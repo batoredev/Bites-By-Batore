@@ -1,0 +1,106 @@
+{"text": "something different", "expect": {"surprise": true, "mood": "different"}}
+{"text": "surprise me", "expect": {"surprise": true}}
+{"text": "i dont know what to do today, suggest something", "expect": {"surprise": true}}
+{"text": "biryani", "expect": {"categories": ["food"], "interests": ["biryani"]}}
+{"text": "cheap biryani then bowling near Peelamedu, 4 of us, 2 hours, one veg", "expect": {"categories": ["food", "bowling"], "interests": ["biryani"], "party_size": 4, "duration_minutes": 120, "area": "Peelamedu"}}
+{"text": "biryani then a movie", "expect": {"categories": ["food", "cinema"], "interests": ["biryani"]}}
+{"text": "movie and dinner for 2 under 1500", "expect": {"categories": ["cinema", "food"], "party_size": 2, "budget": 1500, "time_of_day": "evening"}}
+{"text": "dinner for two, 800 per head", "expect": {"categories": ["food"], "party_size": 2, "budget": 800, "budget_unit": "person", "time_of_day": "evening"}}
+{"text": "lunch with my team of 8, budget 4000 total", "expect": {"categories": ["food"], "party_size": 8, "budget": 4000, "budget_unit": "group", "time_of_day": "afternoon"}}
+{"text": "pure veg dinner in RS Puram", "expect": {"categories": ["food"], "vegetarian": true, "area": "RS Puram", "time_of_day": "evening"}}
+{"text": "jain food for 3 people", "expect": {"categories": ["food"], "vegetarian": true, "party_size": 3}}
+{"text": "veg only, kids with us, something fun for the afternoon", "expect": {"vegetarian": true, "children": true, "time_of_day": "afternoon"}}
+{"text": "family outing with kids, park and ice cream", "expect": {"categories": ["park", "dessert"], "interests": ["ice cream"], "children": true}}
+{"text": "my dad uses a wheelchair, quiet cafe please", "expect": {"categories": ["cafe"], "wheelchair": true, "mood": "quiet"}}
+{"text": "wheelchair accessible restaurant near Race Course", "expect": {"categories": ["food"], "wheelchair": true, "area": "Race Course"}}
+{"text": "go karting with friends", "expect": {"categories": ["adventure"], "interests": ["go karting"], "mood": "social"}}
+{"text": "gokarting and then burgers, 5 people, 3 hrs", "expect": {"categories": ["adventure", "food"], "interests": ["go karting", "burger"], "party_size": 5, "duration_minutes": 180}}
+{"text": "pottery workshop for 2 this weekend", "expect": {"categories": ["workshop"], "interests": ["pottery"], "party_size": 2}}
+{"text": "art workshop", "expect": {"categories": ["workshop"]}}
+{"text": "bowling", "expect": {"categories": ["bowling"]}}
+{"text": "bowling and arcade games", "expect": {"categories": ["bowling", "gaming"]}}
+{"text": "gaming cafe near Saravanampatti", "expect": {"categories": ["gaming"], "area": "Saravanampatti"}}
+{"text": "a good coffee place to work from", "expect": {"categories": ["cafe"], "mood": "quiet"}}
+{"text": "quiet cafe to read, alone", "expect": {"categories": ["cafe"], "mood": "quiet", "party_size": 1}}
+{"text": "just me, cheap street food", "expect": {"categories": ["street_food"], "party_size": 1}}
+{"text": "chaat and pani puri", "expect": {"categories": ["street_food"], "interests": ["chaat", "pani puri"]}}
+{"text": "late night food after 11", "expect": {"categories": ["food"], "time_of_day": "late_night"}}
+{"text": "late night drinks", "expect": {"categories": ["nightlife"], "time_of_day": "late_night"}}
+{"text": "pub with live music tonight, 6 of us", "expect": {"categories": ["nightlife"], "party_size": 6, "time_of_day": "evening"}}
+{"text": "a bar but no smoking", "expect": {"categories": ["nightlife"], "avoid": ["smoking"]}}
+{"text": "dessert place, not too sweet", "expect": {"categories": ["dessert"]}}
+{"text": "best ice cream in town", "expect": {"categories": ["dessert"], "interests": ["ice cream"]}}
+{"text": "cake and coffee", "expect": {"categories": ["dessert", "cafe"], "interests": ["cake"]}}
+{"text": "dosa breakfast", "expect": {"categories": ["food"], "interests": ["dosa"], "time_of_day": "morning"}}
+{"text": "morning walk in a park then filter coffee", "expect": {"categories": ["park", "cafe"], "interests": ["filter coffee"], "time_of_day": "morning"}}
+{"text": "parotta and salna", "expect": {"categories": ["food"], "interests": ["parotta", "salna"]}}
+{"text": "kongu style non veg meals", "expect": {"categories": ["food"], "interests": ["kongu"]}}
+{"text": "sushi", "expect": {"categories": ["food"], "interests": ["sushi"]}}
+{"text": "korean food then a movie, 3 of us", "expect": {"categories": ["food", "cinema"], "interests": ["korean"], "party_size": 3}}
+{"text": "something new, a cuisine i have never tried", "expect": {"categories": ["food"], "novelty": "new_taste"}}
+{"text": "a place i've never been to", "expect": {"novelty": "new_place"}}
+{"text": "our usual favourite spots, nothing new", "expect": {"novelty": "familiar"}}
+{"text": "comfort food on a rainy day", "expect": {"categories": ["food"], "mood": "comfort"}}
+{"text": "something active, we want to sweat", "expect": {"mood": "active"}}
+{"text": "turf for football, 10 guys, 1 hour", "expect": {"categories": ["sports"], "interests": ["football"], "party_size": 10, "duration_minutes": 60, "mood": "active"}}
+{"text": "badminton court booking for 4", "expect": {"categories": ["sports"], "interests": ["badminton"], "party_size": 4}}
+{"text": "trampoline park for my son's birthday", "expect": {"categories": ["adventure"], "interests": ["trampoline"], "children": true}}
+{"text": "water park day with family, 5 people", "expect": {"categories": ["amusement"], "party_size": 5}}
+{"text": "museum and a walk", "expect": {"categories": ["attraction"]}}
+{"text": "zoo with kids", "expect": {"categories": ["attraction"], "interests": ["zoo"], "children": true}}
+{"text": "lake side evening", "expect": {"categories": ["park"], "interests": ["lake"], "time_of_day": "evening"}}
+{"text": "plan a 4 stop evening: food, games, dessert, coffee", "expect": {"categories": ["food", "gaming", "dessert", "cafe"], "max_stops": 4, "time_of_day": "evening"}}
+{"text": "just one place, quick lunch, 45 minutes", "expect": {"categories": ["food"], "max_stops": 1, "duration_minutes": 45, "time_of_day": "afternoon"}}
+{"text": "two stops max", "expect": {"max_stops": 2}}
+{"text": "half day out, around 4 hours", "expect": {"duration_minutes": 240}}
+{"text": "we have 90 mins", "expect": {"duration_minutes": 90}}
+{"text": "one and a half hours free", "expect": {"duration_minutes": 90}}
+{"text": "whole evening, 5 hours, 4 friends, 3000 total", "expect": {"duration_minutes": 300, "party_size": 4, "budget": 3000, "budget_unit": "group", "time_of_day": "evening", "mood": "social"}}
+{"text": "under 2k for both of us", "expect": {"party_size": 2, "budget": 2000, "budget_unit": "group"}}
+{"text": "500 rupees each", "expect": {"budget": 500, "budget_unit": "person"}}
+{"text": "budget ₹1,200 per person", "expect": {"budget": 1200, "budget_unit": "person"}}
+{"text": "rs 300 max", "expect": {"budget": 300}}
+{"text": "within 1500", "expect": {"budget": 1500}}
+{"text": "cheap", "expect": {}}
+{"text": "by bike, food near Gandhipuram", "expect": {"categories": ["food"], "transport": "bike", "area": "Gandhipuram"}}
+{"text": "we will take a cab", "expect": {"transport": "taxi"}}
+{"text": "walking distance from Saibaba Colony", "expect": {"transport": "walk", "area": "Saibaba Colony"}}
+{"text": "driving from Vadavalli, movie tonight", "expect": {"categories": ["cinema"], "transport": "drive", "area": "Vadavalli", "time_of_day": "evening"}}
+{"text": "starting from Avinashi Road", "expect": {"area": "Avinashi Road"}}
+{"text": "right now, hungry, something close", "expect": {"categories": ["food"], "time_of_day": "now"}}
+{"text": "no spicy food please", "expect": {"categories": ["food"], "avoid": ["spicy"]}}
+{"text": "not a mall, somewhere outdoors", "expect": {"avoid": ["mall"]}}
+{"text": "no alcohol, family friendly dinner", "expect": {"categories": ["food"], "avoid": ["alcohol"], "time_of_day": "evening"}}
+{"text": "avoid crowded places", "expect": {"avoid": ["crowded"]}}
+{"text": "anniversary dinner, romantic, for 2", "expect": {"categories": ["food"], "party_size": 2, "time_of_day": "evening"}}
+{"text": "date night, movie then dessert", "expect": {"categories": ["cinema", "dessert"], "party_size": 2, "time_of_day": "evening"}}
+{"text": "birthday party for 12 kids", "expect": {"party_size": 12, "children": true}}
+{"text": "office team outing 20 people", "expect": {"party_size": 20, "mood": "social"}}
+{"text": "naalu peru, biryani saapdanum", "expect": {"categories": ["food"], "interests": ["biryani"], "party_size": 4}}
+{"text": "rendu peru, konjam cheap ah movie", "expect": {"categories": ["cinema"], "party_size": 2}}
+{"text": "moonu per ku tiffin", "expect": {"categories": ["street_food"], "interests": ["tiffin"], "party_size": 3}}
+{"text": "saayangalam enga ponalam", "expect": {"surprise": true, "time_of_day": "evening"}}
+{"text": "veg saapadu venum", "expect": {"categories": ["food"], "vegetarian": true}}
+{"text": "biriyani", "expect": {"categories": ["food"], "interests": ["biryani"]}}
+{"text": "bowlin and piza", "expect": {"categories": ["bowling", "food"], "interests": ["pizza"]}}
+{"text": "movei tonite", "expect": {"categories": ["cinema"], "time_of_day": "evening"}}
+{"text": "ice creem for 3", "expect": {"categories": ["dessert"], "interests": ["ice cream"], "party_size": 3}}
+{"text": "resturant with parking", "expect": {"categories": ["food"]}}
+{"text": "FOUR OF US. SHAWARMA. 600 TOTAL.", "expect": {"categories": ["food"], "interests": ["shawarma"], "party_size": 4, "budget": 600, "budget_unit": "group"}}
+{"text": "a concert tonight", "expect": {"out_of_scope": true, "time_of_day": "evening"}}
+{"text": "plan a trip to Ooty", "expect": {"out_of_scope": true}}
+{"text": "scenic drive around the hills", "expect": {"out_of_scope": true}}
+{"text": "best restaurants in Chennai", "expect": {"categories": ["food"], "out_of_scope": true}}
+{"text": "book a hotel room for tonight", "expect": {"out_of_scope": true, "time_of_day": "evening"}}
+{"text": "standup comedy show", "expect": {"out_of_scope": true}}
+{"text": "escape room with 6 friends", "expect": {"categories": ["gaming"], "interests": ["escape room"], "party_size": 6, "mood": "social"}}
+{"text": "vr games and pizza", "expect": {"categories": ["gaming", "food"], "interests": ["vr", "pizza"]}}
+{"text": "snooker", "expect": {"categories": ["gaming"], "interests": ["snooker"]}}
+{"text": "kids play area and a cafe for parents", "expect": {"categories": ["gaming", "cafe"], "children": true}}
+{"text": "my grandmother is coming, she can't climb stairs", "expect": {"wheelchair": true}}
+{"text": "something for a 5 year old", "expect": {"children": true}}
+{"text": "only vegetarian, no onion no garlic", "expect": {"vegetarian": true, "avoid": ["onion", "garlic"]}}
+{"text": "eggless cake", "expect": {"categories": ["dessert"], "interests": ["cake"], "avoid": ["egg"]}}
+{"text": "mess style meals for a group of 7, cheap", "expect": {"categories": ["street_food"], "interests": ["meals"], "party_size": 7}}
+{"text": "juice shop", "expect": {"categories": ["dessert"], "interests": ["juice"]}}
+{"text": "chill evening with friends, food and something to do after, 4 of us, 2500", "expect": {"categories": ["food"], "party_size": 4, "budget": 2500, "time_of_day": "evening", "mood": "social"}}
