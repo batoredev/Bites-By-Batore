@@ -1,0 +1,40 @@
+{"text": "Craving momos and a milkshake, 3 of us", "expect": {"categories": ["food", "dessert"], "interests": ["momos", "milkshake"], "party_size": 3}}
+{"text": "where can i take my parents for a quiet lunch", "expect": {"categories": ["food"], "mood": "quiet", "time_of_day": "afternoon"}}
+{"text": "need a plan for 6 friends saturday night, bowling then dinner, 700 each", "expect": {"categories": ["bowling", "food"], "party_size": 6, "budget": 700, "budget_unit": "person", "mood": "social", "time_of_day": "evening"}}
+{"text": "kids are bored, something to do near Kovaipudur", "expect": {"children": true, "area": "Kovaipudur"}}
+{"text": "cheap filter coffee near Town Hall", "expect": {"categories": ["cafe"], "interests": ["filter coffee"], "area": "Town Hall"}}
+{"text": "3 hrs, 2 people, paintball", "expect": {"categories": ["adventure"], "interests": ["paintball"], "duration_minutes": 180, "party_size": 2}}
+{"text": "Seafood dinner for 4, total budget 3k", "expect": {"categories": ["food"], "interests": ["seafood"], "party_size": 4, "budget": 3000, "budget_unit": "group", "time_of_day": "evening"}}
+{"text": "veg thali, alone, under 250", "expect": {"categories": ["food"], "interests": ["thali"], "vegetarian": true, "party_size": 1, "budget": 250}}
+{"text": "I'm not sure, show me something good this evening", "expect": {"surprise": true, "time_of_day": "evening"}}
+{"text": "rooftop bar with cocktails for the two of us", "expect": {"categories": ["nightlife"], "interests": ["cocktails"], "party_size": 2}}
+{"text": "pickleball court then juice", "expect": {"categories": ["sports", "dessert"], "interests": ["pickleball", "juice"]}}
+{"text": "laser tag for my daughter's birthday, 10 kids", "expect": {"categories": ["adventure"], "interests": ["laser tag"], "children": true, "party_size": 10}}
+{"text": "movie at a multiplex then falooda", "expect": {"categories": ["cinema", "dessert"], "interests": ["falooda"]}}
+{"text": "planetarium with my nephew who is 8", "expect": {"categories": ["attraction"], "interests": ["planetarium"], "children": true}}
+{"text": "we'll go by scooty, cheap chaat", "expect": {"categories": ["street_food"], "interests": ["chaat"], "transport": "bike"}}
+{"text": "a calm cafe to work from for 2 hours", "expect": {"categories": ["cafe"], "mood": "quiet", "duration_minutes": 120}}
+{"text": "tufting workshop this sunday, 2 of us, 1500 per person", "expect": {"categories": ["workshop"], "interests": ["tufting"], "party_size": 2, "budget": 1500, "budget_unit": "person"}}
+{"text": "anything open after midnight for food?", "expect": {"categories": ["food"], "time_of_day": "late_night"}}
+{"text": "chettinad food, no alcohol", "expect": {"categories": ["food"], "interests": ["chettinad"], "avoid": ["alcohol"]}}
+{"text": "my wife and I want a new cuisine tonight", "expect": {"categories": ["food"], "party_size": 2, "novelty": "new_taste", "time_of_day": "evening"}}
+{"text": "box cricket with 12 guys for an hour", "expect": {"categories": ["sports"], "interests": ["box cricket"], "party_size": 12, "duration_minutes": 60}}
+{"text": "gelato and a walk in a garden", "expect": {"categories": ["dessert", "park"], "interests": ["gelato"]}}
+{"text": "Plan our usual Friday: biryani and a movie", "expect": {"categories": ["food", "cinema"], "interests": ["biryani"], "novelty": "familiar"}}
+{"text": "wheelchair friendly cinema near Brookefields", "expect": {"categories": ["cinema"], "wheelchair": true, "area": "Brookefields"}}
+{"text": "Ooty weekend getaway", "expect": {"out_of_scope": true}}
+{"text": "something energetic for 4 people, max 2 stops", "expect": {"mood": "active", "party_size": 4, "max_stops": 2}}
+{"text": "dosa and filter coffee for breakfast, 5 people", "expect": {"categories": ["food", "cafe"], "interests": ["dosa", "filter coffee"], "party_size": 5, "time_of_day": "morning"}}
+{"text": "bajji stall near Ukkadam, rendu peru", "expect": {"categories": ["street_food"], "interests": ["bajji"], "area": "Ukkadam", "party_size": 2}}
+{"text": "jigarthanda", "expect": {"categories": ["dessert"], "interests": ["jigarthanda"]}}
+{"text": "no meat, light dinner, 45 mins", "expect": {"categories": ["food"], "avoid": ["meat"], "duration_minutes": 45, "time_of_day": "evening"}}
+{"text": "IPL match screening with friends", "expect": {"out_of_scope": true, "mood": "social"}}
+{"text": "arcade then shawarma, we take an auto", "expect": {"categories": ["gaming", "food"], "interests": ["shawarma"], "transport": "taxi"}}
+{"text": "Hyderabadi biryani in Saibaba Colony for 8 people, 4000 overall", "expect": {"categories": ["food"], "interests": ["biryani"], "area": "Saibaba Colony", "party_size": 8, "budget": 4000, "budget_unit": "group"}}
+{"text": "somewhere new for coffee", "expect": {"categories": ["cafe"], "novelty": "new_place"}}
+{"text": "boating at the lake with family", "expect": {"categories": ["park"], "interests": ["boating", "lake"]}}
+{"text": "korean bbq for 2, 2000 for both", "expect": {"categories": ["food"], "interests": ["korean", "bbq"], "party_size": 2, "budget": 2000, "budget_unit": "group"}}
+{"text": "pottery class then cake, my mom uses a walker", "expect": {"categories": ["workshop", "dessert"], "interests": ["pottery", "cake"], "wheelchair": true}}
+{"text": "trampoline + ice cream with kids, 2 hours", "expect": {"categories": ["adventure", "dessert"], "interests": ["trampoline", "ice cream"], "children": true, "duration_minutes": 120}}
+{"text": "best restaurants in Bangalore", "expect": {"categories": ["food"], "out_of_scope": true}}
+{"text": "snooker and beer, 4 guys, after 10 pm", "expect": {"categories": ["gaming", "nightlife"], "interests": ["snooker", "beer"], "party_size": 4, "time_of_day": "late_night"}}

@@ -19,6 +19,10 @@ from pathlib import Path
 from .reading import CRITICAL, FIELDS, LIST_FIELDS, Reading, expected
 
 FROZEN = Path(__file__).with_name("frozen_test.jsonl")
+# Written after v1's mistakes on FROZEN were studied, before v2 was trained, so it stays blind.
+FROZEN_B = Path(__file__).with_name("frozen_test_b.jsonl")
+# Written before the final v1 training run and scored once, with no changes after: the honest number.
+FROZEN_C = Path(__file__).with_name("frozen_test_c.jsonl")
 
 
 def load(path: Path = FROZEN) -> list[dict]:

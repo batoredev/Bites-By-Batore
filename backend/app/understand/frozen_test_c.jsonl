@@ -1,0 +1,30 @@
+{"text": "Kerala food for lunch, 4 of us from Ganapathy", "expect": {"categories": ["food"], "interests": ["kerala"], "party_size": 4, "time_of_day": "afternoon", "area": "Ganapathy"}}
+{"text": "waffles", "expect": {"categories": ["dessert"], "interests": ["waffle"]}}
+{"text": "we are 9, need a turf for 2 hrs", "expect": {"categories": ["sports"], "party_size": 9, "duration_minutes": 120}}
+{"text": "quiet bookstore cafe, just me", "expect": {"categories": ["cafe"], "mood": "quiet", "party_size": 1}}
+{"text": "Something different for my girlfriend and me tonight", "expect": {"surprise": true, "mood": "different", "party_size": 2, "time_of_day": "evening"}}
+{"text": "cold coffee and sandwich near Hopes College", "expect": {"categories": ["cafe"], "interests": ["cold coffee", "sandwich"], "area": "Hopes College"}}
+{"text": "go-karting for 3, budget 1000 per head", "expect": {"categories": ["adventure"], "interests": ["go karting"], "party_size": 3, "budget": 1000, "budget_unit": "person"}}
+{"text": "mandi for the whole team, 15 people", "expect": {"categories": ["food"], "interests": ["mandi"], "party_size": 15}}
+{"text": "no crowded places, a calm park in the morning", "expect": {"categories": ["park"], "avoid": ["crowded"], "mood": "quiet", "time_of_day": "morning"}}
+{"text": "my grandfather can't walk much, family dinner for 6", "expect": {"categories": ["food"], "wheelchair": true, "party_size": 6, "time_of_day": "evening"}}
+{"text": "pure veg sweets for diwali", "expect": {"categories": ["dessert"], "interests": ["sweets"], "vegetarian": true}}
+{"text": "film and then kulfi, by cab", "expect": {"categories": ["cinema", "dessert"], "interests": ["kulfi"], "transport": "taxi"}}
+{"text": "resin art class for 2, 2500 total", "expect": {"categories": ["workshop"], "interests": ["resin art"], "party_size": 2, "budget": 2500, "budget_unit": "group"}}
+{"text": "what should we do today? no idea", "expect": {"surprise": true}}
+{"text": "music concert in Codissia", "expect": {"out_of_scope": true}}
+{"text": "fried chicken, cheap, near Gandhipuram bus stand", "expect": {"categories": ["food"], "interests": ["fried chicken"], "area": "Gandhipuram"}}
+{"text": "aquarium and lunch with my 6 year old", "expect": {"categories": ["attraction", "food"], "interests": ["aquarium"], "children": true, "time_of_day": "afternoon"}}
+{"text": "only 1 stop, ice cream", "expect": {"categories": ["dessert"], "interests": ["ice cream"], "max_stops": 1}}
+{"text": "brewery with craft beer, 5 friends, ₹1500 each", "expect": {"categories": ["nightlife"], "interests": ["craft beer"], "party_size": 5, "budget": 1500, "budget_unit": "person", "mood": "social"}}
+{"text": "noodles and momos after 11 pm", "expect": {"categories": ["food"], "interests": ["noodles", "momos"], "time_of_day": "late_night"}}
+{"text": "skating rink for kids", "expect": {"categories": ["sports"], "interests": ["skating"], "children": true}}
+{"text": "pani puri on foot from RS Puram", "expect": {"categories": ["street_food"], "interests": ["pani puri"], "transport": "walk", "area": "RS Puram"}}
+{"text": "favourite biryani place, the usual", "expect": {"categories": ["food"], "interests": ["biryani"], "novelty": "familiar"}}
+{"text": "Try something I've never eaten before", "expect": {"novelty": "new_taste"}}
+{"text": "escape room, 4 people, 90 minutes, under 3000", "expect": {"categories": ["gaming"], "interests": ["escape room"], "party_size": 4, "duration_minutes": 90, "budget": 3000}}
+{"text": "temple visit then idli", "expect": {"categories": ["attraction", "food"], "interests": ["temple", "idli"]}}
+{"text": "Snow World with cousins, 7 of us", "expect": {"categories": ["amusement"], "interests": ["snow world"], "party_size": 7}}
+{"text": "no garlic, jain dinner", "expect": {"categories": ["food"], "avoid": ["garlic"], "vegetarian": true, "time_of_day": "evening"}}
+{"text": "need to sweat, badminton for an hour", "expect": {"categories": ["sports"], "interests": ["badminton"], "mood": "active", "duration_minutes": 60}}
+{"text": "book flight to Delhi", "expect": {"out_of_scope": true}}

@@ -1,0 +1,823 @@
+{
+ "meta": {
+  "version": "understand-v1",
+  "examples": 14000,
+  "epochs": 6,
+  "seed": 1,
+  "trained_at": "2026-11-26T18:33:12+00:00",
+  "train_seconds": 201.9,
+  "frozen": {
+   "field_accuracy": 0.999,
+   "mentioned_accuracy": 0.996,
+   "exact_requests": 0.981,
+   "critical": {
+    "party_size": 1.0,
+    "budget": 0.991,
+    "budget_unit": 1.0,
+    "vegetarian": 1.0
+   }
+  },
+  "frozen_b": {
+   "field_accuracy": 0.997,
+   "mentioned_accuracy": 0.992,
+   "exact_requests": 0.95,
+   "critical": {
+    "party_size": 1.0,
+    "budget": 1.0,
+    "budget_unit": 1.0,
+    "vegetarian": 1.0
+   }
+  },
+  "frozen_c": {
+   "field_accuracy": 0.998,
+   "mentioned_accuracy": 0.99,
+   "exact_requests": 0.967,
+   "critical": {
+    "party_size": 1.0,
+    "budget": 1.0,
+    "budget_unit": 1.0,
+    "vegetarian": 1.0
+   }
+  }
+ },
+ "ms_per_request": 0.54,
+ "held_out_generated": {
+  "cases": 2000,
+  "field_accuracy": 0.998,
+  "mentioned_accuracy": 0.992,
+  "exact_requests": 0.965
+ },
+ "frozen_model": {
+  "cases": 106,
+  "field_accuracy": 0.999,
+  "mentioned_accuracy": 0.996,
+  "exact_requests": 0.981,
+  "critical": {
+   "party_size": 1.0,
+   "budget": 0.991,
+   "budget_unit": 1.0,
+   "vegetarian": 1.0
+  },
+  "fields": {
+   "categories": {
+    "when_mentioned": 1.0,
+    "mentioned": 72,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "interests": {
+    "when_mentioned": 1.0,
+    "mentioned": 33,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "party_size": {
+    "when_mentioned": 1.0,
+    "mentioned": 28,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "budget": {
+    "when_mentioned": 0.909,
+    "mentioned": 11,
+    "stayed_empty": 1.0,
+    "overall": 0.991
+   },
+   "budget_unit": {
+    "when_mentioned": 1.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "duration_minutes": {
+    "when_mentioned": 1.0,
+    "mentioned": 8,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "vegetarian": {
+    "when_mentioned": 1.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "children": {
+    "when_mentioned": 1.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "wheelchair": {
+    "when_mentioned": 1.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "novelty": {
+    "when_mentioned": 1.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "mood": {
+    "when_mentioned": 1.0,
+    "mentioned": 11,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "max_stops": {
+    "when_mentioned": 1.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "area": {
+    "when_mentioned": 1.0,
+    "mentioned": 8,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "transport": {
+    "when_mentioned": 1.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "avoid": {
+    "when_mentioned": 1.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "time_of_day": {
+    "when_mentioned": 1.0,
+    "mentioned": 24,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "surprise": {
+    "when_mentioned": 1.0,
+    "mentioned": 4,
+    "stayed_empty": 0.99,
+    "overall": 0.991
+   },
+   "out_of_scope": {
+    "when_mentioned": 1.0,
+    "mentioned": 6,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   }
+  }
+ },
+ "frozen_keyword_baseline": {
+  "cases": 106,
+  "field_accuracy": 0.905,
+  "mentioned_accuracy": 0.287,
+  "exact_requests": 0.075,
+  "critical": {
+   "party_size": 0.736,
+   "budget": 0.896,
+   "budget_unit": 0.934,
+   "vegetarian": 0.953
+  },
+  "fields": {
+   "categories": {
+    "when_mentioned": 0.764,
+    "mentioned": 72,
+    "stayed_empty": 0.971,
+    "overall": 0.83
+   },
+   "interests": {
+    "when_mentioned": 0.455,
+    "mentioned": 33,
+    "stayed_empty": 0.904,
+    "overall": 0.764
+   },
+   "party_size": {
+    "when_mentioned": 0.0,
+    "mentioned": 28,
+    "stayed_empty": 1.0,
+    "overall": 0.736
+   },
+   "budget": {
+    "when_mentioned": 0.0,
+    "mentioned": 11,
+    "stayed_empty": 1.0,
+    "overall": 0.896
+   },
+   "budget_unit": {
+    "when_mentioned": 0.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 0.934
+   },
+   "duration_minutes": {
+    "when_mentioned": 0.0,
+    "mentioned": 8,
+    "stayed_empty": 1.0,
+    "overall": 0.925
+   },
+   "vegetarian": {
+    "when_mentioned": 0.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 0.953
+   },
+   "children": {
+    "when_mentioned": 0.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 0.934
+   },
+   "wheelchair": {
+    "when_mentioned": 0.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 0.972
+   },
+   "novelty": {
+    "when_mentioned": 0.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 0.972
+   },
+   "mood": {
+    "when_mentioned": 0.0,
+    "mentioned": 11,
+    "stayed_empty": 1.0,
+    "overall": 0.896
+   },
+   "max_stops": {
+    "when_mentioned": 0.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 0.972
+   },
+   "area": {
+    "when_mentioned": 0.0,
+    "mentioned": 8,
+    "stayed_empty": 1.0,
+    "overall": 0.925
+   },
+   "transport": {
+    "when_mentioned": 0.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 0.962
+   },
+   "avoid": {
+    "when_mentioned": 0.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 0.934
+   },
+   "time_of_day": {
+    "when_mentioned": 0.0,
+    "mentioned": 24,
+    "stayed_empty": 1.0,
+    "overall": 0.774
+   },
+   "surprise": {
+    "when_mentioned": 0.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 0.962
+   },
+   "out_of_scope": {
+    "when_mentioned": 0.0,
+    "mentioned": 6,
+    "stayed_empty": 1.0,
+    "overall": 0.943
+   }
+  }
+ },
+ "frozen_failures": [
+  {
+   "line": 40,
+   "text": "something new, a cuisine i have never tried",
+   "field": "surprise",
+   "expected": false,
+   "got": true
+  },
+  {
+   "line": 106,
+   "text": "chill evening with friends, food and something to do after, 4 of us, 2500",
+   "field": "budget",
+   "expected": 2500,
+   "got": null
+  }
+ ],
+ "frozen_b_model": {
+  "cases": 40,
+  "field_accuracy": 0.997,
+  "mentioned_accuracy": 0.992,
+  "exact_requests": 0.95,
+  "critical": {
+   "party_size": 1.0,
+   "budget": 1.0,
+   "budget_unit": 1.0,
+   "vegetarian": 1.0
+  },
+  "fields": {
+   "categories": {
+    "when_mentioned": 1.0,
+    "mentioned": 35,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "interests": {
+    "when_mentioned": 1.0,
+    "mentioned": 26,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "party_size": {
+    "when_mentioned": 1.0,
+    "mentioned": 16,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "budget": {
+    "when_mentioned": 1.0,
+    "mentioned": 6,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "budget_unit": {
+    "when_mentioned": 1.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "duration_minutes": {
+    "when_mentioned": 1.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "vegetarian": {
+    "when_mentioned": 1.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "children": {
+    "when_mentioned": 1.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "wheelchair": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "novelty": {
+    "when_mentioned": 1.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "mood": {
+    "when_mentioned": 1.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "max_stops": {
+    "when_mentioned": 1.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "area": {
+    "when_mentioned": 1.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "transport": {
+    "when_mentioned": 0.5,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.975
+   },
+   "avoid": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "time_of_day": {
+    "when_mentioned": 1.0,
+    "mentioned": 9,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "surprise": {
+    "when_mentioned": 1.0,
+    "mentioned": 1,
+    "stayed_empty": 0.974,
+    "overall": 0.975
+   },
+   "out_of_scope": {
+    "when_mentioned": 1.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   }
+  }
+ },
+ "frozen_b_keyword_baseline": {
+  "cases": 40,
+  "field_accuracy": 0.864,
+  "mentioned_accuracy": 0.26,
+  "exact_requests": 0.025,
+  "critical": {
+   "party_size": 0.6,
+   "budget": 0.85,
+   "budget_unit": 0.875,
+   "vegetarian": 0.975
+  },
+  "fields": {
+   "categories": {
+    "when_mentioned": 0.857,
+    "mentioned": 35,
+    "stayed_empty": 1.0,
+    "overall": 0.875
+   },
+   "interests": {
+    "when_mentioned": 0.154,
+    "mentioned": 26,
+    "stayed_empty": 0.929,
+    "overall": 0.425
+   },
+   "party_size": {
+    "when_mentioned": 0.0,
+    "mentioned": 16,
+    "stayed_empty": 1.0,
+    "overall": 0.6
+   },
+   "budget": {
+    "when_mentioned": 0.0,
+    "mentioned": 6,
+    "stayed_empty": 1.0,
+    "overall": 0.85
+   },
+   "budget_unit": {
+    "when_mentioned": 0.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 0.875
+   },
+   "duration_minutes": {
+    "when_mentioned": 0.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 0.875
+   },
+   "vegetarian": {
+    "when_mentioned": 0.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 0.975
+   },
+   "children": {
+    "when_mentioned": 0.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 0.9
+   },
+   "wheelchair": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.95
+   },
+   "novelty": {
+    "when_mentioned": 0.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 0.925
+   },
+   "mood": {
+    "when_mentioned": 0.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 0.875
+   },
+   "max_stops": {
+    "when_mentioned": 0.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 0.975
+   },
+   "area": {
+    "when_mentioned": 0.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 0.875
+   },
+   "transport": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.95
+   },
+   "avoid": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.95
+   },
+   "time_of_day": {
+    "when_mentioned": 0.0,
+    "mentioned": 9,
+    "stayed_empty": 1.0,
+    "overall": 0.775
+   },
+   "surprise": {
+    "when_mentioned": 0.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 0.975
+   },
+   "out_of_scope": {
+    "when_mentioned": 0.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 0.925
+   }
+  }
+ },
+ "frozen_b_failures": [
+  {
+   "line": 4,
+   "text": "kids are bored, something to do near Kovaipudur",
+   "field": "surprise",
+   "expected": false,
+   "got": true
+  },
+  {
+   "line": 15,
+   "text": "we'll go by scooty, cheap chaat",
+   "field": "transport",
+   "expected": "bike",
+   "got": "walk"
+  }
+ ],
+ "frozen_c_model": {
+  "cases": 30,
+  "field_accuracy": 0.998,
+  "mentioned_accuracy": 0.99,
+  "exact_requests": 0.967,
+  "critical": {
+   "party_size": 1.0,
+   "budget": 1.0,
+   "budget_unit": 1.0,
+   "vegetarian": 1.0
+  },
+  "fields": {
+   "categories": {
+    "when_mentioned": 1.0,
+    "mentioned": 25,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "interests": {
+    "when_mentioned": 1.0,
+    "mentioned": 20,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "party_size": {
+    "when_mentioned": 1.0,
+    "mentioned": 11,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "budget": {
+    "when_mentioned": 1.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "budget_unit": {
+    "when_mentioned": 1.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "duration_minutes": {
+    "when_mentioned": 1.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "vegetarian": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "children": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "wheelchair": {
+    "when_mentioned": 1.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "novelty": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "mood": {
+    "when_mentioned": 0.8,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 0.967
+   },
+   "max_stops": {
+    "when_mentioned": 1.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "area": {
+    "when_mentioned": 1.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "transport": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "avoid": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "time_of_day": {
+    "when_mentioned": 1.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "surprise": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   },
+   "out_of_scope": {
+    "when_mentioned": 1.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 1.0
+   }
+  }
+ },
+ "frozen_c_keyword_baseline": {
+  "cases": 30,
+  "field_accuracy": 0.863,
+  "mentioned_accuracy": 0.255,
+  "exact_requests": 0.0,
+  "critical": {
+   "party_size": 0.633,
+   "budget": 0.867,
+   "budget_unit": 0.9,
+   "vegetarian": 0.933
+  },
+  "fields": {
+   "categories": {
+    "when_mentioned": 0.88,
+    "mentioned": 25,
+    "stayed_empty": 1.0,
+    "overall": 0.9
+   },
+   "interests": {
+    "when_mentioned": 0.15,
+    "mentioned": 20,
+    "stayed_empty": 0.9,
+    "overall": 0.4
+   },
+   "party_size": {
+    "when_mentioned": 0.0,
+    "mentioned": 11,
+    "stayed_empty": 1.0,
+    "overall": 0.633
+   },
+   "budget": {
+    "when_mentioned": 0.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 0.867
+   },
+   "budget_unit": {
+    "when_mentioned": 0.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 0.9
+   },
+   "duration_minutes": {
+    "when_mentioned": 0.0,
+    "mentioned": 3,
+    "stayed_empty": 1.0,
+    "overall": 0.9
+   },
+   "vegetarian": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.933
+   },
+   "children": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.933
+   },
+   "wheelchair": {
+    "when_mentioned": 0.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 0.967
+   },
+   "novelty": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.933
+   },
+   "mood": {
+    "when_mentioned": 0.0,
+    "mentioned": 5,
+    "stayed_empty": 1.0,
+    "overall": 0.833
+   },
+   "max_stops": {
+    "when_mentioned": 0.0,
+    "mentioned": 1,
+    "stayed_empty": 1.0,
+    "overall": 0.967
+   },
+   "area": {
+    "when_mentioned": 0.0,
+    "mentioned": 4,
+    "stayed_empty": 1.0,
+    "overall": 0.867
+   },
+   "transport": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.933
+   },
+   "avoid": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.933
+   },
+   "time_of_day": {
+    "when_mentioned": 0.0,
+    "mentioned": 7,
+    "stayed_empty": 1.0,
+    "overall": 0.767
+   },
+   "surprise": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.933
+   },
+   "out_of_scope": {
+    "when_mentioned": 0.0,
+    "mentioned": 2,
+    "stayed_empty": 1.0,
+    "overall": 0.933
+   }
+  }
+ },
+ "frozen_c_failures": [
+  {
+   "line": 9,
+   "text": "no crowded places, a calm park in the morning",
+   "field": "mood",
+   "expected": "quiet",
+   "got": null
+  }
+ ]
+}

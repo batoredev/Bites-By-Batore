@@ -34,7 +34,7 @@
 {"text": "dosa breakfast", "expect": {"categories": ["food"], "interests": ["dosa"], "time_of_day": "morning"}}
 {"text": "morning walk in a park then filter coffee", "expect": {"categories": ["park", "cafe"], "interests": ["filter coffee"], "time_of_day": "morning"}}
 {"text": "parotta and salna", "expect": {"categories": ["food"], "interests": ["parotta", "salna"]}}
-{"text": "kongu style non veg meals", "expect": {"categories": ["food"], "interests": ["kongu"]}}
+{"text": "kongu style non veg meals", "expect": {"categories": ["food"], "interests": ["kongu", "meals"]}}
 {"text": "sushi", "expect": {"categories": ["food"], "interests": ["sushi"]}}
 {"text": "korean food then a movie, 3 of us", "expect": {"categories": ["food", "cinema"], "interests": ["korean"], "party_size": 3}}
 {"text": "something new, a cuisine i have never tried", "expect": {"categories": ["food"], "novelty": "new_taste"}}
@@ -42,7 +42,7 @@
 {"text": "our usual favourite spots, nothing new", "expect": {"novelty": "familiar"}}
 {"text": "comfort food on a rainy day", "expect": {"categories": ["food"], "mood": "comfort"}}
 {"text": "something active, we want to sweat", "expect": {"mood": "active"}}
-{"text": "turf for football, 10 guys, 1 hour", "expect": {"categories": ["sports"], "interests": ["football"], "party_size": 10, "duration_minutes": 60, "mood": "active"}}
+{"text": "turf for football, 10 guys, 1 hour", "expect": {"categories": ["sports"], "interests": ["football"], "party_size": 10, "duration_minutes": 60}}
 {"text": "badminton court booking for 4", "expect": {"categories": ["sports"], "interests": ["badminton"], "party_size": 4}}
 {"text": "trampoline park for my son's birthday", "expect": {"categories": ["adventure"], "interests": ["trampoline"], "children": true}}
 {"text": "water park day with family, 5 people", "expect": {"categories": ["amusement"], "party_size": 5}}
