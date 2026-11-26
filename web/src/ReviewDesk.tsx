@@ -39,7 +39,7 @@ interface Preview {
 
 interface DeskItem {
   links: SourceLink[];
-  sheet: "decisions" | "overture";
+  sheet: "decisions" | "overture" | "live";
   row: number;
   title: string;
   question: string;
@@ -602,7 +602,7 @@ export default function ReviewDesk() {
           </span>
         </div>
         <span className="desk-sheet">
-          {item.sheet === "decisions" ? "My decisions" : "Overture places"} · row {item.row + 1}
+          {{ decisions: "My decisions", overture: "Overture places", live: "Live places check" }[item.sheet]} · row {item.row + 1}
         </span>
         <button
           className={"desk-mic" + (voice ? " on" : "")}

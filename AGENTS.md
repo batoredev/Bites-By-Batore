@@ -1,5 +1,11 @@
 # Project continuity
 
+Current plan (26 November): read docs/EXECUTION_PLAN.md first. Owner decisions: customers get
+only the planner agent; every other agent stays on the laptop and production gets a snapshot of
+verified places only; the planner is Bites' own AI, taught and trained locally by Claude and
+deployed as small model files (no cloud AI API). Week 1 is in progress (heartbeat thread, live
+places first in enrichment, 200-place live sample sheet done). Hosting/domain deferred by owner.
+
 Pending (26 November): ElevenLabs voice agent for Quick review — planned, not built. Owner is
 creating the agent; when they say "done", follow docs/ELEVENLABS_DESK_AGENT.md (steps, client
 tools, integration plan and the agent's system prompt).

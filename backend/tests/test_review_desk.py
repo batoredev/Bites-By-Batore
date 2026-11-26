@@ -290,3 +290,48 @@ def test_a_model_yes_with_a_correction_becomes_no_unless_the_owner_said_yes():
     assert review_answers.validate(guess, said, ROW)["verdict"] == "no"
     assert review_answers.validate(guess, "yes, they mostly sell sweets now", ROW)["verdict"] == "yes"
     assert review_answers.interpret("it shut during covid I think", ROW, ask_model=lambda t, i: 1 / 0)["verdict"] == "closed"
+
+
+def test_live_sheet_rows_appear_last_and_answers_are_stored(desk):
+    import csv as _csv
+    import io as _io
+
+    with Session() as db:
+        spot = IdentifiedSpot(user_id=desk.owner, identity_key="k:live-one", name="Live One", category="cafe",
+                              area="Peelamedu", status="approved")
+        spot.data = {"sources": [{"type": "overture", "url": "https://overturemaps.org/x"}]}
+        db.add(spot)
+        db.commit()
+        spot_id = spot.id
+    header = review_desk.LIVE_HEADER
+    out = _io.StringIO()
+    _csv.writer(out, lineterminator="\n").writerows(
+        [header, ["Live One", "cafe", "Peelamedu", "overture", "https://www.google.com/maps/search/?api=1&query=Live+One", "", "", spot_id]])
+    (desk.dir / "spotcheck-live-200.csv").write_text(out.getvalue(), encoding="utf-8-sig")
+    items = desk.client.get("/api/admin/review-desk/items", headers=desk.auth).json()["items"]
+    live = items[-1]
+    assert live["sheet"] == "live" and live["title"] == "Live One"
+    assert live["options"] == ["yes", "no", "closed"]
+    assert live["matches"][0]["id"] == spot_id
+    assert any("one source" in h for h in live["hints"]) and any("estimates" in h for h in live["hints"])
+    r = desk.client.post("/api/admin/review-desk/answer", headers=desk.auth,
+                         json={"sheet": "live", "row": 0, "answer": "closed"})
+    assert r.status_code == 200
+    saved = list(_csv.reader(_io.StringIO((desk.dir / "spotcheck-live-200.csv").read_text(encoding="utf-8-sig"))))
+    assert saved[1][5] == "closed" and saved[1][7] == spot_id
+
+
+def test_live_audit_sample_spreads_across_categories():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "scripts" / "make_live_audit.py"
+    spec = importlib.util.spec_from_file_location("make_live_audit", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    share = mod.allocate({"food": 900, "cafe": 300, "bowling": 6, "park": 2}, 200)
+    assert sum(share.values()) == 200
+    assert share["bowling"] == 4 and share["park"] == 2 and share["food"] > share["cafe"]
+    spots = [SimpleNamespace(id=f"s{i}", category="food" if i % 3 else "cafe") for i in range(60)]
+    first = [s.id for s in mod.sample(spots, 20, seed=1)]
+    assert first == [s.id for s in mod.sample(spots, 20, seed=1)] and len(set(first)) == 20

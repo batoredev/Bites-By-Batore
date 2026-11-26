@@ -2,6 +2,24 @@
 
 Last consolidated: **25 November 2026 (Asia/Calcutta)**.
 
+## Execution plan, split architecture and own planner AI — 26 November 2026
+
+The current plan is [docs/EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md).
+
+- Owner decision: customers get only the planner agent. The Instagram, data and duplicate
+  agents, the review desk and the research DB stay on the laptop. Production receives a
+  versioned snapshot of verified places only, and sends consented feedback back for review.
+- Owner decision: the planner is Bites' own AI. Its parts are understanding (own model trained
+  from scratch locally), the deterministic planner, a ranker trained later on real feedback,
+  and fact-built explanations. It is taught and trained locally and shipped as small CPU model
+  files; the cloud never trains.
+- Owner deferred hosting and domain (needed by about 9 December for the beta).
+- [x] Worker heartbeat moved to its own thread with busy-database retries (it was written only
+  between jobs and failed with "database is locked").
+- [x] Live (approved) places are enriched first (priority 70; 917 had no web check).
+- [x] Quick review "Live places check": 200-place seeded random sample across categories
+  (`scripts/make_live_audit.py`, `data/city-collection/spotcheck-live-200.csv`).
+
 ## Review desk, custom answers, refresh queue fix and readiness audit — 25 November 2026
 
 Launch target: Coimbatore-only, around 16 December 2026, accuracy first.

@@ -542,19 +542,7 @@ def schedule():
                         f"spot-inventory:local-operator:{datetime.now(timezone.utc).date().isoformat()}",
                         priority=95,
                     )
-                    from .db import IdentifiedSpot
-
-                    for spot in db.scalars(
-                        select(IdentifiedSpot).where(IdentifiedSpot.user_id == "local-operator")
-                    ):
-                        if spot.status in {"merged", "quarantined", "rejected"}:
-                            continue
-                        if not spot.data.get("web_search_results") and not any(
-                            s.get("type") == "official" for s in spot.data.get("sources", [])
-                        ):
-                            enqueue(
-                                db, "spot_enrich", {"spot_id": spot.id}, f"spot-enrich:{spot.id}", priority=25
-                            )
+                    queue_enrichment(db, "local-operator")
                     from .evaluation import source_rows
 
                     for source in source_rows(db, "local-operator"):
@@ -590,6 +578,51 @@ def schedule():
             if "media" in sub.content:
                 sub.content = {k: v for k, v in sub.content.items() if k != "media"}
         db.commit()
+
+
+HEARTBEAT_SECONDS = 20
+LIVE_ENRICH_PRIORITY = 70
+ENRICH_KINDS = ["spot_enrich"]
+
+
+def queue_enrichment(db, user_id):
+    """Queue web enrichment for spots with no web results or official page; live places first."""
+    from .db import IdentifiedSpot
+
+    for spot in db.scalars(select(IdentifiedSpot).where(IdentifiedSpot.user_id == user_id)):
+        if spot.status in {"merged", "quarantined", "rejected"}:
+            continue
+        if spot.data.get("web_search_results") or any(
+            s.get("type") == "official" for s in spot.data.get("sources", [])
+        ):
+            continue
+        # Places customers can already see get their facts checked first.
+        wanted = LIVE_ENRICH_PRIORITY if spot.status == "approved" else 25
+        job = enqueue(db, "spot_enrich", {"spot_id": spot.id}, f"spot-enrich:{spot.id}", priority=wanted)
+        if job.state == "queued" and job.priority < wanted:
+            job.priority = wanted
+    db.commit()
+
+
+def beat(attempts=3):
+    """Record that the worker process is alive. Returns False if the DB stayed busy."""
+    import logging
+    from sqlalchemy.exc import OperationalError
+
+    for attempt in range(attempts):
+        try:
+            with Session() as db:
+                heartbeat = db.get(Counter, "worker_heartbeat")
+                if heartbeat:
+                    heartbeat.value = int(time.time())
+                else:
+                    db.add(Counter(key="worker_heartbeat", value=int(time.time())))
+                db.commit()
+            return True
+        except OperationalError:
+            time.sleep(1 + attempt)
+    logging.getLogger(__name__).warning("Heartbeat skipped: database stayed busy")
+    return False
 
 
 def main():
@@ -633,23 +666,45 @@ def main():
             if not worked:
                 stop.wait(max(1, settings().worker_poll_seconds))
 
+    def enrich_loop():
+        # Web enrichment waits on the network, not the GPU or CPU, so it gets its own
+        # lane instead of 2 turns in 9 on the main loop. Per-site pacing still applies.
+        import logging
+
+        while not stop.is_set():
+            try:
+                worked = run_once(include_kinds=ENRICH_KINDS)
+            except Exception:
+                logging.getLogger(__name__).exception("Enrichment lane failed; retrying")
+                worked = False
+            if not worked:
+                stop.wait(max(1, settings().worker_poll_seconds))
+
+    def heartbeat_loop():
+        # Own thread: a long investigation or a busy database must not make a
+        # working worker look dead to the health checks (stale after 120 s).
+        while not stop.is_set():
+            beat()
+            stop.wait(HEARTBEAT_SECONDS)
+
     if pipeline and not args.once:
         threading.Thread(target=model_loop, name="batore-analysis", daemon=True).start()
     if duplicate_lane and not args.once:
         threading.Thread(target=duplicate_loop, name="batore-duplicates", daemon=True).start()
+    if duplicate_lane and not args.once:
+        threading.Thread(target=enrich_loop, name="batore-enrich", daemon=True).start()
+    if args.once:
+        beat()
+    else:
+        threading.Thread(target=heartbeat_loop, name="batore-heartbeat", daemon=True).start()
     while not stop.is_set():
         try:
-            with Session() as db:
-                heartbeat = db.get(Counter, "worker_heartbeat")
-                if heartbeat:
-                    heartbeat.value = int(time.time())
-                else:
-                    db.add(Counter(key="worker_heartbeat", value=int(time.time())))
-                db.commit()
             if time.monotonic() - scheduled > 60:
                 schedule()
                 scheduled = time.monotonic()
-            excluded = (model_kinds if pipeline else []) + (["spot_deduplicate"] if duplicate_lane else [])
+            excluded = (model_kinds if pipeline else []) + (
+                ["spot_deduplicate", *ENRICH_KINDS] if duplicate_lane else []
+            )
             worked = run_once(exclude_kinds=excluded if not args.once else None)
         except KeyboardInterrupt:
             stop.set()

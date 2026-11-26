@@ -38,7 +38,12 @@ ANSWER_COL, NOTE_COL, NOTE_HEADER = 5, 6, "owner_note"
 SHEETS = {
     "decisions": ("spotcheck-claude-decisions-50.csv", {"yes", "no", ""}),
     "overture": ("spotcheck-overture-50.csv", {"yes", "no", "closed", ""}),
+    # Random sample of places customers can see; answers measure live accuracy.
+    "live": ("spotcheck-live-200.csv", {"yes", "no", "closed", ""}),
 }
+LIVE_HEADER = ["place_name", "category", "area", "sources", "google_maps_link",
+               "you_agree (yes/no/closed)", NOTE_HEADER, "spot_id"]
+ITEM_ORDER = ("decisions", "overture", "live")
 
 DECISION_WORDS = {
     ("reject", "not_a_venue"): "I removed this: the name isn't one specific place (it reads like a generic phrase or a page name).",
@@ -224,10 +229,34 @@ def _overture_item(db, row: list[str], index: int) -> dict:
             "matches": matches, "links": links, "hints": hints}
 
 
+def _live_item(db, row: list[str], index: int) -> dict:
+    name, category, area, sources, link = (row + [""] * 8)[:5]
+    spot_id = row[7].strip() if len(row) > 7 else ""
+    answer = row[ANSWER_COL].strip().lower() if len(row) > ANSWER_COL else ""
+    matches, links = _evidence(db, name)
+    exact = [m for m in matches if spot_id and m["id"] == spot_id]
+    matches = exact + [m for m in matches if m not in exact]
+    coords = next((m["coords"] for m in matches if m["coords"]), None)
+    kinds = [s for s in sources.split(";") if s]
+    hints = ["Only one source backs this place." if len(kinds) <= 1 else f"{len(kinds)} kinds of source back it."]
+    hints.append("Its price and opening hours in the app are estimates, not checked facts.")
+    if len(matches) > 1:
+        hints.append(f"{len(matches)} stored places share this name; the first one is the live one.")
+    return {"sheet": "live", "row": index, "title": name, "question": "Is this live place real, open and right?",
+            "claim": f"Customers can see this as a {category or 'place'} in {area or 'Coimbatore'}.",
+            "answer": answer, "note": _owner_note(row), "other": "",
+            "options": ["yes", "no", "closed"], "maps_link": link, "embed": _embed(name, coords),
+            "matches": matches, "links": links, "hints": hints}
+
+
+BUILDERS = {"decisions": _decision_item, "overture": _overture_item, "live": _live_item}
+
+
 @router.get("/items")
 def items(user=Depends(admin_user), db=Depends(get_db)):
     out = []
-    for sheet, build in (("decisions", _decision_item), ("overture", _overture_item)):
+    for sheet in ITEM_ORDER:
+        build = BUILDERS[sheet]
         _, rows = _read(sheet)
         out.extend(build(db, row, i) for i, row in enumerate(rows) if any(cell.strip() for cell in row))
     return {"items": out, "total": len(out), "done": sum(1 for i in out if i["answer"])}
@@ -422,7 +451,7 @@ def _item(db, sheet: str, index: int) -> dict:
     _, rows = _read(sheet)
     if not 0 <= index < len(rows):
         raise HTTPException(404, "No such row")
-    return (_decision_item if sheet == "decisions" else _overture_item)(db, rows[index], index)
+    return BUILDERS[sheet](db, rows[index], index)
 
 
 class Said(BaseModel):
