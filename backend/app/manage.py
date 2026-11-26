@@ -37,8 +37,11 @@ def main():
             "teach-apply",
             "teach-undo",
             "teach-report",
+            "release-snapshot",
+            "release-verify",
         ],
     )
+    parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--user-id", default="local-operator")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--file", default="")
@@ -129,6 +132,22 @@ def main():
 
         with Session() as db:
             print(json.dumps(owner_report(db, args.user_id), indent=2))
+    elif args.command == "release-snapshot":
+        from .release import build_snapshot, write_snapshot
+
+        with Session() as db:
+            snapshot = build_snapshot(db, args.user_id)
+        summary = {k: snapshot[k] for k in ("version", "checksum", "counts")}
+        if not args.dry_run:
+            summary["file"] = str(write_snapshot(snapshot))
+        print(json.dumps(summary, indent=2, ensure_ascii=False))
+    elif args.command == "release-verify":
+        from .release import verify_snapshot
+
+        result = verify_snapshot(args.file)
+        print(json.dumps(result, indent=2))
+        if not result["ok"]:
+            raise SystemExit(1)
     elif args.command == "db-check":
         from .database_audit import audit_database
 

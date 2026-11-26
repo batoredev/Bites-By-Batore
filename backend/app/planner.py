@@ -140,8 +140,17 @@ def fresh_fields(venue, claims, request):
     return all(f in valid for f in needed)
 
 
+def claims_by_venue(claims):
+    """Group facts by place once; scanning every fact for every place made planning take seconds."""
+    grouped = {}
+    for claim in claims:
+        grouped.setdefault(claim.venue_id, []).append(claim)
+    return grouped
+
+
 def live_candidate_order(request, venues, claims):
     """Spend bounded live checks on requested dishes/locked branches before proximity."""
+    by_venue = claims_by_venue(claims)
     query = request.query.casefold()
     words = {word for word in re.findall(r"\w+", query) if len(word) > 2} - {
         "something",
@@ -169,7 +178,7 @@ def live_candidate_order(request, venues, claims):
     }
 
     def relevance(venue):
-        fact = current_fact([c for c in claims if c.venue_id == venue.id], "offerings")
+        fact = current_fact(by_venue.get(venue.id, []), "offerings")
         fields = [venue.name, *venue.tags] + (
             [item["name"] for item in fact.value["value"] if item.get("available") is not False]
             if fact
@@ -203,9 +212,10 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
         for word, category in SYNONYMS.items()
         if re.search(r"(?<!\w)" + word + r"(?!\w)", q) and category not in q
     )
+    by_venue = claims_by_venue(claims)
     menu_terms = {}
     for v in venues:
-        claim = current_fact([c for c in claims if c.venue_id == v.id], "offerings")
+        claim = current_fact(by_venue.get(v.id, []), "offerings")
         menu_terms[v.id] = (
             [
                 term.casefold()
@@ -296,7 +306,7 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
             reason = "location name and Maps branch need confirmation"
         elif d.get("closed"):
             reason = "closed"
-        elif not fresh_fields(v, claims, request):
+        elif not fresh_fields(v, by_venue.get(v.id, []), request):
             reason = "facts need verification"
         elif avoided.intersection(v.tags):
             reason = "excluded preference"
@@ -463,7 +473,7 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
                     "revision": v.revision,
                     "lat": v.lat,
                     "lng": v.lng,
-                    "evidence_ids": [c.id for c in claims if c.venue_id == v.id and c.status == "accepted"],
+                    "evidence_ids": [c.id for c in by_venue.get(v.id, []) if c.status == "accepted"],
                 }
             )
             position, previous_id, clock = (v.lat, v.lng), v.id, end

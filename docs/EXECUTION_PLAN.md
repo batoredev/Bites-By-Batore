@@ -116,8 +116,7 @@ never a guess.
 - **Teaching:** owner answers become rules in `learned.py` and Place-manager edits. Every
   "no" answer is turned into a fix, and accuracy is measured again.
 - **Competitor lists** (FavHiker and others) are leads only, never evidence. 484 of 504
-  FavHiker names are in the DB. 18 held names await the owner
-  (`data/favhiker/held-for-you.txt`).
+  FavHiker names are in the DB. The 18 held names stay held (owner, 26 November: leave them).
 - **Long term:** our own vision, speech and branch models replace the borrowed local models,
   per [OWNED_AI_FEASIBILITY.md](OWNED_AI_FEASIBILITY.md). This is research for after launch,
   not a launch item.
@@ -143,11 +142,12 @@ never a guess.
 | 1.3 | 200-place random live sample in Quick review ("Live places check") | Claude | **done** |
 | 1.4 | Answer the 100 + 200 rows (yes / no / closed, or your own words) | **owner** | next |
 | 1.5 | Accuracy report from the answers: per category, per agent, per source; fix each wrong pattern; re-check | Claude | after 1.4 |
-| 1.6 | Planner brain v1: training data, frozen test, own understanding model trained locally and plugged into the planner (old keyword parser kept as fallback) | Claude | next |
+| 1.6 | Planner brain v1: training data, frozen test, own understanding model trained locally and plugged into the planner (old keyword parser kept as fallback). **First target found by the rehearsal:** "kids day out", "wheelchair friendly evening", "four stops", "new place to try" get "no supported match" because the keyword parser reads *kids / wheelchair / new place* as missing dishes instead of request details | Claude | next |
 | 1.7 | Planner scenario suite (hard rules, honest "no plan", groups, novelty) | Claude | next |
-| 1.8 | Release snapshot: export verified places from the laptop, with the publish rule, version and checksum | Claude | next |
-| 1.9 | Publish rule for customers: map point plus two independent sources or owner OK; estimates labelled "approx." | Claude + owner OK | next |
-| 1.10 | PostgreSQL rehearsal on a copy of the data (needs PostgreSQL installed locally; owner OK to install) | Claude | next |
+| 1.8 | Release snapshot: `python -m app.manage release-snapshot` writes `data/releases/release-<version>.json` (verified places only, public source links, every price and opening time labelled checked or approx., checksum); `release-verify --file` is what production runs before importing. Never overwrites a release | Claude | **done** (first real release after the owner approves the rule) |
+| 1.9 | Publish rule `draft-1` in `backend/app/release.py`: live place, map point in Coimbatore, not closed, no owner "no/closed", **owner yes or two independent kinds of source**, seen within 180 days. Today it passes **740 of 1,542** live places; 802 are held only for having one kind of source (610 Overture-only, 187 OpenStreetMap-only). Thin after the rule: gaming 1, bowling 0, workshop 0 | Claude + **owner OK** | built, awaiting owner |
+| 1.10 | PostgreSQL rehearsal: portable PostgreSQL 17.12 (same major version as Supabase), private on 127.0.0.1:5433 (`scripts/pg_local.ps1`); `scripts/pg_rehearsal.py` copied all **19 tables, 52,609 rows, identical content**, schema 7, row-level security on every table, and the planner gave **12/12 identical plans** on both databases. Audit found 8 old research tasks pointing to deleted investigations (laptop-only data, not copied to production) | Claude | **done** |
+| 1.11 | Planner speed: it scanned every fact for every place (13.7 million reads per request); now grouped once. **5–29 s per request → 0.1–0.8 s**, same results; 60 planner/parity/release tests pass. Live in the app after the next restart | Claude | **done** |
 
 ### Week 2: 3 – 9 Dec (the production app)
 
@@ -187,8 +187,13 @@ never a guess.
 2. Approve the publish rule and the launch targets in section 3.
 3. Choose hosting and domain (by about 9 Dec) and create the Supabase project.
 4. Create the ElevenLabs agent when ready, and put the keys in `.env` yourself, never in chat.
-5. Decide the 18 held FavHiker names.
-6. Approve the legal text and make the go/no-go call.
+5. Approve the legal text and make the go/no-go call.
+
+(The 18 held FavHiker names: the owner said on 26 November to leave them. They stay held and
+are not added.)
+
+**Launch date:** on 26 November the owner asked about moving launch to **14 January 2027** for
+more testing. Decision pending; the 16 December dates below stand until the owner confirms.
 
 ## 8. Rules that never change
 

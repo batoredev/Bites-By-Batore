@@ -19,6 +19,19 @@ The current plan is [docs/EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md).
 - [x] Live (approved) places are enriched first (priority 70; 917 had no web check).
 - [x] Quick review "Live places check": 200-place seeded random sample across categories
   (`scripts/make_live_audit.py`, `data/city-collection/spotcheck-live-200.csv`).
+- [x] Enrichment has its own worker lane (network-bound; the GPU lane keeps vision work).
+- [x] Release snapshot and draft publish rule (`backend/app/release.py`; `manage.py
+  release-snapshot [--dry-run]`, `release-verify --file`). Rule `draft-1`, NOT yet approved by
+  the owner, passes 740 of 1,542 live places; 802 held for having one kind of source.
+- [x] PostgreSQL 17.12 portable install, private on 127.0.0.1:5433 (`scripts/pg_local.ps1`).
+  Rehearsal (`scripts/pg_rehearsal.py`): 19/19 tables, 52,609 rows identical; row-level
+  security on all tables; planner 12/12 identical plans. Locally tested only; not production.
+- [x] Planner speed: facts grouped by place once (was 13.7M attribute reads per request);
+  5–29 s → 0.1–0.8 s per request, same output. 503 backend tests pass.
+- [ ] Understanding gap found: "kids", "wheelchair", "new place", "four stops" are read as
+  missing dishes, giving "no supported match". First target of planner brain v1 (item 1.6).
+- Owner (26 November): leave the 18 held FavHiker names held. Owner asked about launching
+  14 January 2027 instead; pending decision.
 
 ## Review desk, custom answers, refresh queue fix and readiness audit — 25 November 2026
 
