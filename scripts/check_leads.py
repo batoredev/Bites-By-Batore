@@ -261,6 +261,13 @@ def apply(path: Path):
                             "phones": [str(p) for p in props.get("phones") or []][:2],
                             "datasets": r["overture"]["datasets"],
                         }
+                    listed_area = infer_area([r["name"]])
+                    point_area = infer_area([item["address"], item["locality"]]) if item else None
+                    if item and listed_area and point_area != listed_area:
+                        # The list names a branch area the Overture point doesn't confirm: wrong-branch risk.
+                        data["lead"]["overture_other_branch"] = f"{item['name']} at {item['address'] or 'an unlisted address'}"
+                        area = listed_area
+                        item = None
                     if item:
                         evidence = overture._evidence(item)
                         evidence["overture"]["confidence"] = r["overture"]["confidence"]
@@ -268,6 +275,7 @@ def apply(path: Path):
                                 "coordinates": overture._point(item)}
                         category = item["category"] or category
                         area = infer_area([item["address"], item["locality"]]) or ""
+                area = area or infer_area([r["name"]]) or ""
                 row = upsert_spot(db, owner, short(r["name"]), category, area, data)
                 if row is None:
                     skipped.append({"name": r["name"], "why": "held back by the name and scope rules"})
