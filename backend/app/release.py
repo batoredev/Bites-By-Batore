@@ -5,9 +5,11 @@ checksummed JSON file holding the places that pass the publish rule, with only t
 the planner needs, each labelled checked or estimated. Raw reels, comments, drafts,
 review notes and model observations never go in it.
 
-The publish rule (PUBLISH_RULE, a DRAFT until the owner approves it) decides each live
-place. A place goes to customers only when every check passes; otherwise it is held with
-the reasons, and stays on the laptop for more evidence or the owner's answer.
+The publish rule (PUBLISH_RULE, decided by the owner on 26 November 2026): the owner
+personally approves every place in Operations > Approve places. An approval covers the
+exact facts the owner saw (FACT_FIELDS); if any of them changes later, the place goes back
+to the owner's queue. Safety checks (live, map point in Coimbatore, not closed, no owner
+"no/closed") still block. Source count and freshness are shown as hints, not rules.
 """
 
 from __future__ import annotations
@@ -32,18 +34,32 @@ FRESH_DAYS = 180
 SNAPSHOT_FORMAT = 1
 
 PUBLISH_RULE = {
-    "version": "draft-1",
-    "approved_by_owner": False,
+    "version": "owner-1",
+    "approved_by_owner": True,
+    "decided_on": "2026-11-26",
     "checks": [
+        "The owner personally approved this place in Operations > Approve places, and none of "
+        "its facts changed since.",
         "The place is live on the laptop (approved, published, not demo).",
         "It has a map point inside Coimbatore (within 40 km of the centre).",
         "It is not marked closed, and the owner has not answered 'no' or 'closed' for it.",
-        "Either the owner said yes to it (Live places check or Place manager), or at least two "
-        "independent kinds of source back it (Overture, OpenStreetMap, Instagram, the official "
-        "site, other web pages).",
-        "At least one source was seen within the last 180 days.",
         "Every price and opening time goes out labelled 'checked' or 'approx.'.",
     ],
+    "hints_shown_to_owner": [
+        "How many independent kinds of source back it (Overture, OpenStreetMap, Instagram, "
+        "the official site, other web pages).",
+        "Whether any source was seen in the last 180 days.",
+    ],
+}
+
+# The facts an approval covers. Changing any of them sends the place back to the owner.
+FACT_FIELDS = ("name", "category", "area", "address", "lat", "lng", "tags")
+DETAIL_FACTS = ("hours", "price_per_person", "fee_per_group", "visit_minutes", "wait_minutes",
+                "max_group", "min_age", "child_friendly", "vegetarian", "sessions")
+STATE_REASON = {
+    "waiting": "waiting for the owner's approval",
+    "changed": "facts changed since the owner approved",
+    "rejected": "the owner rejected it",
 }
 
 # Kinds of source that count as independent of each other. Web search results and pages we
@@ -75,8 +91,9 @@ def _when(value) -> datetime | None:
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
-def owner_verdicts(sheet: Path = LIVE_SHEET) -> dict[str, str]:
+def owner_verdicts(sheet: Path | None = None) -> dict[str, str]:
     """spot_id -> yes/no/closed from the Live places check (the only sheet keyed by place ID)."""
+    sheet = sheet or LIVE_SHEET
     if not sheet.exists():
         return {}
     with sheet.open(encoding="utf-8", newline="") as handle:
@@ -91,37 +108,65 @@ def owner_verdicts(sheet: Path = LIVE_SHEET) -> dict[str, str]:
     return verdicts
 
 
-def _owner_confirmed(venue_details: dict) -> bool:
-    by = str(venue_details.get("maps_identity", {}).get("confirmed_by") or "")
-    return bool(by) and not by.startswith("agent:")
+def fact_fingerprint(venue) -> str:
+    """What an approval covers: the customer-facing facts, nothing else."""
+    details = venue.details or {}
+    facts = {f: getattr(venue, f, None) for f in FACT_FIELDS}
+    facts.update({f: details.get(f) for f in DETAIL_FACTS})
+    canonical = json.dumps(facts, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def approval_state(venue) -> str:
+    approval = (venue.details or {}).get("owner_publish") or {}
+    if approval.get("decision") == "reject":
+        return "rejected"
+    if approval.get("decision") == "approve":
+        return "approved" if approval.get("fingerprint") == fact_fingerprint(venue) else "changed"
+    return "waiting"
 
 
 def publish_decision(venue, spot_data: dict, verdict: str | None, at: datetime) -> dict:
-    """Apply the publish rule to one place. Pure: no database access."""
+    """Apply the publish rule to one place. Pure: no database access.
+
+    state is one of: approved, waiting, changed (approved, then a fact changed), rejected,
+    blocked (a safety check fails, so it cannot be approved yet).
+    """
     details = venue.details or {}
-    reasons = []
+    blockers = []
     if venue.status != "published" or venue.is_demo:
-        reasons.append("not a live place")
+        blockers.append("not a live place")
     if venue.lat is None or venue.lng is None or km((venue.lat, venue.lng), CITY_CENTRE) > CITY_RADIUS_KM:
-        reasons.append("no map point inside Coimbatore")
+        blockers.append("no map point inside Coimbatore")
     if str(details.get("closed")).lower() == "true":
-        reasons.append("marked closed")
+        blockers.append("marked closed")
     if verdict in OWNER_NO:
-        reasons.append(f"owner answered '{verdict}'")
+        blockers.append(f"owner answered '{verdict}' in the Live places check")
     sources = spot_data.get("sources", []) or []
     groups = sorted({SOURCE_GROUPS.get(s.get("type"), s.get("type") or "unknown") for s in sources})
-    owner_yes = verdict == "yes" or _owner_confirmed(details)
-    if not owner_yes and len(groups) < 2:
-        reasons.append("only one kind of source and no owner OK")
     seen = [_when(s.get("collected_at")) for s in sources] + [_when(spot_data.get("web_search_completed_at"))]
     latest = max((s for s in seen if s), default=None)
-    if not owner_yes and (latest is None or at - latest > timedelta(days=FRESH_DAYS)):
-        reasons.append(f"no source seen in the last {FRESH_DAYS} days")
+    hints = []
+    if len(groups) < 2:
+        hints.append("Only one kind of source backs this place.")
+    else:
+        hints.append(f"{len(groups)} independent kinds of source back it: {', '.join(groups)}.")
+    if latest is None or at - latest > timedelta(days=FRESH_DAYS):
+        hints.append(f"No source has mentioned it in the last {FRESH_DAYS} days.")
+    if verdict == "yes":
+        hints.append("You said yes to it in the Live places check.")
+    state = approval_state(venue)
+    if state != "rejected" and blockers:
+        state = "blocked"
+    reasons = blockers + ([STATE_REASON[state]] if state in STATE_REASON else [])
     return {
-        "publish": not reasons,
+        "publish": state == "approved",
+        "state": state,
         "reasons": reasons,
+        "blockers": blockers,
+        "hints": hints,
         "source_groups": groups,
-        "owner_ok": owner_yes,
+        "owner_ok": state == "approved",
         "last_seen": latest.isoformat() if latest else None,
     }
 
@@ -185,7 +230,7 @@ def checksum(places: list[dict]) -> str:
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def build_snapshot(db, owner_id: str, at: datetime | None = None, sheet: Path = LIVE_SHEET) -> dict:
+def build_snapshot(db, owner_id: str, at: datetime | None = None, sheet: Path | None = None) -> dict:
     at = at or datetime.now(timezone.utc)
     verdicts = owner_verdicts(sheet)
     venues = list(
@@ -198,7 +243,7 @@ def build_snapshot(db, owner_id: str, at: datetime | None = None, sheet: Path = 
     if venues:
         for claim in db.scalars(select(Claim).where(Claim.venue_id.in_([v.id for v in venues]))):
             claims_by_venue.setdefault(claim.venue_id, []).append(claim)
-    places, held = [], {}
+    places, held, by_state = [], {}, {}
     held_by_category: dict[str, int] = {}
     published_by_category: dict[str, int] = {}
     for venue in venues:
@@ -208,6 +253,7 @@ def build_snapshot(db, owner_id: str, at: datetime | None = None, sheet: Path = 
         if not spot:
             decision["publish"] = False
             decision["reasons"].append("no linked research record")
+        by_state[decision["state"]] = by_state.get(decision["state"], 0) + 1
         if decision["publish"]:
             places.append(_place(venue, spot_data, claims_by_venue.get(venue.id, []), decision))
             published_by_category[venue.category] = published_by_category.get(venue.category, 0) + 1
@@ -225,6 +271,7 @@ def build_snapshot(db, owner_id: str, at: datetime | None = None, sheet: Path = 
             "live_on_laptop": len(venues),
             "published": len(places),
             "held": len(venues) - len(places),
+            "by_state": dict(sorted(by_state.items())),
             "published_by_category": dict(sorted(published_by_category.items())),
             "held_by_category": dict(sorted(held_by_category.items())),
             "held_reasons": dict(sorted(held.items(), key=lambda kv: -kv[1])),

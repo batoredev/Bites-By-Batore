@@ -2244,6 +2244,104 @@ pre {
 .desk-empty {
   padding: 1rem;
 }
+/* Approve places: the owner's per-place publish decision, built on the desk layout. */
+.approve-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+.approve-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 99px;
+  border: 1px solid var(--desk-line);
+  background: none;
+  color: var(--cream);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.approve-filters button span {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+.approve-filters button.active {
+  background: var(--turmeric);
+  border-color: var(--turmeric);
+  color: var(--espresso);
+}
+.approve-filters button.active span {
+  color: var(--espresso);
+}
+.approve-filters select,
+.approve-filters input {
+  padding: 0.4rem 0.7rem;
+  border-radius: 99px;
+  border: 1px solid var(--desk-line);
+  background: var(--desk-panel);
+  color: var(--cream);
+  font: inherit;
+  font-size: 0.85rem;
+}
+.approve-filters select {
+  width: auto;
+  flex: 0 0 auto;
+}
+.approve-filters input {
+  width: auto;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.approve-blockers {
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.9rem;
+  list-style: none;
+  border-radius: 12px;
+  border: 1px solid var(--turmeric);
+  color: var(--cream);
+  font-size: 0.9rem;
+}
+.approve-blockers li::before {
+  content: "Can't approve: ";
+  font-weight: 700;
+}
+.approve-basis {
+  padding: 0 0.4rem;
+  border-radius: 6px;
+  background: var(--cocoa);
+  font-size: 0.75rem;
+  color: var(--gold);
+}
+.approve-basis.ok {
+  background: var(--leaf);
+  color: var(--cream);
+}
+.approve-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.approve-sources a {
+  color: var(--cream);
+}
+.approve-note {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--gold);
+}
+.approve-note input {
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--desk-line);
+  background: var(--desk-bg);
+  color: var(--cream);
+  font: inherit;
+}
 @media (max-width: 760px) {
   .desk-grid {
     grid-template-columns: 1fr;

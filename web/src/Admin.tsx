@@ -21,6 +21,7 @@ import Quality from "./Quality";
 import IdentifiedSpots from "./IdentifiedSpots";
 import Unpublished from "./Unpublished";
 import ReviewDesk from "./ReviewDesk";
+import PublishApproval from "./PublishApproval";
 
 function OperationsEditor({
   venue,
@@ -443,6 +444,7 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
       >
         {[
           "desk",
+          "approve",
           "review",
           "research",
           "spots",
@@ -461,6 +463,8 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
           >
             {t === "desk"
               ? "Quick review"
+              : t === "approve"
+              ? "Approve places"
               : t === "review"
               ? "Review queue"
               : t === "research"
@@ -483,6 +487,7 @@ export default function Admin({ onChanged }: { onChanged: () => void }) {
       </div>
       <ErrorBox message={error} />
       {tab === "desk" && <ReviewDesk />}
+      {tab === "approve" && <PublishApproval />}
       {tab === "research" && <Research admin venues={data.venues} />}
       {tab === "spots" && <IdentifiedSpots onChanged={load} />}
       {tab === "unpublished" && <Unpublished onChanged={load} />}
