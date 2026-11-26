@@ -1,5 +1,9 @@
 # Project continuity
 
+Pending (26 November): ElevenLabs voice agent for Quick review — planned, not built. Owner is
+creating the agent; when they say "done", follow docs/ELEVENLABS_DESK_AGENT.md (steps, client
+tools, integration plan and the agent's system prompt).
+
 Latest continuation (25 November): read the 25 November section of PROJECT_MASTER.md.
 Quick review desk with sources, voice and custom answers (owner's words become verdicts and
 Place-manager edits after confirmation). Refresh jobs now rotate in bulk mode; stale queue
