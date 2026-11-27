@@ -1,6 +1,28 @@
 # Bites by Batore — master project record and completion tracker
 
-Last consolidated: **25 November 2026 (Asia/Calcutta)**.
+Last consolidated: **27 November 2026 (Asia/Calcutta)**.
+
+## Owner-only planner, location fixes, wider search, agents paused — 27 November 2026
+
+Details in [docs/EXECUTION_PLAN.md](docs/EXECUTION_PLAN.md) items 1.12–1.16.
+
+- Owner rule: the sample answers (Live places check, location fixes) are for data collection
+  only. Only places the owner personally approves in Approve places reach customers or the
+  planner, on the laptop as well as production (`release.customer_ready`).
+- [x] Planner AI v1 (own understanding model) trained locally and plugged into the app.
+- [x] "Wrong location?" in Quick review and Approve places.
+- [x] Wider search plan: 24 areas x 12 topics + 27 city topics (315 searches).
+- [x] Planner and customer screens use owner-approved places only (523 backend tests, 20
+  planner browser tests pass).
+- [x] Database backup `data/backups/local-research-20261127.db` (integrity ok; the previous
+  backup was 7 November).
+- First accuracy reading (80 of 200 live rows): 55% right; Instagram-backed places best.
+- Collection about half done (see 1.15). Agents paused at the owner's request to free the
+  GPU; resume on the owner's word.
+- [ ] Owner: finish the 120 rows and the approvals. Then Claude runs the full diagnostic and
+  trains every agent (1.16).
+- Still open for the owner: 14 Jan launch question, hosting and domain (by about 9 Dec),
+  Supabase project, ElevenLabs agent, subagent model option.
 
 ## Execution plan, split architecture and own planner AI — 26 November 2026
 
