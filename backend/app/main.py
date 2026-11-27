@@ -438,10 +438,14 @@ def venues(
         query = query.where(Venue.category == category)
     rows = list(db.scalars(query.order_by(Venue.name, Venue.id)))
     output = []
+    from .release import customer_ready
+
     for v in rows:
         if not v.is_demo and not (
             v.details.get("location_approval") and v.details.get("maps_identity", {}).get("confirmed_by")
         ):
+            continue
+        if not customer_ready(v):
             continue
         item = venue_dict(db, v, user)
         menu = item["menu"]
@@ -487,18 +491,26 @@ def saved_venues(user=Depends(current_user), db=Depends(get_db)):
         )
         .order_by(Venue.name, Venue.id)
     )
+    from .release import customer_ready
+
     return [
         venue_dict(db, v, user)
         for v in rows
         if v.is_demo
-        or (v.details.get("location_approval") and v.details.get("maps_identity", {}).get("confirmed_by"))
+        or (
+            v.details.get("location_approval")
+            and v.details.get("maps_identity", {}).get("confirmed_by")
+            and customer_ready(v)
+        )
     ]
 
 
 @app.get("/api/venues/{venue_id}")
 def venue_detail(venue_id: str, user=Depends(current_user), db=Depends(get_db)):
     v = accessible_venue(db, venue_id)
-    if v.status != "published" and not is_admin(user):
+    from .release import customer_ready
+
+    if not is_admin(user) and (v.status != "published" or not customer_ready(v)):
         raise HTTPException(404, "Venue not published")
     return venue_dict(db, v, user)
 
@@ -580,6 +592,19 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
             select(Venue).where(Venue.is_demo == (settings().app_mode == "demo"), Venue.status == "published")
         )
     )
+    # Only places the owner personally approved are planned with (publish rule owner-1).
+    from .release import customer_ready
+
+    waiting = sum(not customer_ready(v) for v in rows)
+    rows = [v for v in rows if customer_ready(v)]
+    if not rows and waiting:
+        return {
+            "options": [],
+            "message": "No places are approved for customers yet. The owner approves each place in Operations > Approve places.",
+            "excluded": {"waiting for the owner's approval": waiting},
+            "candidate_count": 0,
+            "understood_by": reader,
+        }
     claims = list(db.scalars(select(Claim).where(Claim.venue_id.in_([v.id for v in rows])))) if rows else []
     visited = set(db.scalars(select(Visit.venue_id).where(Visit.user_id == user.id)))
     warnings = []
@@ -662,6 +687,8 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
             }
 
     result = build_plans(data, rows, claims, user.profile, visited, route)
+    if waiting:
+        result = {**result, "excluded": {**result.get("excluded", {}), "waiting for the owner's approval": waiting}}
     output = []
     for option in result["options"]:
         option["warnings"] += sorted(set(warnings))

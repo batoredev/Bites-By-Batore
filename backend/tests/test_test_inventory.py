@@ -13,6 +13,17 @@ from app.spot_identity import quality_issues
 OWNER = "owner"
 
 
+def approve_all(client, auth):
+    """The owner approves every live place through the real Approve places route."""
+    with Session() as db:
+        ids = list(db.scalars(select(Venue.id).where(Venue.status == "published", Venue.is_demo.is_(False))))
+    for venue_id in ids:
+        answer = client.post(
+            "/api/admin/publish/decide", headers=auth, json={"venue_id": venue_id, "decision": "approve"}
+        )
+        assert answer.status_code == 200, answer.text
+
+
 @pytest.mark.parametrize(
     "name,context,expected",
     [
@@ -216,6 +227,11 @@ def test_local_planner_uses_test_inventory_without_a_map_provider(local, request
         "categories": ["cafe", "park", "street_food"],
         "departure": "2026-11-14T17:00:00+05:30",
     }
+    # Live but not yet approved by the owner: the planner and the place list must not use them.
+    waiting = local.post("/api/plans", headers=auth, json=body).json()
+    assert waiting["options"] == [] and waiting["excluded"] == {"waiting for the owner's approval": 3}
+    assert local.get("/api/venues", headers=auth).json() == []
+    approve_all(local, auth)
     response = local.post("/api/plans", headers=auth, json=body)
     assert response.status_code == 200, response.text
     result = response.json()
@@ -475,6 +491,7 @@ def test_planner_returns_as_many_distinct_plans_as_requested(local, request_data
         "categories": ["cafe", "park", "street_food", "dessert", "food"],
         "departure": "2026-11-14T17:00:00+05:30",
     }
+    approve_all(local, auth)
     three = local.post("/api/plans", headers=auth, json=body).json()
     assert len(three["options"]) == 3 and three["total_options"] > 3
     many = local.post("/api/plans", headers=auth, json={**body, "max_options": 60}).json()

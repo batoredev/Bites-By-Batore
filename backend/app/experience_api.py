@@ -25,6 +25,10 @@ def published_venue(db, venue_id):
         venue.details.get("location_approval") and venue.details.get("maps_identity", {}).get("confirmed_by")
     ):
         raise HTTPException(404, "Location awaits approval")
+    from .release import customer_ready
+
+    if not customer_ready(venue):
+        raise HTTPException(404, "Waiting for the owner's approval")
     return venue
 
 

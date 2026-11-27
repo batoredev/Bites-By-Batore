@@ -55,6 +55,28 @@ def test_changing_a_fact_after_approval_sends_it_back_to_the_owner():
     assert (d["state"], d["publish"]) == ("changed", False)
 
 
+def test_only_owner_approved_places_reach_customers_or_the_planner():
+    assert not release.customer_ready(venue())
+    assert release.customer_ready(approved(venue()))
+    assert not release.customer_ready(approved(venue(), "reject"))
+    changed = approved(venue())
+    changed.details = {**changed.details, "price_per_person": 900}
+    assert not release.customer_ready(changed)
+    closed = approved(venue())
+    closed.details = {**closed.details, "closed": True}
+    assert not release.customer_ready(closed)
+    assert not release.customer_ready(approved(venue(status="review")))
+    assert release.customer_ready(venue(is_demo=True))
+
+
+def test_a_yes_in_the_sample_sheet_never_approves_a_place():
+    # The Live places check teaches the collecting agents; only Approve places approves.
+    d = decide(venue(), sources("overture", "openstreetmap"), verdict="yes")
+    assert (d["state"], d["publish"]) == ("waiting", False)
+    assert "You said yes to it in the Live places check." in d["hints"]
+    assert not release.customer_ready(venue())
+
+
 def test_adding_a_source_does_not_undo_an_approval():
     place = approved(venue())
     assert decide(place, sources("overture", "instagram", "web_candidate"))["state"] == "approved"

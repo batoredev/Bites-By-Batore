@@ -126,6 +126,20 @@ def approval_state(venue) -> str:
     return "waiting"
 
 
+def customer_ready(venue) -> bool:
+    """The owner's rule: a real place reaches customers, or the planner, only after the owner
+    personally approved it in Approve places and none of its facts changed since. The owner's
+    sample answers (Live places check) teach the collecting agents; they never approve a place.
+    Demo fixtures are invented and exempt."""
+    if getattr(venue, "is_demo", False):
+        return True
+    return (
+        venue.status == "published"
+        and approval_state(venue) == "approved"
+        and str((venue.details or {}).get("closed")).lower() != "true"
+    )
+
+
 def publish_decision(venue, spot_data: dict, verdict: str | None, at: datetime) -> dict:
     """Apply the publish rule to one place. Pure: no database access.
 

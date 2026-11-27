@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from collections import Counter
 from .schemas import OutingRequest
 from .menu import current_fact, text_matches
+from .release import customer_ready
 
 IST = ZoneInfo("Asia/Kolkata")
 from .categories import FOOD  # noqa: E402
@@ -300,7 +301,9 @@ def build_plans(request: OutingRequest, venues, claims, profile, visited, route)
         if request.outing_type == "entertainment" and v.category in FOOD:
             continue
         reason = None
-        if not getattr(v, "is_demo", False) and not d.get("location_approval"):
+        if not customer_ready(v):
+            reason = "waiting for the owner's approval"
+        elif not getattr(v, "is_demo", False) and not d.get("location_approval"):
             reason = "location awaits operator approval"
         elif not getattr(v, "is_demo", False) and not d.get("maps_identity", {}).get("confirmed_by"):
             reason = "location name and Maps branch need confirmation"
