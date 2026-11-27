@@ -27,6 +27,18 @@ CITY_TOPICS = [
     "hidden gem restaurants",
     "sushi Japanese Korean restaurants",
     "buffet restaurants",
+    # Added 27 Nov: categories that came out thin in the owner's checks.
+    "bowling alley",
+    "board game cafe",
+    "candle making resin art workshop",
+    "dessert cafe waffles",
+    "late night food",
+    "mess meals",
+    "craft beer brewery microbrewery",
+    "family entertainment centre",
+    "rooftop cafe",
+    "pure veg restaurants new",
+    "laser tag paintball",
 ]
 # Searched for every area below.
 CATEGORIES = [
@@ -58,6 +70,17 @@ AREAS = [
     "Ganapathy",
     "Podanur",
     "Sundarapuram",
+    # Added 27 Nov: busy areas with live places that the first grid never searched.
+    "Avinashi Road",
+    "Kovaipudur",
+    "Kalapatti",
+    "Kuniyamuthur",
+    "Town Hall",
+    "Brookefields",
+    "Ramanathapuram",
+    "Sitra",
+    "Vilankurichi",
+    "Kavundampalayam",
 ]
 
 

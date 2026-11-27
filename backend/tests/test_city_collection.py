@@ -173,7 +173,7 @@ def test_start_is_durable_idempotent_and_grid_is_not_completeness(client):
         assert db.get(Counter, "research_paused").value == 0
         assert len(list(db.scalars(select(Job).where(Job.kind == "city_directory")))) == 1
         report = c.coverage(db, "owner")
-        assert report["discovery_queries"] == 168 and report["queries_scheduled"] == 0
+        assert report["discovery_queries"] == 288 and report["queries_scheduled"] == 0
         assert report["city_complete"] is False
 
 

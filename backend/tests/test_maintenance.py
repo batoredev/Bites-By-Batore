@@ -297,7 +297,7 @@ def test_holdout_corrections_do_not_leak_into_other_evaluation_sources(client):
 def test_frontier_covers_more_topics_and_areas():
     from app.frontier import AREAS, CATEGORIES
 
-    assert len(AREAS) * len(CATEGORIES) == 168
+    assert len(AREAS) * len(CATEGORIES) == 288
     assert not any(t in " ".join(CATEGORIES) for t in ["events", "scenic drives"])
 
 
