@@ -48,6 +48,7 @@ def _item(venue, spot_data: dict, claims: list, decision: dict) -> dict:
             "id", "name", "category", "area", "address", "lat", "lng", "tags", "hours", "hours_basis",
             "price_per_person", "price_basis", "fee_per_group", "visit_minutes", "max_group", "min_age",
             "child_friendly", "vegetarian", "sessions", "sources", "source_groups", "last_seen")},
+        "spot_id": (venue.details or {}).get("identified_spot_id") or "",
         "state": decision["state"],
         "blockers": decision["blockers"],
         "hints": decision["hints"],

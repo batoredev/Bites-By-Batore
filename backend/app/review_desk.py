@@ -454,6 +454,33 @@ def _item(db, sheet: str, index: int) -> dict:
     return BUILDERS[sheet](db, rows[index], index)
 
 
+class Relocate(BaseModel):
+    sheet: str
+    row: int
+    spot_id: str = Field(min_length=1, max_length=64)
+    maps_url: str = Field(min_length=3, max_length=2048)
+
+
+@router.post("/location")
+def relocate(body: Relocate, user=Depends(admin_user), db=Depends(get_db)):
+    """The owner found the stored location wrong: set it from a Maps link or coordinates.
+
+    Uses the Place manager's own edit, so the link is checked, the live place moves, the
+    change is kept in the place's history and the audit trail, and the agents reuse it.
+    The row's note records the fix so the accuracy report counts location errors.
+    """
+    from .spots_api import SpotEdit, edit_spot
+
+    item = _item(db, body.sheet, body.row)
+    if body.spot_id not in {m.get("id") for m in item["matches"] if m.get("id")}:
+        raise HTTPException(409, "That place isn't the one shown on this row")
+    edit_spot(body.spot_id, SpotEdit(maps_url=body.maps_url), user=user, db=db)
+    note = item.get("note") or ""
+    if "location corrected" not in note.casefold():
+        _store(body.sheet, body.row, note=(note + " · " if note else "") + "Location corrected by owner")
+    return _item(db, body.sheet, body.row)
+
+
 class Said(BaseModel):
     sheet: str
     row: int

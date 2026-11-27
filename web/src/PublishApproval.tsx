@@ -30,6 +30,7 @@ interface Place {
   sources: { type: string; url: string }[];
   source_groups: string[];
   last_seen: string | null;
+  spot_id: string;
   state: State;
   blockers: string[];
   hints: string[];
@@ -121,6 +122,39 @@ export default function PublishApproval() {
 
   const item = page?.items[index];
   useEffect(() => setNote(item?.note || ""), [item?.id, item?.note]);
+
+  // The stored location is wrong: paste the right Maps link or coordinates.
+  const [fixing, setFixing] = useState(false);
+  const [placeText, setPlaceText] = useState("");
+  const [saved, setSaved] = useState("");
+  useEffect(() => {
+    setFixing(false);
+    setPlaceText("");
+    setSaved("");
+  }, [item?.id]);
+  const saveLocation = useCallback(async () => {
+    if (!item?.spot_id || busy || placeText.trim().length < 3) return;
+    setBusy(true);
+    setError("");
+    try {
+      await post(`/admin/spots/${item.spot_id}/edit`, { maps_url: placeText.trim() });
+      const fresh = await api<Page>(path());
+      setPage(fresh);
+      const at = fresh.items.findIndex((p) => p.id === item.id);
+      if (at >= 0) setIndex(at);
+      setFixing(false);
+      setPlaceText("");
+      setSaved(
+        item.state === "approved"
+          ? "Location saved. Your approval covered the old pin, so approve it again with the new one."
+          : "Location saved. The map shows the new pin.",
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }, [item, busy, placeText, path]);
 
   const decide = useCallback(
     async (decision: "approve" | "reject" | "clear", target?: Place) => {
@@ -363,7 +397,42 @@ export default function PublishApproval() {
                   Open in Maps <kbd>M</kbd>
                 </a>
               )}
+              {item.spot_id && (
+                <button aria-expanded={fixing} onClick={() => setFixing((f) => !f)}>
+                  Wrong location?
+                </button>
+              )}
             </div>
+            {saved && (
+              <p className="desk-said" role="status">
+                {saved}
+              </p>
+            )}
+            {fixing && item.spot_id && (
+              <form
+                className="desk-fix"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void saveLocation();
+                }}
+              >
+                <label htmlFor="approve-fix-place">Paste the right place from Google Maps</label>
+                <div>
+                  <input
+                    id="approve-fix-place"
+                    autoFocus
+                    value={placeText}
+                    maxLength={2048}
+                    onChange={(e) => setPlaceText(e.target.value)}
+                    placeholder="Share link, full Maps link, or 11.0168, 76.9558"
+                  />
+                  <button type="submit" disabled={busy || placeText.trim().length < 3}>
+                    {busy ? "Saving…" : "Save location"}
+                  </button>
+                </div>
+                <small>In Google Maps: open the place, tap Share, copy the link.</small>
+              </form>
+            )}
           </article>
 
           <div className="desk-side">

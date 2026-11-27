@@ -2319,6 +2319,56 @@ pre {
 .desk-empty {
   padding: 1rem;
 }
+/* Wrong location? The owner pastes the right Maps link or coordinates (both desk tabs). */
+.desk-fix {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--desk-line);
+  background: var(--desk-bg);
+  font-size: 0.85rem;
+}
+.desk-fix label {
+  color: var(--gold);
+}
+.desk-fix div {
+  display: flex;
+  gap: 0.5rem;
+}
+.desk-fix input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--desk-line);
+  background: var(--desk-panel);
+  color: var(--cream);
+  font: inherit;
+}
+.desk-fix button {
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  border: 0;
+  background: var(--turmeric);
+  color: var(--espresso);
+  font-weight: 700;
+  cursor: pointer;
+}
+.desk-fix button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.desk-fix small {
+  color: var(--gold);
+  opacity: 0.85;
+}
+@media (max-width: 480px) {
+  .desk-fix div {
+    flex-direction: column;
+  }
+}
 /* Approve places: the owner's per-place publish decision, built on the desk layout. */
 .approve-filters {
   display: flex;

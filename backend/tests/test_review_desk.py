@@ -51,6 +51,38 @@ def test_items_explain_each_row_and_attach_evidence(desk):
     assert "Another source agrees it exists." in third["hints"]
 
 
+def test_owner_can_correct_the_location_from_the_desk(desk):
+    from app.db import Venue
+
+    with Session() as db:
+        venue = Venue(name="Test Cafe", category="cafe", area="RS Puram", address="", lat=11.0, lng=76.9,
+                      tags=[], details={}, status="published", is_demo=False)
+        db.add(venue)
+        db.flush()
+        row = IdentifiedSpot(user_id=desk.owner, identity_key="k:test-cafe", name="Test Cafe", category="cafe",
+                             area="RS Puram", status="approved", venue_id=venue.id)
+        row.data = {"coordinates": {"lat": 11.0, "lng": 76.9}}
+        db.add(row)
+        db.commit()
+        spot_id, venue_id = row.id, venue.id
+
+    def move(**kw):
+        return desk.client.post("/api/admin/review-desk/location", headers=desk.auth,
+                                json={"sheet": "overture", "row": 0, **kw})
+
+    assert move(spot_id="someone-else", maps_url="11.02, 76.96").status_code == 409
+    assert move(spot_id=spot_id, maps_url="13.08, 80.27").status_code == 422
+    body = move(spot_id=spot_id, maps_url="11.0200, 76.9600").json()
+    assert "11.02,76.96" in body["embed"] and "Location corrected by owner" in body["note"]
+    with Session() as db:
+        spot, venue = db.get(IdentifiedSpot, spot_id), db.get(Venue, venue_id)
+        assert (venue.lat, venue.lng) == (11.02, 76.96)
+        assert spot.data["coordinates"]["basis"] == "Coordinates supplied by the owner"
+        assert spot.data["operator_edits"][-1]["from"] == "11.0,76.9"
+    # Fixing it again does not repeat the note.
+    assert move(spot_id=spot_id, maps_url="11.0210, 76.9610").json()["note"].count("Location corrected") == 1
+
+
 def test_answer_is_written_to_the_sheet_and_can_be_changed(desk):
     post = lambda **kw: desk.client.post("/api/admin/review-desk/answer", json=kw, headers=desk.auth)
     assert post(sheet="decisions", row=1, answer="Yes").status_code == 200

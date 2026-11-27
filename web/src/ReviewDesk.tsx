@@ -4,6 +4,7 @@ import { ErrorBox, Loading } from "./components";
 import { parseCommand, type Command } from "./voiceCommands";
 
 interface Match {
+  id: string;
   name: string;
   area: string;
   category: string;
@@ -298,7 +299,37 @@ export default function ReviewDesk() {
     setSourcePick(0);
     setReading(null);
     setWords("");
+    setFixing(false);
+    setPlace("");
   }, [index]);
+
+  // The stored location is wrong: the owner pastes the right Maps link or coordinates.
+  const [fixing, setFixing] = useState(false);
+  const [place, setPlace] = useState("");
+  const [placeBusy, setPlaceBusy] = useState(false);
+  const saveLocation = async () => {
+    const target = items?.[index];
+    const spot = target?.matches[0]?.id;
+    if (!items || !target || !spot || placeBusy || place.trim().length < 3) return;
+    setPlaceBusy(true);
+    setError("");
+    try {
+      const updated = await post<DeskItem>("/admin/review-desk/location", {
+        sheet: target.sheet,
+        row: target.row,
+        spot_id: spot,
+        maps_url: place.trim(),
+      });
+      setItems(items.map((x, k) => (k === index ? updated : x)));
+      setFixing(false);
+      setPlace("");
+      say("Location saved. The map now shows the new point.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setPlaceBusy(false);
+    }
+  };
 
   // The owner's own words: show what was understood first, change nothing until confirmed.
   const understand = async (text: string) => {
@@ -765,7 +796,37 @@ export default function ReviewDesk() {
                 Open in Maps <kbd>M</kbd>
               </a>
             )}
+            {match?.id && (
+              <button aria-expanded={fixing} onClick={() => setFixing((f) => !f)}>
+                Wrong location?
+              </button>
+            )}
           </div>
+          {fixing && match?.id && (
+            <form
+              className="desk-fix"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void saveLocation();
+              }}
+            >
+              <label htmlFor="desk-fix-place">Paste the right place from Google Maps</label>
+              <div>
+                <input
+                  id="desk-fix-place"
+                  autoFocus
+                  value={place}
+                  maxLength={2048}
+                  onChange={(e) => setPlace(e.target.value)}
+                  placeholder="Share link, full Maps link, or 11.0168, 76.9558"
+                />
+                <button type="submit" disabled={placeBusy || place.trim().length < 3}>
+                  {placeBusy ? "Saving…" : "Save location"}
+                </button>
+              </div>
+              <small>In Google Maps: open the place, tap Share, copy the link. The pin moves for customers too.</small>
+            </form>
+          )}
         </article>
 
         <div className="desk-side">

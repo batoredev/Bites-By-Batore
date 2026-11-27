@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from typing import Literal
@@ -163,16 +165,57 @@ def _owned(db, spot_id, user):
 
 
 MAPS_HOSTS = {"google.com", "www.google.com", "maps.google.com", "google.co.in", "www.google.co.in"}
+# What the Share button in Google Maps gives: a short link that redirects to the full one.
+SHORT_HOSTS = {"maps.app.goo.gl", "goo.gl"}
+COORDINATES = re.compile(r"^\s*(-?\d{1,2}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})\s*$")
+PIN = re.compile(r"!3d(-?\d{1,2}\.\d{3,})!4d(-?\d{1,3}\.\d{3,})")
+
+
+def _resolve_short(url: str) -> str:
+    """Follow a Maps share link to the full Google Maps link. Only Google addresses are
+    followed, at most five hops, so a pasted link can never send the server elsewhere."""
+    from urllib.parse import urljoin, urlparse
+
+    import httpx
+
+    current = url
+    with httpx.Client(timeout=8, follow_redirects=False, trust_env=False,
+                      headers={"User-Agent": "Mozilla/5.0 (Bites place check)"}) as client:
+        for _ in range(5):
+            parsed = urlparse(current)
+            if parsed.scheme != "https" or parsed.hostname not in MAPS_HOSTS | SHORT_HOSTS or parsed.username:
+                break
+            if parsed.hostname in MAPS_HOSTS:
+                return current
+            response = client.get(current)
+            location = response.headers.get("location")
+            if response.status_code not in (301, 302, 303, 307, 308) or not location:
+                break
+            current = urljoin(current, location)
+    raise HTTPException(422, "That share link didn't lead to a Google Maps place; open it and paste the full link")
 
 
 def _link_point(maps_url):
-    """Coordinates from a pasted Google Maps link. Only HTTPS Google Maps links are stored."""
+    """Coordinates from what the owner pasted: a Google Maps link (full or share link) or
+    "lat, lng". The place's own pin (!3d/!4d) is preferred over the map's centre (@)."""
     from urllib.parse import urlparse
 
     from .geocode import link_points
     from .planner import km
 
-    parsed = urlparse(maps_url.strip())
+    text = maps_url.strip()
+    typed = COORDINATES.match(text)
+    if typed:
+        lat, lng = float(typed.group(1)), float(typed.group(2))
+        if km((lat, lng), (11.0168, 76.9558)) > 40:
+            raise HTTPException(422, "That point is more than 40 km from Coimbatore")
+        return {"lat": lat, "lng": lng, "source_url": f"https://www.google.com/maps?q={lat},{lng}",
+                "basis": "Coordinates supplied by the owner"}
+    parsed = urlparse(text)
+    if parsed.scheme == "https" and parsed.hostname in SHORT_HOSTS and not parsed.username:
+        text = _resolve_short(text)
+    maps_url = text
+    parsed = urlparse(maps_url)
     if (
         parsed.scheme != "https"
         or parsed.hostname not in MAPS_HOSTS
@@ -181,9 +224,10 @@ def _link_point(maps_url):
         or parsed.port not in {None, 443}
         or not (parsed.path.startswith("/maps") or parsed.hostname == "maps.google.com")
     ):
-        raise HTTPException(422, "Paste an https://www.google.com/maps/... link")
+        raise HTTPException(422, "Paste a Google Maps link (or coordinates like 11.0168, 76.9558)")
     maps_url = parsed.geturl()
-    points = link_points([maps_url])
+    pin = PIN.search(maps_url)
+    points = [(float(pin.group(1)), float(pin.group(2)), maps_url)] if pin else link_points([maps_url])
     if not points:
         raise HTTPException(
             422, "Open the place in Google Maps and paste a link that contains its coordinates"
@@ -249,14 +293,14 @@ def add_places(data: PlacesAdd, user=Depends(admin_user), db=Depends(get_db)):
             "sources": [
                 {
                     "type": "owner",
-                    "url": data.maps_url,
+                    "url": point["source_url"] if point else data.maps_url,
                     "collected_at": now(),
                     "basis": "Added by the owner from personal knowledge; details unverified",
                 }
             ],
             "operator_named": True,
             "name_status": "operator_named",
-            **({"coordinates": point, "maps_links": [data.maps_url]} if point else {}),
+            **({"coordinates": point, "maps_links": [point["source_url"]]} if point else {}),
         }
         category = data.category or category_for(learned, name) or classify(name)
         row = upsert_spot(db, user.id, name, category, data.area, evidence)
@@ -343,9 +387,13 @@ def edit_spot(spot_id: str, data: SpotEdit, user=Depends(admin_user), db=Depends
         edits.append({"field": "area", "from": row.area, "to": data.area.strip()})
         row.area = data.area.strip()
     if data.maps_url:
-        record["coordinates"] = _link_point(data.maps_url)
-        record["maps_links"] = list(dict.fromkeys([data.maps_url, *record.get("maps_links", [])]))
-        edits.append({"field": "coordinates", "from": "", "to": data.maps_url[:200]})
+        before = record.get("coordinates") or {}
+        point = _link_point(data.maps_url)
+        record["coordinates"] = point
+        record["maps_links"] = list(dict.fromkeys([point["source_url"], *record.get("maps_links", [])]))
+        old = f"{before.get('lat')},{before.get('lng')}" if before.get("lat") is not None else ""
+        edits.append({"field": "coordinates", "from": old, "to": f"{point['lat']},{point['lng']}",
+                      "link": point["source_url"][:200]})
     if data.release:
         # "It is real": the name is a real venue. Also releases a held record.
         if row.status == "quarantined":
