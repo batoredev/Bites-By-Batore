@@ -379,6 +379,79 @@ textarea:focus-visible {
   background: transparent;
   padding: 12px 0;
 }
+/* "I understood": what Bites' own model read from the request box. */
+.understood {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.understood-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.understood ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.understood li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--espresso);
+  font-size: 12px;
+  animation: understood-in 0.25s ease-out;
+}
+.understood li.info {
+  padding-right: 11px;
+}
+.understood li button {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.understood li button:hover,
+.understood li button:focus-visible {
+  background: var(--soft);
+  color: var(--espresso);
+}
+.understood-notice {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--espresso);
+  font-size: 13px;
+}
+@keyframes understood-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .understood li { animation: none; }
+}
 .mood-row,
 .category-row,
 .tag-row {

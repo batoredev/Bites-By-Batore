@@ -67,6 +67,7 @@ from .learning_api import router as learning_router, correction_dict
 from .spots_api import router as spots_router
 from .review_desk import router as review_desk_router
 from .publish_approval import router as publish_router
+from .understand_api import router as understand_router
 from .evaluation import router as evaluation_router
 from .maintenance_api import router as maintenance_router
 from .spots import spot_dict
@@ -129,6 +130,7 @@ app.include_router(learning_router)
 app.include_router(spots_router)
 app.include_router(review_desk_router)
 app.include_router(publish_router)
+app.include_router(understand_router)
 app.include_router(evaluation_router)
 app.include_router(maintenance_router)
 
@@ -541,7 +543,7 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
             return None
         from .research import start_case
 
-        query = data.query + " Coimbatore"
+        query = asked.query + " Coimbatore"
         existing = db.scalar(
             select(Investigation).where(
                 Investigation.user_id == user.id,
@@ -564,6 +566,15 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
         raise HTTPException(
             422, "The first release covers Coimbatore. Choose a starting point within 40 km of the city."
         )
+    # Bites' own understanding model reads the words; the planner below stays deterministic.
+    from .understand.apply import OUT_OF_SCOPE, planner_query, read as understand
+
+    asked = data
+    reading, reader = understand(asked.query)
+    if reading["out_of_scope"]:
+        return {"options": [], "message": OUT_OF_SCOPE, "excluded": {}, "candidate_count": 0,
+                "understood_by": reader}
+    data = asked.model_copy(update={"query": planner_query(asked.query, reading)})
     rows = list(
         db.scalars(
             select(Venue).where(Venue.is_demo == (settings().app_mode == "demo"), Venue.status == "published")
@@ -654,7 +665,7 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
     output = []
     for option in result["options"]:
         option["warnings"] += sorted(set(warnings))
-        plan = Plan(user_id=user.id, request=data.model_dump(mode="json"), result=option)
+        plan = Plan(user_id=user.id, request=asked.model_dump(mode="json"), result=option)
         db.add(plan)
         db.flush()
         output.append(plan_dict(db, plan))
@@ -662,6 +673,7 @@ def create_plans(data: OutingRequest, user=Depends(current_user), db=Depends(get
     return {
         **result,
         "options": output,
+        "understood_by": reader,
         # A vague request ("something different") is not a research topic.
         "investigation_id": investigate_gap()
         if not output and not result["candidate_count"] and result.get("interest_tags")

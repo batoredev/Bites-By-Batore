@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowRight,
   Compass,
@@ -46,6 +46,16 @@ export function defaultRequest(user: User): OutingRequest {
     lock_ids: [],
   };
 }
+// What Bites' own model understood from the request box (POST /api/understand).
+interface Understood {
+  form: Partial<OutingRequest>;
+  chips: { fields: string[]; label: string }[];
+  notices: string[];
+  reader: string;
+}
+type Filled = { field: keyof OutingRequest; before: unknown; value: unknown };
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
 const starts = [
   ["RS Puram, Coimbatore", 11.008, 76.948],
   ["Gandhipuram, Coimbatore", 11.017, 76.967],
@@ -94,6 +104,66 @@ export default function Discover({
     key: K,
     value: OutingRequest[K],
   ) => setRequest({ ...request, [key]: value });
+
+  // Read the words as the person types, fill the form, and say what was understood.
+  // A field the person changes by hand stays theirs; removing a chip puts it back.
+  const [understood, setUnderstood] = useState<Understood | null>(null);
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  const latest = useRef(request);
+  latest.current = request;
+  const filled = useRef<Filled[]>([]);
+  // Fields the person changed by hand after the model filled them: never filled again.
+  const owned = useRef<Set<string>>(new Set());
+  const dismissedRef = useRef(dismissed);
+  dismissedRef.current = dismissed;
+
+  useEffect(() => {
+    const text = request.query.trim();
+    const timer = setTimeout(async () => {
+      const next = { ...latest.current } as Record<string, unknown>;
+      for (const f of filled.current) {
+        if (same(next[f.field], f.value)) next[f.field] = f.before;
+        else owned.current.add(f.field);
+      }
+      filled.current = [];
+      if (text.length < 3) {
+        setRequest(next as unknown as OutingRequest);
+        setUnderstood(null);
+        setDismissed([]);
+        owned.current = new Set();
+        return;
+      }
+      try {
+        const u = await post<Understood>("/understand", { text });
+        const off = new Set(u.chips.filter((c) => dismissedRef.current.includes(c.label)).flatMap((c) => c.fields));
+        for (const [field, value] of Object.entries(u.form)) {
+          if (off.has(field) || owned.current.has(field)) continue;
+          filled.current.push({ field: field as keyof OutingRequest, before: next[field], value });
+          next[field] = value;
+        }
+        setRequest(next as unknown as OutingRequest);
+        setUnderstood(u);
+        if (typeof u.form.start_label === "string") setCustom(!starts.some((s) => s[0] === u.form.start_label));
+      } catch {
+        // Understanding is a help, never a blocker: the form still plans as it is.
+        setRequest(next as unknown as OutingRequest);
+        setUnderstood(null);
+      }
+    }, 450);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request.query]);
+
+  function dismiss(chip: Understood["chips"][number]) {
+    const next = { ...latest.current } as Record<string, unknown>;
+    filled.current = filled.current.filter((f) => {
+      if (!chip.fields.includes(f.field)) return true;
+      if (same(next[f.field], f.value)) next[f.field] = f.before;
+      return false;
+    });
+    setRequest(next as unknown as OutingRequest);
+    setDismissed((d) => [...d, chip.label]);
+  }
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -195,6 +265,34 @@ export default function Discover({
             placeholder="Sushi with friends, or just something different…"
           />
         </label>
+        {understood && (understood.chips.length > 0 || understood.notices.length > 0) && (
+          <div className="understood" aria-live="polite">
+            {understood.chips.some((c) => !dismissed.includes(c.label)) && (
+              <>
+                <span className="understood-label">I understood</span>
+                <ul aria-label="What Bites understood">
+                  {understood.chips
+                    .filter((c) => !dismissed.includes(c.label))
+                    .map((c) => (
+                      <li key={c.label} className={c.fields.length ? undefined : "info"}>
+                        {c.label}
+                        {c.fields.length > 0 && (
+                          <button type="button" aria-label={`Remove ${c.label}`} onClick={() => dismiss(c)}>
+                            ×
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                </ul>
+              </>
+            )}
+            {understood.notices.map((n) => (
+              <p key={n} className="understood-notice">
+                {n}
+              </p>
+            ))}
+          </div>
+        )}
         <div className="mood-row">
           {[
             { id: "different", label: "Surprise me" },

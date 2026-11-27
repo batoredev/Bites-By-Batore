@@ -113,6 +113,61 @@ def test_model_never_reads_an_age_as_a_group_size(model):
     assert model.read("something for a 5 year old")["party_size"] is None
 
 
+def test_reading_fills_only_what_was_said_and_explains_it():
+    from datetime import datetime
+
+    from app.understand.apply import IST, form_and_chips
+    from app.understand.reading import Reading
+
+    r = {**Reading().as_dict(), "categories": ["food"], "interests": ["biryani"], "party_size": 4, "budget": 800,
+         "budget_unit": "person", "vegetarian": True, "time_of_day": "evening", "duration_minutes": 90}
+    now = datetime(2026, 11, 27, 20, 0, tzinfo=IST)
+    form, chips, notices = form_and_chips(r, now=now)
+    assert form["party_size"] == 4 and form["budget"] == 800 and form["budget_unit"] == "person"
+    assert form["vegetarian"] is True and "children" not in form and "wheelchair" not in form
+    assert form["departure"] == "2026-11-28T19:00:00+05:30"  # evening already passed today
+    labels = [c["label"] for c in chips]
+    assert "4 people" in labels and "₹800 per person" in labels and "1 h 30 min" in labels and "biryani" in labels
+    assert notices == []
+    form, _, notices = form_and_chips({**r, "party_size": 40, "out_of_scope": True})
+    assert "party_size" not in form and any("20 people" in n for n in notices)
+    assert any("inside Coimbatore" in n for n in notices)
+
+
+def test_planner_query_opens_detail_only_requests_and_adds_canonical_dishes():
+    from app.understand.apply import planner_query
+    from app.understand.reading import Reading
+
+    empty = Reading().as_dict()
+    assert planner_query("kids day out", {**empty, "children": True}).endswith("something different")
+    assert planner_query("briyani", {**empty, "interests": ["biryani"]}) == "briyani biryani"
+    assert planner_query("zxqv", empty) == "zxqv"
+
+
+def test_understand_endpoint_and_planning_use_the_model(client, auth, request_data):
+    body = client.post("/api/understand", headers=auth, json={"text": "biryani for 4, 800 per head"}).json()
+    assert body["reader"] == "understand-v1"
+    assert body["form"]["party_size"] == 4 and body["form"]["budget_unit"] == "person"
+    assert {"fields": ["party_size"], "label": "4 people"} in body["chips"]
+
+    away = client.post("/api/plans", headers=auth, json={**request_data, "query": "plan a trip to Ooty"}).json()
+    assert away["options"] == [] and "inside Coimbatore" in away["message"]
+
+    kids = client.post("/api/plans", headers=auth,
+                       json={**request_data, "query": "something fun with my son", "children": True}).json()
+    assert "no supported match" not in kids.get("message", "")
+    assert kids["understood_by"] == "understand-v1"
+
+
+def test_planning_still_works_when_the_model_file_is_missing(client, auth, request_data, monkeypatch):
+    from app.understand import model
+
+    monkeypatch.setattr(model, "CURRENT", model.MODEL_DIR / "missing.json")
+    monkeypatch.setattr(model, "_loaded", None)
+    body = client.post("/api/plans", headers=auth, json=request_data).json()
+    assert body["understood_by"] == "keyword"
+
+
 def test_keyword_baseline_reads_categories_but_nothing_else():
     reading = keyword_reading("biryani then a movie for 4")
     assert set(reading["categories"]) == {"food", "cinema"} and reading["interests"] == ["biryani"]
